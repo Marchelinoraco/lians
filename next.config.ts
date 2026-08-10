@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   // proyek dari berkas lock terdekat. Dikunci agar build tidak bergantung pada
   // isi folder di luar repositori.
   turbopack: { root: path.resolve(import.meta.dirname) },
+
 };
 
 export default nextConfig;
