@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { countRentalDays, formatTanggalID } from '@/lib/dates';
+import { countRentalDays, formatTanggal } from '@/lib/dates';
 
 describe('countRentalDays', () => {
   it('menghitung 1 Agustus sampai 3 Agustus sebagai 2 hari', () => {
@@ -21,8 +21,17 @@ describe('countRentalDays', () => {
   });
 });
 
-describe('formatTanggalID', () => {
+describe('formatTanggal', () => {
   it('memformat dalam bahasa Indonesia', () => {
-    expect(formatTanggalID(new Date('2026-08-10'))).toBe('10 Agustus 2026');
+    expect(formatTanggal(new Date('2026-08-10'), 'id')).toBe('10 Agustus 2026');
+  });
+
+  it('memformat dalam bahasa Inggris', () => {
+    expect(formatTanggal(new Date('2026-08-10'), 'en')).toBe('10 August 2026');
+  });
+
+  it('memakai urutan tahun-bulan-hari untuk Mandarin dan Korea', () => {
+    expect(formatTanggal(new Date('2026-08-10'), 'zh')).toBe('2026年8月10日');
+    expect(formatTanggal(new Date('2026-08-10'), 'ko')).toBe('2026년 8월 10일');
   });
 });
