@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   // isi folder di luar repositori.
   turbopack: { root: path.resolve(import.meta.dirname) },
 
+  // next/image menolak host luar yang tidak didaftarkan. Foto armada
+  // diunggah ke Cloudinary, jadi domainnya harus diizinkan di sini.
+  images: {
+    remotePatterns: [{ protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' }],
+  },
+
 };
 
 export default nextConfig;
