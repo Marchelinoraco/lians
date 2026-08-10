@@ -118,7 +118,7 @@ npm install -D drizzle-kit vitest @vitejs/plugin-react jsdom @testing-library/re
 
 - [ ] **Step 3: Konfigurasi Vitest**
 
-Create `vitest.config.ts`:
+Create `vitest.config.mts` — ekstensi `.mts`, bukan `.ts`, agar dimuat sebagai ESM tanpa peringatan Vite:
 
 ```ts
 import { defineConfig } from 'vitest/config';
@@ -133,7 +133,7 @@ export default defineConfig({
     globals: true,
   },
   resolve: {
-    alias: { '@': path.resolve(__dirname, './src') },
+    alias: { '@': path.resolve(import.meta.dirname, './src') },
   },
 });
 ```
@@ -141,7 +141,12 @@ export default defineConfig({
 Create `tests/setup.ts`:
 
 ```ts
+import { config } from 'dotenv';
 import '@testing-library/jest-dom/vitest';
+
+// Vitest tidak membaca .env.local sendiri. Tanpa ini, tes integrasi
+// akan terlewat diam-diam karena DATABASE_URL tidak terlihat.
+config({ path: '.env.local', quiet: true });
 ```
 
 Tambahkan skrip ke `package.json`:
@@ -2237,8 +2242,15 @@ export async function getSettings(): Promise<SettingsInput> {
 
 Create `src/db/seed.ts`:
 
+Env dimuat lewat flag pada perintah, bukan di dalam berkas: impor ES di-hoist ke atas panggilan apa pun, sehingga memanggil `dotenv` di dalam `seed.ts` sudah terlambat — `src/db/index.ts` keburu dievaluasi dan melempar "DATABASE_URL belum diatur".
+
+Ubah skripnya di `package.json`:
+
+```json
+"db:seed": "tsx --env-file=.env.local src/db/seed.ts"
+```
+
 ```ts
-import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db';
 import { siteSettings, testimonials, travelRoutes, users, vehicles } from '@/db/schema';
