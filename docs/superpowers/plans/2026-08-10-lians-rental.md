@@ -17,7 +17,10 @@
 - Terjemahan yang belum diisi **selalu jatuh ke bahasa Indonesia**, tidak pernah disembunyikan.
 - Nama kendaraan, nama kota dan bandara, nama pelanggan, nomor telepon, alamat, dan seluruh angka harga **tidak diterjemahkan**.
 - Mata uang **IDR** di semua bahasa, diformat `Rp 350.000` (pemisah titik, tanpa desimal).
-- **Next.js 16**, bukan 15. `create-next-app@latest` memasang 16.3.0. Konsekuensi paling penting: berkas `middleware.ts` kini bernama `proxy.ts` dan fungsinya diekspor sebagai `proxy`. Perilaku, `matcher`, dan pola `request: { headers }` tidak berubah.
+- **Next.js 16**, bukan 15. `create-next-app@latest` memasang 16.3.0. Konsekuensi paling penting: berkas `middleware.ts` kini bernama `proxy.ts` dan fungsinya diekspor sebagai `proxy`. Perilaku dan `matcher` tidak berubah.
+- **`proxy.ts` diletakkan di `src/`, bukan akar proyek**, karena harus sejajar dengan folder `app` — dan folder itu ada di dalam `src/`. Di akar proyek, berkasnya diabaikan diam-diam dan setiap rute menghasilkan 404.
+- **Root layout situs publik ada di `src/app/[locale]/layout.tsx`; berkas `src/app/layout.tsx` sengaja tidak dibuat.** Root layout di bawah segmen dinamis membuat atribut `<html lang>` datang dari `params`, sehingga keempat bahasa tetap dibangun sebagai HTML statis. Menaruhnya di `src/app/layout.tsx` memaksa bahasa dibaca lewat `headers()`, dan itu membuat seluruh halaman publik dirender per permintaan — ISR tidak pernah aktif.
+- Saat memverifikasi halaman lewat `curl`, **pastikan port 3000 benar-benar bebas lebih dulu** (`lsof -ti:3000 | xargs kill -9`). Server lama yang masih hidup membuat `npm start` gagal dengan `EADDRINUSE` di latar, dan pengujian mengenai build usang tanpa tanda apa pun. Berkas prerender di `.next/server/app/*.html` juga disimpan tanpa tag `<html>` pembuka — tag itu dipasang saat penyajian, jadi berkas itu bukan alat verifikasi yang sahih.
 - Konfigurasi Vitest berada di `vitest.config.mts` (bukan `.ts`) agar dimuat sebagai ESM tanpa peringatan.
 - `next.config.ts` mengunci `turbopack.root` ke akar repositori.
 - TypeScript `strict: true`. Tidak ada `any` di kode produksi.
