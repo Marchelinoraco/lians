@@ -968,9 +968,12 @@ export function localeHref(path: string, locale: Locale): string {
 
 - [ ] **Step 4: Tulis kamus pesan**
 
-Create `src/i18n/messages/id.ts` — sumber kebenaran kunci:
+Create `src/i18n/messages/id.ts` — sumber kebenaran kunci.
+
+**Jangan pakai `as const` di sini.** Dengan `as const`, setiap nilai menjadi tipe literal (`'Kendaraan'` alih-alih `string`), sehingga `const en: Messages = { … }` ditolak TypeScript karena `'Vehicles'` bukan `'Kendaraan'`. Kamus perlu menyamakan **bentuk kunci**, bukan isi.
 
 ```ts
+// Sengaja TANPA `as const` — lihat penjelasan di atas.
 const id = {
   nav: {
     home: 'Beranda',
@@ -1137,7 +1140,7 @@ const id = {
     notFoundTitle: 'Halaman tidak ditemukan',
     notFoundBody: 'Halaman yang Anda cari tidak ada atau sudah dipindahkan.',
   },
-} as const;
+};
 
 export default id;
 ```
