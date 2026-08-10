@@ -1844,7 +1844,7 @@ export const bookingInputSchema = z
 
     if (mulai < startOfDay(new Date())) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         path: ['startDate'],
         message: 'Tanggal mulai tidak boleh di masa lalu',
       });
@@ -1855,7 +1855,7 @@ export const bookingInputSchema = z
     const selesai = startOfDay(new Date(data.endDate));
     if (selesai < mulai) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         path: ['endDate'],
         message: 'Tanggal selesai harus setelah tanggal mulai',
       });
@@ -1865,7 +1865,7 @@ export const bookingInputSchema = z
     const jumlahHari = Math.max(1, differenceInCalendarDays(selesai, mulai));
     if (data.driverDays > jumlahHari) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         path: ['driverDays'],
         message: `Hari pakai sopir tidak boleh lebih dari ${jumlahHari} hari sewa`,
       });
@@ -1888,28 +1888,36 @@ Create `src/schemas/localized.ts`:
 
 ```ts
 import { z } from 'zod';
-import { LOCALES, DEFAULT_LOCALE } from '@/i18n/config';
 
 /**
  * Bahasa Indonesia wajib, tiga lainnya opsional.
- * Dipakai untuk setiap field yang bisa diterjemahkan supaya aturannya
- * hanya ditulis sekali dan tidak bisa berbeda antar-form.
+ *
+ * Ditulis eksplisit per bahasa, bukan dibangkitkan dari daftar LOCALES.
+ * Versi dinamis memaksa cast ke `Record<string, ZodTypeAny>` yang membuang
+ * seluruh tipe hasilnya — justru menghilangkan alasan memakai Zod.
+ * Konsekuensinya: menambah bahasa kelima kelak perlu menyentuh berkas ini.
  */
 export function localizedString(inner: z.ZodString) {
-  const bentuk = Object.fromEntries(
-    LOCALES.map((l) => [l, l === DEFAULT_LOCALE ? inner : inner.or(z.literal('')).optional()]),
-  );
-  return z.object(bentuk as Record<string, z.ZodTypeAny>);
+  const opsional = inner.or(z.literal('')).optional();
+  return z.object({ id: inner, en: opsional, zh: opsional, ko: opsional });
 }
 
 export function localizedArray(inner: z.ZodString) {
   const daftar = z.array(inner);
-  const bentuk = Object.fromEntries(
-    LOCALES.map((l) => [l, l === DEFAULT_LOCALE ? daftar.default([]) : daftar.optional()]),
-  );
-  return z.object(bentuk as Record<string, z.ZodTypeAny>);
+  return z.object({
+    // Wajib ada, tetapi boleh berupa daftar kosong. JANGAN pakai `.default([])`:
+    // default membuat kunci ini opsional, sehingga kendaraan yang fasilitasnya
+    // hanya diisi dalam bahasa Inggris tampil kosong bagi pengunjung Indonesia —
+    // pasar utamanya justru yang dirugikan.
+    id: daftar,
+    en: daftar.optional(),
+    zh: daftar.optional(),
+    ko: daftar.optional(),
+  });
 }
 ```
+
+**Catatan Zod 4.** Proyek memakai Zod 4.4.x. Di dalam `superRefine`, kode isu ditulis sebagai literal `'custom'` (`ctx.addIssue({ code: 'custom', … })`), bukan `z.ZodIssueCode.custom` seperti pada Zod 3.
 
 - [ ] **Step 7: Implementasi skema admin**
 
