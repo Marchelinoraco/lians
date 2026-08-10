@@ -2,24 +2,28 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Membangun situs publik `lians.id` dan panel admin `admin.lians.id` untuk rental mobil LIANS Manado dalam satu aplikasi Next.js, dengan seluruh konten dikelola lewat CRUD di panel admin.
+**Goal:** Membangun situs publik `lians.id` empat bahasa (Indonesia, Inggris, Mandarin, Korea) dan panel admin `admin.lians.id` untuk rental mobil LIANS Manado dalam satu aplikasi Next.js, dengan seluruh konten dikelola lewat CRUD di panel admin.
 
-**Architecture:** Satu aplikasi Next.js 15 App Router. `middleware.ts` membaca hostname dan menulis-ulang `admin.*` ke grup rute `(admin)`, host lain ke `(public)`. Server Component membaca Postgres langsung lewat Drizzle tanpa lapisan REST internal; mutasi lewat Server Action yang memvalidasi dengan skema Zod yang sama dengan form di browser, lalu `revalidatePath`. Logika harga diisolasi sebagai fungsi murni tanpa ketergantungan React maupun database.
+**Architecture:** Satu aplikasi Next.js 15 App Router. `middleware.ts` membaca hostname dan menulis-ulang `admin.*` ke grup rute `(admin)`, host lain ke `(public)/[locale]` sesuai awalan bahasa pada path. Server Component membaca Postgres langsung lewat Drizzle tanpa lapisan REST internal; mutasi lewat Server Action yang memvalidasi dengan skema Zod yang sama dengan form di browser, lalu `revalidatePath`. Logika harga diisolasi sebagai fungsi murni tanpa ketergantungan React maupun database.
 
-**Tech Stack:** Next.js 15 (App Router) · React 19 · TypeScript strict · Tailwind CSS 4 · shadcn/ui · Drizzle ORM · Neon Postgres · Auth.js v5 · Cloudinary · React Hook Form · Zod · date-fns · lucide-react · Vitest · Testing Library · fast-check
+**Tech Stack:** Next.js 15 (App Router) · React 19 · TypeScript strict · Tailwind CSS 4 · shadcn/ui · Drizzle ORM · Neon Postgres · Auth.js v5 · Cloudinary · React Hook Form · Zod · date-fns · lucide-react · Vitest · Testing Library · fast-check · kamus multibahasa buatan sendiri
 
 **Spesifikasi:** `docs/superpowers/specs/2026-08-10-lians-rental-design.md`
 
 ## Global Constraints
 
 - Direktori kerja: `/Users/marchelinoraco/Documents/2026/lians/lians-web`. Folder `../website-rental-mobil` adalah **referensi baca-saja** — jangan pernah diubah.
-- Bahasa seluruh teks antarmuka: **Indonesia**. Mata uang **IDR**, diformat `Rp 350.000` (pemisah titik, tanpa desimal).
+- **Bahasa situs publik:** Indonesia (`id`, bawaan, tanpa awalan URL), Inggris (`en`), Mandarin (`zh`), Korea (`ko`). **Panel admin hanya berbahasa Indonesia.**
+- Terjemahan yang belum diisi **selalu jatuh ke bahasa Indonesia**, tidak pernah disembunyikan.
+- Nama kendaraan, nama kota dan bandara, nama pelanggan, nomor telepon, alamat, dan seluruh angka harga **tidak diterjemahkan**.
+- Mata uang **IDR** di semua bahasa, diformat `Rp 350.000` (pemisah titik, tanpa desimal).
 - TypeScript `strict: true`. Tidak ada `any` di kode produksi.
 - Path alias `@/*` → `src/*`.
 - Semua harga disimpan sebagai **integer rupiah**, tidak pernah float.
 - Nama bisnis: **LIANS**. Alamat lengkap, dipakai persis: `Jalan Pomorow (Depan Luwansa Hotel), Kelurahan Banjer, Kecamatan Tikala, Manado 95125`.
 - Warna aksen utama: `#2E8BF0` (biru logo LIANS). Tema terang — latar putih/abu netral, teks gelap.
 - Hitungan hari sewa: `differenceInCalendarDays(endDate, startDate)`, minimum 1. Sewa 1 Agustus–3 Agustus = **2 hari**.
+- Tidak ada teks antarmuka yang ditulis langsung di JSX. Semua lewat kamus `@/i18n` supaya keempat bahasa tidak pernah berbeda isi.
 - Tarif sopir global di `siteSettings.driverFeePerDay`; `vehicles.driverFeeOverride` ada di skema tetapi selalu `null` pada rilis ini.
 - Total harga **selalu** dihitung ulang di server; angka dari browser tidak pernah dipercaya.
 - Commit setiap akhir tugas. Pesan commit berbahasa Indonesia, format `feat:` / `test:` / `chore:` / `fix:`.
@@ -36,8 +40,9 @@ lians-web/
 │   ├── app/
 │   │   ├── layout.tsx           root: font, globals.css
 │   │   ├── globals.css          token Tailwind 4 + palet LIANS
-│   │   ├── (public)/            situs publik lians.id
-│   │   ├── (admin)/admin/       panel admin.lians.id
+│   │   ├── (public)/[locale]/   situs publik lians.id, 4 bahasa
+│   │   ├── (admin)/admin/       panel admin.lians.id (Indonesia saja)
+│   │   ├── (admin)/login/       login, di luar layout berpenjaga
 │   │   ├── api/auth/[...nextauth]/route.ts
 │   │   ├── sitemap.ts
 │   │   └── robots.ts
@@ -45,9 +50,15 @@ lians-web/
 │   │   ├── schema.ts            6 tabel + enum
 │   │   ├── index.ts             koneksi Neon serverless
 │   │   └── seed.ts              data awal + akun admin pertama
+│   ├── i18n/
+│   │   ├── config.ts            daftar Locale, label, kode hreflang
+│   │   ├── locale-path.ts       baca/tulis awalan bahasa pada URL
+│   │   ├── localized.ts         tipe Localized<T> + pickLocale
+│   │   ├── messages/            kamus id/en/zh/ko
+│   │   └── index.ts             getMessages, fill
 │   ├── lib/
 │   │   ├── pricing.ts           fungsi murni harga  ← inti
-│   │   ├── dates.ts             countRentalDays, format tanggal ID
+│   │   ├── dates.ts             countRentalDays, formatTanggal per bahasa
 │   │   ├── format.ts            formatRupiah
 │   │   ├── slug.ts              slugify + penjamin keunikan
 │   │   ├── booking-code.ts      LNS-YYYYMMDD-XXXX
@@ -62,10 +73,12 @@ lians-web/
 │       ├── ui/                  shadcn/ui
 │       ├── layout/              Header, Footer
 │       ├── vehicle/ booking/ travel/ testimonial/
-│       └── admin/               DataTable, ImageUploader, form
+│       └── admin/               ImageUploader, LocalizedInput, form
 └── tests/
     ├── unit/ properties/ components/ integration/
 ```
+
+Segmen `[locale]` hanya ada di sisi publik. Panel admin tidak berbahasa jamak, jadi rutenya tetap datar — memaksa segmen bahasa ke sana hanya menambah parameter yang selalu bernilai sama.
 
 Pemisahan `queries/` (baca) dan `actions/` (tulis) disengaja: berkas `queries/` aman dipanggil dari Server Component mana pun, sedangkan setiap berkas di `actions/` diawali `'use server'` dan wajib memeriksa sesi. Batas ini membuat lupa-memeriksa-sesi menjadi kesalahan yang terlihat saat membaca kode.
 
@@ -400,7 +413,7 @@ export function generateBookingCode(now: Date, random: () => number = Math.rando
 Run: `npm test`
 Expected: PASS semua
 
-- [ ] **Step 13: Commit**
+- [ ] **Step 14: Commit**
 
 ```bash
 git add -A
@@ -782,7 +795,580 @@ git commit -m "feat: fungsi harga sewa dan travel dengan property-based test"
 
 ---
 
-### Task 4: Skema database dan koneksi Neon
+### Task 4: Fondasi multibahasa
+
+Empat bahasa: `id` (bawaan, tanpa awalan URL), `en`, `zh`, `ko`. Tugas ini membangun tipe, kamus, dan fungsi jatuh-balik yang dipakai seluruh tugas berikutnya. Tidak ada komponen React di sini — semuanya fungsi murni yang bisa diuji tanpa merender apa pun.
+
+**Files:**
+- Create: `src/i18n/config.ts`, `src/i18n/locale-path.ts`, `src/i18n/localized.ts`, `src/i18n/messages/id.ts`, `src/i18n/messages/en.ts`, `src/i18n/messages/zh.ts`, `src/i18n/messages/ko.ts`, `src/i18n/index.ts`
+- Modify: `src/lib/dates.ts` (format tanggal per bahasa)
+- Test: `tests/unit/i18n.test.ts`, `tests/unit/localized.test.ts`
+
+**Interfaces:**
+- Consumes: `formatTanggalID` dari `@/lib/dates` (diganti)
+- Produces:
+  - `type Locale = 'id' | 'en' | 'zh' | 'ko'`, `LOCALES: readonly Locale[]`, `DEFAULT_LOCALE: 'id'`, `LOCALE_LABELS: Record<Locale, string>` — dari `@/i18n/config`
+  - `type Localized<T> = { id: T } & Partial<Record<Locale, T>>` — dari `@/i18n/localized`
+  - `pickLocale<T>(value: Localized<T> | null | undefined, locale: Locale): T | null` — dari `@/i18n/localized`
+  - `toLocalized<T>(value: T): Localized<T>` — dari `@/i18n/localized`
+  - `splitLocalePath(pathname: string): { locale: Locale; rest: string }` — dari `@/i18n/locale-path`
+  - `localeHref(path: string, locale: Locale): string` — dari `@/i18n/locale-path`
+  - `getMessages(locale: Locale): Messages`, `type Messages` — dari `@/i18n`
+  - `formatTanggal(d: Date, locale: Locale): string` — dari `@/lib/dates` (menggantikan `formatTanggalID`)
+
+- [ ] **Step 1: Tulis tes pembacaan bahasa dari path yang gagal**
+
+Create `tests/unit/i18n.test.ts`:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { splitLocalePath, localeHref } from '@/i18n/locale-path';
+import { LOCALES, DEFAULT_LOCALE } from '@/i18n/config';
+import { getMessages } from '@/i18n';
+
+describe('splitLocalePath', () => {
+  it('membaca path tanpa awalan sebagai bahasa Indonesia', () => {
+    expect(splitLocalePath('/mobil')).toEqual({ locale: 'id', rest: '/mobil' });
+  });
+
+  it('membaca awalan /en', () => {
+    expect(splitLocalePath('/en/mobil')).toEqual({ locale: 'en', rest: '/mobil' });
+  });
+
+  it('membaca awalan /zh dan /ko', () => {
+    expect(splitLocalePath('/zh/travel')).toEqual({ locale: 'zh', rest: '/travel' });
+    expect(splitLocalePath('/ko/booking')).toEqual({ locale: 'ko', rest: '/booking' });
+  });
+
+  it('mengembalikan / untuk awalan bahasa tanpa sisa path', () => {
+    expect(splitLocalePath('/en')).toEqual({ locale: 'en', rest: '/' });
+    expect(splitLocalePath('/en/')).toEqual({ locale: 'en', rest: '/' });
+  });
+
+  it('memperlakukan segmen yang mirip bahasa tapi bukan sebagai path biasa', () => {
+    expect(splitLocalePath('/id/mobil')).toEqual({ locale: 'id', rest: '/id/mobil' });
+    expect(splitLocalePath('/enak')).toEqual({ locale: 'id', rest: '/enak' });
+  });
+
+  it('memperlakukan akar sebagai Indonesia', () => {
+    expect(splitLocalePath('/')).toEqual({ locale: 'id', rest: '/' });
+  });
+});
+
+describe('localeHref', () => {
+  it('tidak memberi awalan pada bahasa bawaan', () => {
+    expect(localeHref('/mobil', 'id')).toBe('/mobil');
+    expect(localeHref('/', 'id')).toBe('/');
+  });
+
+  it('memberi awalan pada bahasa lain', () => {
+    expect(localeHref('/mobil', 'en')).toBe('/en/mobil');
+    expect(localeHref('/', 'ko')).toBe('/ko');
+  });
+
+  it('bolak-balik dengan splitLocalePath tanpa berubah', () => {
+    for (const locale of LOCALES) {
+      for (const path of ['/', '/mobil', '/mobil/innova-zenix-g', '/travel']) {
+        expect(splitLocalePath(localeHref(path, locale))).toEqual({ locale, rest: path });
+      }
+    }
+  });
+});
+
+describe('kamus pesan', () => {
+  it('menyediakan kamus untuk setiap bahasa', () => {
+    for (const locale of LOCALES) {
+      expect(getMessages(locale).nav.vehicles).toBeTruthy();
+    }
+  });
+
+  it('setiap bahasa punya kunci yang sama persis dengan bahasa bawaan', () => {
+    const kunciBawaan = Object.keys(getMessages(DEFAULT_LOCALE)).sort();
+    for (const locale of LOCALES) {
+      expect(Object.keys(getMessages(locale)).sort()).toEqual(kunciBawaan);
+    }
+  });
+
+  it('menerjemahkan label navigasi ke bahasa masing-masing', () => {
+    expect(getMessages('id').nav.vehicles).toBe('Kendaraan');
+    expect(getMessages('en').nav.vehicles).toBe('Vehicles');
+    expect(getMessages('zh').nav.vehicles).toBe('车辆');
+    expect(getMessages('ko').nav.vehicles).toBe('차량');
+  });
+});
+```
+
+- [ ] **Step 2: Jalankan tes, pastikan gagal**
+
+Run: `npm test -- tests/unit/i18n.test.ts`
+Expected: FAIL — `Failed to resolve import "@/i18n/locale-path"`
+
+- [ ] **Step 3: Implementasi konfigurasi bahasa dan path**
+
+Create `src/i18n/config.ts`:
+
+```ts
+export const LOCALES = ['id', 'en', 'zh', 'ko'] as const;
+export type Locale = (typeof LOCALES)[number];
+
+export const DEFAULT_LOCALE: Locale = 'id';
+
+/** Ditulis dalam bahasa masing-masing — orang mencari bahasanya sendiri, bukan namanya dalam bahasa kita. */
+export const LOCALE_LABELS: Record<Locale, string> = {
+  id: 'Indonesia',
+  en: 'English',
+  zh: '中文',
+  ko: '한국어',
+};
+
+/** Kode untuk atribut html lang dan hreflang. */
+export const LOCALE_HTML_LANG: Record<Locale, string> = {
+  id: 'id-ID',
+  en: 'en',
+  zh: 'zh-CN',
+  ko: 'ko-KR',
+};
+
+export function isLocale(value: string): value is Locale {
+  return (LOCALES as readonly string[]).includes(value);
+}
+```
+
+Create `src/i18n/locale-path.ts`:
+
+```ts
+import { DEFAULT_LOCALE, isLocale, type Locale } from './config';
+
+/**
+ * Memisahkan awalan bahasa dari path.
+ * Bahasa bawaan tidak memakai awalan, jadi "/id/mobil" adalah path biasa —
+ * bukan bahasa Indonesia yang diberi awalan.
+ */
+export function splitLocalePath(pathname: string): { locale: Locale; rest: string } {
+  const segmen = pathname.split('/').filter(Boolean);
+  const pertama = segmen[0];
+
+  if (pertama && pertama !== DEFAULT_LOCALE && isLocale(pertama)) {
+    const sisa = `/${segmen.slice(1).join('/')}`;
+    return { locale: pertama, rest: sisa === '/' ? '/' : sisa };
+  }
+
+  return { locale: DEFAULT_LOCALE, rest: pathname === '' ? '/' : pathname };
+}
+
+/** Kebalikan splitLocalePath: menyusun URL untuk sebuah path dalam bahasa tertentu. */
+export function localeHref(path: string, locale: Locale): string {
+  if (locale === DEFAULT_LOCALE) return path;
+  return path === '/' ? `/${locale}` : `/${locale}${path}`;
+}
+```
+
+- [ ] **Step 4: Tulis kamus pesan**
+
+Create `src/i18n/messages/id.ts` — sumber kebenaran kunci:
+
+```ts
+const id = {
+  nav: {
+    home: 'Beranda',
+    vehicles: 'Kendaraan',
+    travel: 'Travel',
+    booking: 'Booking',
+    testimonials: 'Testimoni',
+    about: 'Tentang',
+    contact: 'Kontak',
+    contactUs: 'Hubungi Kami',
+    openMenu: 'Buka menu',
+    closeMenu: 'Tutup menu',
+    language: 'Bahasa',
+  },
+  common: {
+    perDay24: 'per 24 jam',
+    perDay12: 'per 12 jam',
+    seats: 'kursi',
+    automatic: 'Matic',
+    manual: 'Manual',
+    luggage: 'koper',
+    unavailable: 'Sedang tersewa',
+    photoComingSoon: 'Foto menyusul',
+    viewAll: 'Lihat semua',
+    contactForPrice: 'Hubungi untuk harga',
+    bookNow: 'Booking sekarang',
+    askWhatsApp: 'Tanya lewat WhatsApp',
+    order: 'Pesan',
+    tryAgain: 'Coba lagi',
+    backHome: 'Kembali ke beranda',
+  },
+  catalog: {
+    title: 'Armada LIANS',
+    subtitle:
+      'Semua kendaraan terawat dan siap jalan. Tarif sudah termasuk pajak, belum termasuk BBM dan biaya sopir.',
+    search: 'Cari kendaraan',
+    searchPlaceholder: 'Avanza, Innova…',
+    category: 'Kategori',
+    allCategories: 'Semua kategori',
+    maxPrice: 'Harga maksimum',
+    sort: 'Urutkan',
+    sortDefault: 'Urutan bawaan',
+    sortPriceAsc: 'Harga termurah',
+    sortPriceDesc: 'Harga termahal',
+    sortNameAsc: 'Nama A–Z',
+    apply: 'Terapkan filter',
+    showing: 'Menampilkan {n} dari {total} kendaraan',
+    empty:
+      'Tidak ada kendaraan yang cocok dengan pencarian Anda. Coba ubah filter atau hubungi kami lewat WhatsApp.',
+  },
+  vehicle: {
+    rate24: 'Tarif 24 jam',
+    rate12: 'Tarif 12 jam',
+    driverFeeNote: 'Biaya sopir {harga} per hari, dihitung hanya untuk hari yang Anda pakai sopir.',
+    capacity: 'Kapasitas',
+    transmission: 'Transmisi',
+    fuel: 'Bahan bakar',
+    year: 'Tahun',
+    luggageLabel: 'Bagasi',
+    features: 'Fasilitas',
+    terms: 'Syarat sewa',
+    unavailableNote: 'Sedang tersewa — hubungi kami untuk jadwal berikutnya',
+  },
+  travel: {
+    title: 'Antar-Jemput & Travel',
+    subtitle:
+      'Tarif berlaku sekali jalan dan sudah termasuk sopir serta BBM. Rute yang belum tercantum tarifnya bisa Anda tanyakan langsung lewat WhatsApp.',
+    oneWayIncludingDriver: 'sekali jalan, sudah termasuk sopir',
+    empty: 'Belum ada rute yang ditampilkan. Hubungi kami untuk menanyakan tujuan Anda.',
+  },
+  booking: {
+    title: 'Booking Kendaraan',
+    subtitle:
+      'Pesanan Anda langsung tercatat di sistem kami, lalu WhatsApp terbuka berisi ringkasannya. Tim LIANS akan mengonfirmasi ketersediaan.',
+    serviceType: 'Jenis layanan',
+    selfDrive: 'Lepas kunci',
+    withDriver: 'Dengan sopir',
+    tourism: 'Bus / Hiace pariwisata',
+    travelService: 'Antar-jemput / travel',
+    route: 'Rute',
+    chooseRoute: 'Pilih rute…',
+    vehicle: 'Kendaraan',
+    chooseVehicle: 'Pilih kendaraan…',
+    startDate: 'Tanggal mulai',
+    endDate: 'Tanggal selesai',
+    ratePackage: 'Paket tarif',
+    driverDays: 'Hari pakai sopir',
+    driverDaysHint: 'Boleh lebih sedikit dari durasi sewa. Isi 0 bila tanpa sopir.',
+    driverDaysMax: 'Maksimum {n} hari.',
+    driverDaysTooMany: 'Hari pakai sopir tidak boleh lebih dari {n} hari sewa.',
+    fullName: 'Nama lengkap',
+    whatsappNumber: 'Nomor WhatsApp',
+    emailOptional: 'Email (opsional)',
+    notesOptional: 'Catatan (opsional)',
+    notesPlaceholder: 'Lokasi penjemputan, permintaan khusus…',
+    submit: 'Kirim pesanan',
+    submitting: 'Mengirim…',
+    estimate: 'Perkiraan Biaya',
+    estimateHint: 'Lengkapi pilihan kendaraan dan tanggal untuk melihat perkiraan harga.',
+    rentalLine: 'Sewa {days} hari × {harga}',
+    driverLine: 'Sopir {days} hari × {harga}',
+    total: 'Total',
+    excludesNote: 'Belum termasuk BBM dan tol. Harga final dikonfirmasi lewat WhatsApp.',
+    routeFixedPrice: 'Tarif sekali jalan {harga}, sudah termasuk sopir dan BBM.',
+    routeNoPrice: 'Rute ini belum bertarif tetap. Kami akan mengirimkan penawaran lewat WhatsApp.',
+    successTitle: 'Pesanan Anda tercatat',
+    successBody: 'Kode pesanan Anda {kode}. Simpan kode ini untuk memudahkan komunikasi dengan tim kami.',
+    continueWhatsApp: 'Lanjutkan ke WhatsApp',
+    successFooter:
+      'Belum sempat mengirim chat? Tidak apa-apa — pesanan Anda sudah masuk dan tim kami akan menghubungi Anda.',
+    seeOtherVehicles: 'Lihat kendaraan lain',
+  },
+  home: {
+    servingArea: 'Melayani Manado & Sulawesi Utara',
+    viewFleet: 'Lihat armada',
+    ourServices: 'Layanan Kami',
+    featuredFleet: 'Armada Pilihan',
+    popularRoutes: 'Rute Antar-Jemput',
+    whatCustomersSay: 'Kata Pelanggan',
+    serviceSelfDrive: 'Lepas Kunci',
+    serviceSelfDriveDesc: 'Bawa sendiri, bebas ke mana saja. Tarif 24 jam atau 12 jam.',
+    serviceWithDriver: 'Dengan Sopir',
+    serviceWithDriverDesc: 'Sopir berpengalaman yang hafal jalanan Manado.',
+    serviceTourism: 'Bus & Hiace Pariwisata',
+    serviceTourismDesc: 'Rombongan keluarga, kantor, atau wisata sekolah.',
+    serviceAirport: 'Antar-Jemput Bandara',
+    serviceAirportDesc: 'Tarif tetap sekali jalan ke Sam Ratulangi dan sekitarnya.',
+  },
+  testimonials: {
+    title: 'Testimoni Pelanggan',
+    subtitle: 'Apa kata mereka yang sudah menyewa di LIANS.',
+    empty: 'Belum ada testimoni yang ditampilkan.',
+    ratingLabel: 'Rating {n} dari 5',
+  },
+  about: {
+    title: 'Tentang LIANS',
+    fallback:
+      'LIANS melayani rental mobil lepas kunci dan dengan sopir, bus serta Hiace pariwisata, dan antar-jemput bandara di Manado dan sekitarnya. Kantor kami berada di {alamat}.',
+  },
+  contact: {
+    title: 'Hubungi Kami',
+    address: 'Alamat',
+    whatsapp: 'WhatsApp',
+    phone: 'Telepon',
+    email: 'Email',
+    hours: 'Jam Operasional',
+    mapTitle: 'Lokasi LIANS di Google Maps',
+  },
+  footer: {
+    tagline: 'Rental mobil, bus pariwisata, dan antar-jemput bandara di Manado dan Sulawesi Utara.',
+    navigation: 'Navigasi',
+    contactHeading: 'Hubungi',
+    hoursHeading: 'Jam Operasional',
+    rights: '© {tahun} LIANS. Seluruh hak cipta dilindungi.',
+  },
+  pricingError: {
+    RATE_12H_UNAVAILABLE: 'Kendaraan ini tidak menyediakan paket 12 jam.',
+    DRIVER_DAYS_EXCEEDS_DURATION: 'Hari pakai sopir tidak boleh lebih dari durasi sewa.',
+    DRIVER_DAYS_NEGATIVE: 'Hari pakai sopir tidak boleh negatif.',
+  },
+  error: {
+    title: 'Terjadi gangguan',
+    body: 'Halaman ini sedang tidak bisa dimuat. Silakan coba lagi, atau hubungi kami langsung lewat WhatsApp.',
+    notFoundTitle: 'Halaman tidak ditemukan',
+    notFoundBody: 'Halaman yang Anda cari tidak ada atau sudah dipindahkan.',
+  },
+} as const;
+
+export default id;
+```
+
+Create `src/i18n/messages/en.ts`, `zh.ts`, dan `ko.ts` dengan **struktur kunci yang persis sama**, masing-masing diawali:
+
+```ts
+import type { Messages } from '../index';
+
+const en: Messages = {
+  nav: {
+    home: 'Home',
+    vehicles: 'Vehicles',
+    travel: 'Travel',
+    booking: 'Booking',
+    testimonials: 'Reviews',
+    about: 'About',
+    contact: 'Contact',
+    contactUs: 'Contact Us',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
+    language: 'Language',
+  },
+  // …lanjutkan seluruh kunci dari id.ts
+};
+
+export default en;
+```
+
+Untuk `zh.ts` mulai dengan `nav: { home: '首页', vehicles: '车辆', travel: '接送', booking: '预订', testimonials: '评价', about: '关于我们', contact: '联系我们', … }`, dan untuk `ko.ts` `nav: { home: '홈', vehicles: '차량', travel: '픽업', booking: '예약', testimonials: '후기', about: '소개', contact: '문의', … }`.
+
+Anotasi `: Messages` inilah pengamannya — kunci yang kurang atau salah ketik membuat `npm run build` gagal, bukan tayang setengah jadi.
+
+Placeholder `{n}`, `{harga}`, `{days}`, `{kode}`, `{tahun}`, `{alamat}`, `{total}` harus tetap ada di semua bahasa; hanya teks di sekitarnya yang berubah.
+
+- [ ] **Step 5: Buat titik masuk kamus**
+
+Create `src/i18n/index.ts`:
+
+```ts
+import type { Locale } from './config';
+import id from './messages/id';
+import en from './messages/en';
+import zh from './messages/zh';
+import ko from './messages/ko';
+
+/** Bahasa Indonesia adalah sumber kebenaran bentuk kamus. */
+export type Messages = typeof id;
+
+const KAMUS: Record<Locale, Messages> = { id, en, zh, ko };
+
+export function getMessages(locale: Locale): Messages {
+  return KAMUS[locale];
+}
+
+/** Mengisi placeholder: t('Menampilkan {n} dari {total}', { n: 3, total: 8 }) */
+export function fill(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (cocok, kunci) =>
+    kunci in values ? String(values[kunci]) : cocok,
+  );
+}
+
+export * from './config';
+export * from './localized';
+export * from './locale-path';
+```
+
+- [ ] **Step 6: Jalankan tes bahasa, pastikan lulus**
+
+Run: `npm test -- tests/unit/i18n.test.ts`
+Expected: PASS, 12 tes
+
+- [ ] **Step 7: Tulis tes jatuh-balik terjemahan yang gagal**
+
+Create `tests/unit/localized.test.ts`:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import { pickLocale, toLocalized } from '@/i18n/localized';
+
+describe('pickLocale', () => {
+  const fitur = { id: ['AC Dingin'], en: ['Cold AC'], ko: ['시원한 에어컨'] };
+
+  it('mengambil bahasa yang diminta bila tersedia', () => {
+    expect(pickLocale(fitur, 'en')).toEqual(['Cold AC']);
+    expect(pickLocale(fitur, 'ko')).toEqual(['시원한 에어컨']);
+  });
+
+  it('jatuh ke bahasa Indonesia bila terjemahan belum diisi', () => {
+    expect(pickLocale(fitur, 'zh')).toEqual(['AC Dingin']);
+  });
+
+  it('jatuh ke bahasa Indonesia bila terjemahan berupa string kosong', () => {
+    expect(pickLocale({ id: 'Halo', en: '' }, 'en')).toBe('Halo');
+  });
+
+  it('jatuh ke bahasa Indonesia bila terjemahan berupa array kosong', () => {
+    expect(pickLocale({ id: ['A'], en: [] }, 'en')).toEqual(['A']);
+  });
+
+  it('mengembalikan null untuk nilai yang tidak ada', () => {
+    expect(pickLocale(null, 'en')).toBeNull();
+    expect(pickLocale(undefined, 'id')).toBeNull();
+  });
+});
+
+describe('toLocalized', () => {
+  it('membungkus nilai tunggal sebagai bahasa Indonesia', () => {
+    expect(toLocalized('Halo')).toEqual({ id: 'Halo' });
+  });
+});
+```
+
+- [ ] **Step 8: Jalankan tes, pastikan gagal**
+
+Run: `npm test -- tests/unit/localized.test.ts`
+Expected: FAIL — `Failed to resolve import "@/i18n/localized"`
+
+- [ ] **Step 9: Implementasi jatuh-balik**
+
+Create `src/i18n/localized.ts`:
+
+```ts
+import { DEFAULT_LOCALE, type Locale } from './config';
+
+/** Bahasa Indonesia wajib ada; sisanya opsional. */
+export type Localized<T> = { id: T } & Partial<Record<Locale, T>>;
+
+function kosong(v: unknown): boolean {
+  if (v === null || v === undefined) return true;
+  if (typeof v === 'string') return v.trim() === '';
+  if (Array.isArray(v)) return v.length === 0;
+  return false;
+}
+
+/**
+ * Mengambil nilai untuk sebuah bahasa, jatuh ke bahasa Indonesia
+ * bila terjemahannya belum diisi. Halaman tidak pernah bolong hanya
+ * karena staf belum sempat menerjemahkan.
+ */
+export function pickLocale<T>(
+  value: Localized<T> | null | undefined,
+  locale: Locale,
+): T | null {
+  if (!value) return null;
+
+  const diminta = value[locale];
+  if (!kosong(diminta)) return diminta as T;
+
+  const bawaan = value[DEFAULT_LOCALE];
+  return kosong(bawaan) ? null : (bawaan as T);
+}
+
+export function toLocalized<T>(value: T): Localized<T> {
+  return { [DEFAULT_LOCALE]: value } as Localized<T>;
+}
+```
+
+- [ ] **Step 10: Jalankan tes, pastikan lulus**
+
+Run: `npm test -- tests/unit/localized.test.ts`
+Expected: PASS, 6 tes
+
+- [ ] **Step 11: Ganti format tanggal agar mengikuti bahasa**
+
+Modify `src/lib/dates.ts` — `formatTanggalID` diganti `formatTanggal(d, locale)`:
+
+```ts
+import { differenceInCalendarDays, format } from 'date-fns';
+import { id as idLocale, enUS, zhCN, ko as koLocale } from 'date-fns/locale';
+import type { Locale } from '@/i18n/config';
+
+/**
+ * Jumlah hari sewa = selisih hari kalender, minimum 1.
+ * 1 Agustus sampai 3 Agustus = 2 hari (dua periode 24 jam).
+ */
+export function countRentalDays(start: Date, end: Date): number {
+  return Math.max(1, differenceInCalendarDays(end, start));
+}
+
+const DATE_FNS_LOCALE = { id: idLocale, en: enUS, zh: zhCN, ko: koLocale };
+const DATE_PATTERN: Record<Locale, string> = {
+  id: 'd MMMM yyyy',
+  en: 'd MMMM yyyy',
+  zh: 'yyyy年M月d日',
+  ko: 'yyyy년 M월 d일',
+};
+
+export function formatTanggal(d: Date, locale: Locale): string {
+  return format(d, DATE_PATTERN[locale], { locale: DATE_FNS_LOCALE[locale] });
+}
+```
+
+Perbarui `tests/unit/dates.test.ts` — ganti blok `formatTanggalID`:
+
+```ts
+describe('formatTanggal', () => {
+  it('memformat dalam bahasa Indonesia', () => {
+    expect(formatTanggal(new Date('2026-08-10'), 'id')).toBe('10 Agustus 2026');
+  });
+
+  it('memformat dalam bahasa Inggris', () => {
+    expect(formatTanggal(new Date('2026-08-10'), 'en')).toBe('10 August 2026');
+  });
+
+  it('memakai urutan tahun-bulan-hari untuk Mandarin dan Korea', () => {
+    expect(formatTanggal(new Date('2026-08-10'), 'zh')).toBe('2026年8月10日');
+    expect(formatTanggal(new Date('2026-08-10'), 'ko')).toBe('2026년 8월 10일');
+  });
+});
+```
+
+Ganti juga impornya di baris atas berkas tes: `import { countRentalDays, formatTanggal } from '@/lib/dates';`
+
+- [ ] **Step 12: Jalankan seluruh tes**
+
+Run: `npm test`
+Expected: PASS semua — 3 tes tanggal lama diganti 3 tes baru, tidak ada rujukan tersisa ke `formatTanggalID`
+
+- [ ] **Step 13: Pastikan tidak ada sisa `formatTanggalID`**
+
+Run: `grep -rn "formatTanggalID" src tests || echo "bersih"`
+Expected: `bersih`
+
+- [ ] **Step 14: Commit**
+
+```bash
+git add -A
+git commit -m "feat: fondasi multibahasa — tipe Locale, kamus, jatuh-balik terjemahan"
+```
+
+---
+
+### Task 5: Skema database dan koneksi Neon
 
 **Files:**
 - Create: `src/db/schema.ts`, `src/db/index.ts`, `drizzle.config.ts`
@@ -810,6 +1396,7 @@ Create `src/db/schema.ts`:
 import {
   pgTable, pgEnum, uuid, text, integer, boolean, jsonb, date, timestamp,
 } from 'drizzle-orm/pg-core';
+import type { Localized } from '@/i18n/localized';
 
 export const vehicleCategoryEnum = pgEnum('vehicle_category', [
   'hatchback', 'sedan', 'suv', 'mpv', 'luxury', 'bus',
@@ -842,8 +1429,8 @@ export const vehicles = pgTable('vehicles', {
   fuelType: fuelTypeEnum('fuel_type').notNull(),
   year: integer('year').notNull(),
   luggage: integer('luggage').notNull().default(0),
-  features: jsonb('features').$type<string[]>().notNull().default([]),
-  rentalTerms: jsonb('rental_terms').$type<string[]>().notNull().default([]),
+  features: jsonb('features').$type<Localized<string[]>>().notNull().default({ id: [] }),
+  rentalTerms: jsonb('rental_terms').$type<Localized<string[]>>().notNull().default({ id: [] }),
   status: vehicleStatusEnum('status').notNull().default('available'),
   isPublished: boolean('is_published').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
@@ -856,8 +1443,8 @@ export const travelRoutes = pgTable('travel_routes', {
   origin: text('origin').notNull(),
   destination: text('destination').notNull(),
   price: integer('price'),
-  vehicleNote: text('vehicle_note'),
-  estimatedDuration: text('estimated_duration'),
+  vehicleNote: jsonb('vehicle_note').$type<Localized<string> | null>(),
+  estimatedDuration: jsonb('estimated_duration').$type<Localized<string> | null>(),
   isPublished: boolean('is_published').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -902,7 +1489,7 @@ export const testimonials = pgTable('testimonials', {
   id: uuid('id').primaryKey().defaultRandom(),
   customerName: text('customer_name').notNull(),
   rating: integer('rating').notNull(),
-  reviewText: text('review_text').notNull(),
+  reviewText: jsonb('review_text').$type<Localized<string>>().notNull(),
   vehicleName: text('vehicle_name'),
   date: date('date').notNull(),
   isFeatured: boolean('is_featured').notNull().default(false),
@@ -1024,6 +1611,24 @@ describe('skema travel_routes', () => {
     expect(kolom(travelRoutes)['price'].notNull).toBe(false);
   });
 });
+
+describe('kolom yang dapat diterjemahkan', () => {
+  it('features dan rental_terms disimpan sebagai jsonb, bukan array datar', () => {
+    const c = kolom(vehicles);
+    expect(c['features'].dataType).toBe('json');
+    expect(c['rental_terms'].dataType).toBe('json');
+  });
+
+  it('nilai bawaan features memuat kunci bahasa Indonesia', () => {
+    expect(kolom(vehicles)['features'].default).toEqual({ id: [] });
+  });
+
+  it('catatan kendaraan dan waktu tempuh rute disimpan sebagai jsonb', () => {
+    const c = kolom(travelRoutes);
+    expect(c['vehicle_note'].dataType).toBe('json');
+    expect(c['estimated_duration'].dataType).toBe('json');
+  });
+});
 ```
 
 - [ ] **Step 6: Jalankan tes, pastikan lulus**
@@ -1049,7 +1654,7 @@ git commit -m "feat: skema database Drizzle dan koneksi Neon"
 
 ---
 
-### Task 5: Skema Zod bersama dan tipe ActionResult
+### Task 6: Skema Zod bersama dan tipe ActionResult
 
 **Files:**
 - Create: `src/actions/result.ts`, `src/schemas/booking.ts`, `src/schemas/vehicle.ts`, `src/schemas/route.ts`, `src/schemas/testimonial.ts`, `src/schemas/settings.ts`
@@ -1264,19 +1869,49 @@ export const bookingInputSchema = z
 export type BookingInput = z.infer<typeof bookingInputSchema>;
 ```
 
-Catatan: aturan "paket 12 jam ditolak bila kendaraan tidak punya `rate12h`" tidak bisa ditegakkan di sini karena skema tidak melihat data kendaraan. Aturan itu ditegakkan di `calculateRentalPrice` (Task 3) dan diperiksa lagi di Server Action (Task 11).
+Catatan: aturan "paket 12 jam ditolak bila kendaraan tidak punya `rate12h`" tidak bisa ditegakkan di sini karena skema tidak melihat data kendaraan. Aturan itu ditegakkan di `calculateRentalPrice` (Task 3) dan diperiksa lagi di Server Action (Task 12).
 
 - [ ] **Step 5: Jalankan tes, pastikan lulus**
 
 Run: `npm test -- tests/unit/schemas.test.ts`
 Expected: PASS, 11 tes
 
-- [ ] **Step 6: Implementasi skema admin**
+- [ ] **Step 6: Buat validator terjemahan**
+
+Create `src/schemas/localized.ts`:
+
+```ts
+import { z } from 'zod';
+import { LOCALES, DEFAULT_LOCALE } from '@/i18n/config';
+
+/**
+ * Bahasa Indonesia wajib, tiga lainnya opsional.
+ * Dipakai untuk setiap field yang bisa diterjemahkan supaya aturannya
+ * hanya ditulis sekali dan tidak bisa berbeda antar-form.
+ */
+export function localizedString(inner: z.ZodString) {
+  const bentuk = Object.fromEntries(
+    LOCALES.map((l) => [l, l === DEFAULT_LOCALE ? inner : inner.or(z.literal('')).optional()]),
+  );
+  return z.object(bentuk as Record<string, z.ZodTypeAny>);
+}
+
+export function localizedArray(inner: z.ZodString) {
+  const daftar = z.array(inner);
+  const bentuk = Object.fromEntries(
+    LOCALES.map((l) => [l, l === DEFAULT_LOCALE ? daftar.default([]) : daftar.optional()]),
+  );
+  return z.object(bentuk as Record<string, z.ZodTypeAny>);
+}
+```
+
+- [ ] **Step 7: Implementasi skema admin**
 
 Create `src/schemas/vehicle.ts`:
 
 ```ts
 import { z } from 'zod';
+import { localizedArray } from './localized';
 
 export const vehicleInputSchema = z
   .object({
@@ -1296,8 +1931,8 @@ export const vehicleInputSchema = z
     fuelType: z.enum(['petrol', 'diesel', 'electric', 'hybrid']),
     year: z.coerce.number().int().min(1990).max(new Date().getFullYear() + 1),
     luggage: z.coerce.number().int().min(0).default(0),
-    features: z.array(z.string().trim().min(1)).default([]),
-    rentalTerms: z.array(z.string().trim().min(1)).default([]),
+    features: localizedArray(z.string().trim().min(1)),
+    rentalTerms: localizedArray(z.string().trim().min(1)),
     status: z.enum(['available', 'unavailable']).default('available'),
     isPublished: z.boolean().default(true),
     sortOrder: z.coerce.number().int().default(0),
@@ -1314,13 +1949,14 @@ Create `src/schemas/route.ts`:
 
 ```ts
 import { z } from 'zod';
+import { localizedString } from './localized';
 
 export const routeInputSchema = z.object({
   origin: z.string().trim().min(2, 'Asal wajib diisi').max(100),
   destination: z.string().trim().min(2, 'Tujuan wajib diisi').max(100),
   price: z.coerce.number().int().min(0).nullable().default(null),
-  vehicleNote: z.string().trim().max(100).nullable().default(null),
-  estimatedDuration: z.string().trim().max(50).nullable().default(null),
+  vehicleNote: localizedString(z.string().trim().max(100)).nullable().default(null),
+  estimatedDuration: localizedString(z.string().trim().max(50)).nullable().default(null),
   isPublished: z.boolean().default(true),
   sortOrder: z.coerce.number().int().default(0),
 });
@@ -1332,11 +1968,12 @@ Create `src/schemas/testimonial.ts`:
 
 ```ts
 import { z } from 'zod';
+import { localizedString } from './localized';
 
 export const testimonialInputSchema = z.object({
   customerName: z.string().trim().min(2, 'Nama wajib diisi').max(100),
   rating: z.coerce.number().int().min(1).max(5),
-  reviewText: z.string().trim().min(10, 'Ulasan minimal 10 karakter').max(500),
+  reviewText: localizedString(z.string().trim().min(10, 'Ulasan minimal 10 karakter').max(500)),
   vehicleName: z.string().trim().max(100).nullable().default(null),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   isFeatured: z.boolean().default(false),
@@ -1351,42 +1988,43 @@ Create `src/schemas/settings.ts`:
 
 ```ts
 import { z } from 'zod';
+import { localizedString } from './localized';
 
 export const settingsInputSchema = z.object({
   whatsappNumber: z.string().regex(/^(\+62|62|0)8[1-9][0-9]{6,11}$/, 'Nomor WhatsApp tidak valid'),
   phone: z.string().trim().max(30),
   email: z.union([z.literal(''), z.string().email()]),
   address: z.string().trim().min(5),
-  operatingHours: z.string().trim().max(200),
   mapsUrl: z.union([z.literal(''), z.string().url()]),
-  heroTitle: z.string().trim().max(120),
-  heroSubtitle: z.string().trim().max(300),
-  aboutText: z.string().trim().max(4000),
+  operatingHours: localizedString(z.string().trim().max(200)),
+  heroTitle: localizedString(z.string().trim().max(120)),
+  heroSubtitle: localizedString(z.string().trim().max(300)),
+  aboutText: localizedString(z.string().trim().max(4000)),
   socialLinks: z
     .array(z.object({ label: z.string().trim().min(1), url: z.string().url() }))
     .default([]),
-  promoBanner: z.string().trim().max(200),
+  promoBanner: localizedString(z.string().trim().max(200)),
   driverFeePerDay: z.coerce.number().int().min(0),
 });
 
 export type SettingsInput = z.infer<typeof settingsInputSchema>;
 ```
 
-- [ ] **Step 7: Jalankan seluruh tes**
+- [ ] **Step 8: Jalankan seluruh tes**
 
 Run: `npm test`
 Expected: PASS semua
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: skema Zod bersama dan tipe ActionResult"
+git commit -m "feat: skema Zod bersama, validator terjemahan, dan tipe ActionResult"
 ```
 
 ---
 
-### Task 6: Lapisan query dan data awal
+### Task 7: Lapisan query dan data awal
 
 **Files:**
 - Create: `src/queries/vehicles.ts`, `src/queries/routes.ts`, `src/queries/testimonials.ts`, `src/queries/settings.ts`, `src/queries/bookings.ts`, `src/db/seed.ts`
@@ -1542,15 +2180,31 @@ export const DEFAULT_SETTINGS: SettingsInput = {
   phone: '081234567890',
   email: 'info@lians.id',
   address: 'Jalan Pomorow (Depan Luwansa Hotel), Kelurahan Banjer, Kecamatan Tikala, Manado 95125',
-  operatingHours: 'Setiap hari, 07.00 – 21.00 WITA',
   mapsUrl: '',
-  heroTitle: 'Rental Mobil Terpercaya di Manado',
-  heroSubtitle:
-    'Lepas kunci, dengan sopir, bus pariwisata, dan antar-jemput bandara. Armada terawat, harga jelas.',
-  aboutText: '',
   socialLinks: [],
-  promoBanner: '',
   driverFeePerDay: 150000,
+
+  // Lima kunci berikut dapat diterjemahkan; Indonesia wajib, sisanya opsional.
+  operatingHours: {
+    id: 'Setiap hari, 07.00 – 21.00 WITA',
+    en: 'Daily, 7:00 AM – 9:00 PM (WITA)',
+    zh: '每天 07:00 – 21:00（WITA）',
+    ko: '매일 07:00 – 21:00 (WITA)',
+  },
+  heroTitle: {
+    id: 'Rental Mobil Terpercaya di Manado',
+    en: 'Trusted Car Rental in Manado',
+    zh: '万鸦老值得信赖的租车服务',
+    ko: '마나도의 믿을 수 있는 렌터카',
+  },
+  heroSubtitle: {
+    id: 'Lepas kunci, dengan sopir, bus pariwisata, dan antar-jemput bandara. Armada terawat, harga jelas.',
+    en: 'Self-drive, with driver, tour buses, and airport transfers. Well-maintained fleet, transparent pricing.',
+    zh: '自驾、含司机、旅游巴士与机场接送。车况良好，价格透明。',
+    ko: '자차 운전, 기사 포함, 관광버스, 공항 픽업. 잘 관리된 차량과 투명한 요금.',
+  },
+  aboutText: { id: '' },
+  promoBanner: { id: '' },
 };
 
 /**
@@ -1588,11 +2242,13 @@ const armada = [
   { name: 'Hiace Commuter', category: 'bus' as const, rate24h: 1300000, rate12h: 950000, seats: 15, transmission: 'manual' as const, year: 2023 },
 ];
 
+const durasi = (id: string, en: string, zh: string, ko: string) => ({ id, en, zh, ko });
+
 const rute = [
-  { origin: 'Manado', destination: 'Bandara Sam Ratulangi', price: 150000, estimatedDuration: '30 menit' },
-  { origin: 'Manado', destination: 'Tomohon', price: 300000, estimatedDuration: '1 jam' },
-  { origin: 'Manado', destination: 'Bitung', price: 400000, estimatedDuration: '1,5 jam' },
-  { origin: 'Manado', destination: 'Likupang', price: null, estimatedDuration: '2 jam' },
+  { origin: 'Manado', destination: 'Bandara Sam Ratulangi', price: 150000, estimatedDuration: durasi('30 menit', '30 minutes', '30 分钟', '30분') },
+  { origin: 'Manado', destination: 'Tomohon', price: 300000, estimatedDuration: durasi('1 jam', '1 hour', '1 小时', '1시간') },
+  { origin: 'Manado', destination: 'Bitung', price: 400000, estimatedDuration: durasi('1,5 jam', '1.5 hours', '1.5 小时', '1시간 30분') },
+  { origin: 'Manado', destination: 'Likupang', price: null, estimatedDuration: durasi('2 jam', '2 hours', '2 小时', '2시간') },
 ];
 
 async function seed() {
@@ -1607,11 +2263,26 @@ async function seed() {
       serviceTypes: m.category === 'bus' ? ['with-driver', 'tourism'] : ['self-drive', 'with-driver'],
       fuelType: 'petrol' as const,
       luggage: 2,
-      features: ['AC Dingin', 'Audio', 'Terawat'],
+      features: {
+        id: ['AC Dingin', 'Audio', 'Terawat'],
+        en: ['Cold AC', 'Audio system', 'Well maintained'],
+        zh: ['冷气充足', '音响系统', '车况良好'],
+        ko: ['시원한 에어컨', '오디오', '잘 관리됨'],
+      },
       rentalTerms:
         m.category === 'bus'
-          ? ['Include driver', 'Durasi 12 jam', 'Area Manado dan sekitarnya']
-          : ['Lepas kunci', 'Durasi 24 jam', 'Jaminan KTP + KK'],
+          ? {
+              id: ['Include driver', 'Durasi 12 jam', 'Area Manado dan sekitarnya'],
+              en: ['Driver included', '12-hour package', 'Manado area and surroundings'],
+              zh: ['含司机', '12 小时套餐', '万鸦老及周边地区'],
+              ko: ['기사 포함', '12시간 패키지', '마나도 및 인근 지역'],
+            }
+          : {
+              id: ['Lepas kunci', 'Durasi 24 jam', 'Jaminan KTP + KK'],
+              en: ['Self-drive', '24-hour package', 'ID card + family card as deposit'],
+              zh: ['自驾', '24 小时套餐', '需押身份证与家庭卡'],
+              ko: ['자차 운전', '24시간 패키지', '신분증 + 가족관계증명서 보증'],
+            },
       status: 'available' as const,
       isPublished: true,
       sortOrder: i,
@@ -1619,13 +2290,48 @@ async function seed() {
   );
 
   await db.insert(travelRoutes).values(
-    rute.map((r, i) => ({ ...r, vehicleNote: 'Avanza / Xenia', isPublished: true, sortOrder: i })),
+    rute.map((r, i) => ({
+      ...r,
+      vehicleNote: { id: 'Avanza / Xenia', en: 'Avanza / Xenia', zh: 'Avanza / Xenia', ko: 'Avanza / Xenia' },
+      isPublished: true,
+      sortOrder: i,
+    })),
   );
 
   await db.insert(testimonials).values([
-    { customerName: 'Rina M.', rating: 5, reviewText: 'Mobil bersih dan tepat waktu. Sopirnya ramah, tahu jalan tikus Manado.', vehicleName: 'Innova Reborn', date: '2026-06-12', isFeatured: true, isPublished: true, sortOrder: 0 },
-    { customerName: 'Dedi K.', rating: 5, reviewText: 'Proses cepat, harga sesuai yang disebut di awal. Tidak ada biaya tersembunyi.', vehicleName: 'Toyota Avanza', date: '2026-07-02', isFeatured: true, isPublished: true, sortOrder: 1 },
-    { customerName: 'Grace L.', rating: 4, reviewText: 'Hiace-nya nyaman untuk rombongan keluarga ke Tomohon. Rekomendasi.', vehicleName: 'Hiace Commuter', date: '2026-07-20', isFeatured: true, isPublished: true, sortOrder: 2 },
+    {
+      customerName: 'Rina M.',
+      rating: 5,
+      reviewText: {
+        id: 'Mobil bersih dan tepat waktu. Sopirnya ramah, tahu jalan tikus Manado.',
+        en: 'Clean car and right on time. Friendly driver who knows every shortcut in Manado.',
+        zh: '车子干净，准时到达。司机友善，熟悉万鸦老的每条近路。',
+        ko: '차가 깨끗하고 시간을 잘 지켰습니다. 기사님이 친절하고 마나도 길을 훤히 아세요.',
+      },
+      vehicleName: 'Innova Reborn', date: '2026-06-12', isFeatured: true, isPublished: true, sortOrder: 0,
+    },
+    {
+      customerName: 'Dedi K.',
+      rating: 5,
+      reviewText: {
+        id: 'Proses cepat, harga sesuai yang disebut di awal. Tidak ada biaya tersembunyi.',
+        en: 'Fast process, price exactly as quoted. No hidden fees.',
+        zh: '流程快捷，价格与最初报价一致，没有隐藏费用。',
+        ko: '절차가 빠르고 처음 안내받은 금액 그대로였습니다. 숨은 비용이 없어요.',
+      },
+      vehicleName: 'Toyota Avanza', date: '2026-07-02', isFeatured: true, isPublished: true, sortOrder: 1,
+    },
+    {
+      customerName: 'Grace L.',
+      rating: 4,
+      reviewText: {
+        id: 'Hiace-nya nyaman untuk rombongan keluarga ke Tomohon. Rekomendasi.',
+        en: 'The Hiace was comfortable for our family trip to Tomohon. Recommended.',
+        zh: 'Hiace 很适合我们全家去托莫洪的行程，推荐。',
+        ko: '가족 단위로 토모혼 갈 때 하이에스가 편안했습니다. 추천합니다.',
+      },
+      vehicleName: 'Hiace Commuter', date: '2026-07-20', isFeatured: true, isPublished: true, sortOrder: 2,
+    },
   ]);
 
   await db.insert(siteSettings).values(
@@ -1704,6 +2410,20 @@ jalankan('query terhadap data seed', () => {
     expect(s.address).toContain('Pomorow');
     expect(s.driverFeePerDay).toBeGreaterThan(0);
   });
+
+  it('menyimpan teks hero dalam keempat bahasa', async () => {
+    const s = await getSettings();
+    expect(s.heroTitle.id).toBeTruthy();
+    expect(s.heroTitle.en).toBeTruthy();
+    expect(s.heroTitle.zh).toBeTruthy();
+    expect(s.heroTitle.ko).toBeTruthy();
+  });
+
+  it('menyimpan fasilitas kendaraan sebagai objek berkunci bahasa', async () => {
+    const [v] = await getPublishedVehicles();
+    expect(Array.isArray(v.features.id)).toBe(true);
+    expect(v.features.en?.length).toBeGreaterThan(0);
+  });
 });
 ```
 
@@ -1722,11 +2442,12 @@ git commit -m "feat: lapisan query dan data awal"
 ---
 ## Fase 2 — Situs Publik
 
-### Task 7: Tema LIANS, layout publik, dan routing subdomain
+### Task 8: Tema LIANS, layout publik, routing subdomain, dan routing bahasa
 
 **Files:**
-- Create: `middleware.ts`, `src/app/globals.css`, `src/components/layout/Header.tsx`, `src/components/layout/Footer.tsx`, `src/components/layout/WhatsAppFloat.tsx`, `src/app/(public)/layout.tsx`, `src/app/(public)/error.tsx`, `src/app/(public)/not-found.tsx`, `src/lib/cn.ts`
-- Move: `src/app/page.tsx` → `src/app/(public)/page.tsx`
+- Create: `middleware.ts`, `src/app/globals.css`, `src/components/layout/Header.tsx`, `src/components/layout/Footer.tsx`, `src/components/layout/WhatsAppFloat.tsx`, `src/components/layout/LanguageSwitcher.tsx`, `src/app/(public)/[locale]/layout.tsx`, `src/app/(public)/[locale]/error.tsx`, `src/app/(public)/[locale]/not-found.tsx`, `src/lib/cn.ts`
+- Modify: `src/i18n/locale-path.ts` (tambah `toAppPath`), `src/app/layout.tsx` (atribut `lang` dinamis)
+- Move: `src/app/page.tsx` → `src/app/(public)/[locale]/page.tsx`
 - Test: `tests/components/layout.test.tsx`, `tests/unit/middleware.test.ts`
 
 **Interfaces:**
@@ -1735,6 +2456,8 @@ git commit -m "feat: lapisan query dan data awal"
   - `cn(...inputs: ClassValue[]): string` dari `@/lib/cn`
   - `<Header settings={SettingsInput} />`, `<Footer settings={SettingsInput} />` dari `@/components/layout`
   - `resolveHost(host: string, pathname: string): { kind: 'admin' | 'public' | 'blocked'; rewriteTo?: string }` dari `@/lib/host` — dipisah dari `middleware.ts` supaya bisa diuji tanpa runtime Next.js
+  - `toAppPath(pathname: string): string` dari `@/i18n/locale-path` — path publik → path internal berawalan bahasa
+  - `<LanguageSwitcher current={Locale} path={string} />` dari `@/components/layout/LanguageSwitcher`
   - Token CSS `--lians-blue`, kelas utilitas tema
 
 - [ ] **Step 1: Tulis tes routing hostname yang gagal**
@@ -1820,6 +2543,7 @@ Create `middleware.ts` (di akar proyek, bukan di `src/`):
 ```ts
 import { NextResponse, type NextRequest } from 'next/server';
 import { resolveHost } from '@/lib/host';
+import { splitLocalePath, toAppPath } from '@/i18n/locale-path';
 
 export function middleware(req: NextRequest) {
   const hasil = resolveHost(req.headers.get('host') ?? '', req.nextUrl.pathname);
@@ -1827,18 +2551,59 @@ export function middleware(req: NextRequest) {
   if (hasil.kind === 'blocked') {
     return new NextResponse('Halaman tidak ditemukan', { status: 404 });
   }
+
+  const url = req.nextUrl.clone();
+
   if (hasil.kind === 'admin') {
-    const url = req.nextUrl.clone();
     url.pathname = hasil.rewriteTo;
     return NextResponse.rewrite(url);
   }
-  return NextResponse.next();
+
+  // Sisi publik: setiap permintaan diarahkan ke segmen [locale].
+  // /mobil → /id/mobil, /en/mobil → /en/mobil.
+  const { locale } = splitLocalePath(req.nextUrl.pathname);
+  url.pathname = toAppPath(req.nextUrl.pathname);
+
+  // Root layout perlu tahu bahasanya untuk atribut <html lang>,
+  // dan root layout tidak menerima params [locale].
+  const headers = new Headers(req.headers);
+  headers.set('x-lians-locale', locale);
+
+  return NextResponse.rewrite(url, { request: { headers } });
 }
 
 export const config = {
   matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\..*).*)'],
 };
 ```
+
+Tambahkan `toAppPath` ke `src/i18n/locale-path.ts`:
+
+```ts
+/** Path internal App Router — selalu diawali segmen bahasa, termasuk untuk Indonesia. */
+export function toAppPath(pathname: string): string {
+  const { locale, rest } = splitLocalePath(pathname);
+  return rest === '/' ? `/${locale}` : `/${locale}${rest}`;
+}
+```
+
+Tambahkan kasus uji ke `tests/unit/i18n.test.ts`:
+
+```ts
+describe('toAppPath', () => {
+  it('memberi awalan bahasa Indonesia pada path tanpa awalan', () => {
+    expect(toAppPath('/mobil')).toBe('/id/mobil');
+    expect(toAppPath('/')).toBe('/id');
+  });
+
+  it('membiarkan path yang sudah berawalan bahasa lain', () => {
+    expect(toAppPath('/en/mobil')).toBe('/en/mobil');
+    expect(toAppPath('/ko')).toBe('/ko');
+  });
+});
+```
+
+Ingat menambahkan `toAppPath` ke daftar impor di berkas tes itu.
 
 - [ ] **Step 6: Definisikan palet LIANS**
 
@@ -1896,22 +2661,38 @@ import { DEFAULT_SETTINGS } from '@/queries/settings';
 
 describe('Footer', () => {
   it('menampilkan alamat LIANS di Manado', () => {
-    render(<Footer settings={DEFAULT_SETTINGS} />);
+    render(<Footer settings={DEFAULT_SETTINGS} locale="id" />);
     expect(screen.getByText(/Pomorow/)).toBeInTheDocument();
     expect(screen.getByText(/Manado 95125/)).toBeInTheDocument();
   });
 
   it('menampilkan seluruh tautan navigasi utama', () => {
-    render(<Footer settings={DEFAULT_SETTINGS} />);
+    render(<Footer settings={DEFAULT_SETTINGS} locale="id" />);
     for (const label of ['Beranda', 'Kendaraan', 'Travel', 'Booking', 'Testimoni', 'Tentang', 'Kontak']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
   });
 
   it('menautkan WhatsApp ke nomor dari pengaturan', () => {
-    render(<Footer settings={{ ...DEFAULT_SETTINGS, whatsappNumber: '081234567890' }} />);
+    render(<Footer settings={{ ...DEFAULT_SETTINGS, whatsappNumber: '081234567890' }} locale="id" />);
     const tautan = screen.getByRole('link', { name: /whatsapp/i });
     expect(tautan).toHaveAttribute('href', expect.stringContaining('wa.me/6281234567890'));
+  });
+
+  it('menerjemahkan navigasi dan memberi awalan bahasa pada tautan', () => {
+    render(<Footer settings={DEFAULT_SETTINGS} locale="en" />);
+    expect(screen.getByRole('link', { name: 'Vehicles' })).toHaveAttribute('href', '/en/mobil');
+  });
+
+  it('menampilkan jam operasional dalam bahasa yang diminta', () => {
+    render(<Footer settings={DEFAULT_SETTINGS} locale="ko" />);
+    expect(screen.getByText(/매일/)).toBeInTheDocument();
+  });
+
+  it('jatuh ke bahasa Indonesia bila terjemahan jam operasional kosong', () => {
+    const settings = { ...DEFAULT_SETTINGS, operatingHours: { id: 'Setiap hari' } };
+    render(<Footer settings={settings} locale="zh" />);
+    expect(screen.getByText('Setiap hari')).toBeInTheDocument();
   });
 });
 ```
@@ -1944,15 +2725,18 @@ export function waLink(phone: string, message: string): string {
 Create `src/components/layout/nav-items.ts`:
 
 ```ts
+import type { Messages } from '@/i18n';
+
+/** `key` menunjuk ke kamus, bukan teks langsung — supaya label ikut berganti bahasa. */
 export const NAV_ITEMS = [
-  { href: '/', label: 'Beranda' },
-  { href: '/mobil', label: 'Kendaraan' },
-  { href: '/travel', label: 'Travel' },
-  { href: '/booking', label: 'Booking' },
-  { href: '/testimoni', label: 'Testimoni' },
-  { href: '/tentang', label: 'Tentang' },
-  { href: '/kontak', label: 'Kontak' },
-] as const;
+  { href: '/', key: 'home' },
+  { href: '/mobil', key: 'vehicles' },
+  { href: '/travel', key: 'travel' },
+  { href: '/booking', key: 'booking' },
+  { href: '/testimoni', key: 'testimonials' },
+  { href: '/tentang', key: 'about' },
+  { href: '/kontak', key: 'contact' },
+] as const satisfies readonly { href: string; key: keyof Messages['nav'] }[];
 ```
 
 Create `src/components/layout/Footer.tsx`:
@@ -1962,9 +2746,11 @@ import Link from 'next/link';
 import { MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react';
 import type { SettingsInput } from '@/schemas/settings';
 import { normalizePhone } from '@/lib/whatsapp';
+import { getMessages, fill, pickLocale, localeHref, type Locale } from '@/i18n';
 import { NAV_ITEMS } from './nav-items';
 
-export function Footer({ settings }: { settings: SettingsInput }) {
+export function Footer({ settings, locale }: { settings: SettingsInput; locale: Locale }) {
+  const t = getMessages(locale);
   const tahun = new Date().getFullYear();
   const wa = normalizePhone(settings.whatsappNumber);
 
@@ -1973,18 +2759,19 @@ export function Footer({ settings }: { settings: SettingsInput }) {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-4">
           <p className="text-xl font-black tracking-wide text-lians-600">LIANS</p>
-          <p className="text-sm leading-relaxed text-muted">
-            Rental mobil, bus pariwisata, dan antar-jemput bandara di Manado dan Sulawesi Utara.
-          </p>
+          <p className="text-sm leading-relaxed text-muted">{t.footer.tagline}</p>
         </div>
 
-        <nav aria-label="Navigasi footer" className="space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide">Navigasi</h2>
+        <nav aria-label={t.footer.navigation} className="space-y-3">
+          <h2 className="text-sm font-bold uppercase tracking-wide">{t.footer.navigation}</h2>
           <ul className="space-y-2">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="text-sm text-muted hover:text-lians-600">
-                  {item.label}
+                <Link
+                  href={localeHref(item.href, locale)}
+                  className="text-sm text-muted hover:text-lians-600"
+                >
+                  {t.nav[item.key]}
                 </Link>
               </li>
             ))}
@@ -1992,7 +2779,7 @@ export function Footer({ settings }: { settings: SettingsInput }) {
         </nav>
 
         <div className="space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide">Hubungi</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wide">{t.footer.contactHeading}</h2>
           <ul className="space-y-3 text-sm text-muted">
             <li className="flex gap-2">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-lians-500" aria-hidden />
@@ -2005,7 +2792,7 @@ export function Footer({ settings }: { settings: SettingsInput }) {
             <li className="flex gap-2">
               <MessageCircle className="h-4 w-4 shrink-0 text-lians-500" aria-hidden />
               <a href={`https://wa.me/${wa}`} aria-label="WhatsApp LIANS">
-                WhatsApp
+                {t.contact.whatsapp}
               </a>
             </li>
             {settings.email ? (
@@ -2018,16 +2805,16 @@ export function Footer({ settings }: { settings: SettingsInput }) {
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide">Jam Operasional</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wide">{t.footer.hoursHeading}</h2>
           <p className="flex gap-2 text-sm text-muted">
             <Clock className="mt-0.5 h-4 w-4 shrink-0 text-lians-500" aria-hidden />
-            <span>{settings.operatingHours}</span>
+            <span>{pickLocale(settings.operatingHours, locale)}</span>
           </p>
         </div>
       </div>
 
       <div className="border-t border-slate-200 py-5 text-center text-xs text-muted">
-        © {tahun} LIANS. Seluruh hak cipta dilindungi.
+        {fill(t.footer.rights, { tahun })}
       </div>
     </footer>
   );
@@ -2045,48 +2832,53 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { getMessages, localeHref, splitLocalePath, type Locale } from '@/i18n';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { NAV_ITEMS } from './nav-items';
 
-export function Header({ whatsappUrl }: { whatsappUrl: string }) {
+export function Header({ whatsappUrl, locale }: { whatsappUrl: string; locale: Locale }) {
+  const t = getMessages(locale);
   const pathname = usePathname();
+  const { rest } = splitLocalePath(pathname);
   const [terbuka, setTerbuka] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <Link href="/" className="flex items-center gap-2" aria-label="Beranda LIANS">
+        <Link href={localeHref('/', locale)} className="flex items-center gap-2" aria-label="LIANS">
           <Image src="/logo-lians.png" alt="LIANS" width={120} height={32} priority />
         </Link>
 
-        <nav aria-label="Navigasi utama" className="hidden items-center gap-1 lg:flex">
+        <nav aria-label={t.nav.home} className="hidden items-center gap-1 lg:flex">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              href={localeHref(item.href, locale)}
               className={cn(
                 'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                pathname === item.href
+                rest === item.href
                   ? 'bg-lians-50 text-lians-700'
                   : 'text-slate-600 hover:text-lians-600',
               )}
             >
-              {item.label}
+              {t.nav[item.key]}
             </Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-2">
+          <LanguageSwitcher current={locale} path={rest} />
           <a
             href={whatsappUrl}
             className="hidden rounded-lg bg-lians-500 px-4 py-2 text-sm font-semibold text-white hover:bg-lians-600 sm:inline-block"
           >
-            Hubungi Kami
+            {t.nav.contactUs}
           </a>
           <button
             type="button"
             onClick={() => setTerbuka((v) => !v)}
             aria-expanded={terbuka}
-            aria-label={terbuka ? 'Tutup menu' : 'Buka menu'}
+            aria-label={terbuka ? t.nav.closeMenu : t.nav.openMenu}
             className="rounded-lg p-2 lg:hidden"
           >
             {terbuka ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -2095,16 +2887,16 @@ export function Header({ whatsappUrl }: { whatsappUrl: string }) {
       </div>
 
       {terbuka ? (
-        <nav aria-label="Navigasi seluler" className="border-t border-slate-200 lg:hidden">
+        <nav aria-label={t.nav.openMenu} className="border-t border-slate-200 lg:hidden">
           <ul className="mx-auto max-w-6xl px-4 py-2">
             {NAV_ITEMS.map((item) => (
               <li key={item.href}>
                 <Link
-                  href={item.href}
+                  href={localeHref(item.href, locale)}
                   onClick={() => setTerbuka(false)}
                   className="block py-3 text-sm font-medium text-slate-700"
                 >
-                  {item.label}
+                  {t.nav[item.key]}
                 </Link>
               </li>
             ))}
@@ -2116,36 +2908,96 @@ export function Header({ whatsappUrl }: { whatsappUrl: string }) {
 }
 ```
 
-- [ ] **Step 11: Buat layout publik**
+Create `src/components/layout/LanguageSwitcher.tsx`:
 
-Create `src/app/(public)/layout.tsx`:
+```tsx
+'use client';
+
+import Link from 'next/link';
+import { Globe } from 'lucide-react';
+import { cn } from '@/lib/cn';
+import { LOCALES, LOCALE_LABELS, localeHref, getMessages, type Locale } from '@/i18n';
+
+/**
+ * Menautkan ke halaman yang sama dalam bahasa lain, bukan ke beranda.
+ * Orang yang sedang membaca halaman Innova ingin membacanya dalam bahasa lain,
+ * bukan dilempar kembali ke awal.
+ */
+export function LanguageSwitcher({ current, path }: { current: Locale; path: string }) {
+  const t = getMessages(current);
+
+  return (
+    <nav aria-label={t.nav.language} className="flex items-center gap-1">
+      <Globe className="mr-0.5 h-4 w-4 text-slate-400" aria-hidden />
+      {LOCALES.map((locale) => (
+        <Link
+          key={locale}
+          href={localeHref(path, locale)}
+          hrefLang={locale}
+          aria-current={locale === current ? 'true' : undefined}
+          className={cn(
+            'rounded-md px-2 py-1 text-xs font-semibold transition-colors',
+            locale === current
+              ? 'bg-lians-50 text-lians-700'
+              : 'text-slate-500 hover:text-lians-600',
+          )}
+        >
+          {LOCALE_LABELS[locale]}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+```
+
+- [ ] **Step 11: Buat layout publik berbahasa**
+
+Create `src/app/(public)/[locale]/layout.tsx`:
 
 ```tsx
 import type { ReactNode } from 'react';
+import { notFound } from 'next/navigation';
 import { Toaster } from 'sonner';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { WhatsAppFloat } from '@/components/layout/WhatsAppFloat';
 import { getSettings } from '@/queries/settings';
 import { normalizePhone } from '@/lib/whatsapp';
+import { LOCALES, isLocale } from '@/i18n';
 
 export const revalidate = 300;
 
-export default async function PublicLayout({ children }: { children: ReactNode }) {
+/** Keempat bahasa dibangun sebagai halaman statis saat build. */
+export function generateStaticParams() {
+  return LOCALES.map((locale) => ({ locale }));
+}
+
+export default async function PublicLayout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+
   const settings = await getSettings();
   const whatsappUrl = `https://wa.me/${normalizePhone(settings.whatsappNumber)}`;
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header whatsappUrl={whatsappUrl} />
+      <Header whatsappUrl={whatsappUrl} locale={locale} />
       <main className="flex-1">{children}</main>
-      <Footer settings={settings} />
+      <Footer settings={settings} locale={locale} />
       <WhatsAppFloat url={whatsappUrl} />
       <Toaster position="top-center" richColors />
     </div>
   );
 }
 ```
+
+Setiap halaman publik pada tugas-tugas berikutnya menerima `params: Promise<{ locale: Locale }>`, memanggil `getMessages(locale)` untuk label, dan `pickLocale(field, locale)` untuk isi database.
 
 Create `src/components/layout/WhatsAppFloat.tsx`:
 
@@ -2169,7 +3021,7 @@ export function WhatsAppFloat({ url }: { url: string }) {
 
 - [ ] **Step 12: Buat halaman error dan 404**
 
-Create `src/app/(public)/error.tsx`:
+Create `src/app/(public)/[locale]/error.tsx`:
 
 ```tsx
 'use client';
@@ -2194,7 +3046,7 @@ export default function Error({ reset }: { error: Error; reset: () => void }) {
 }
 ```
 
-Create `src/app/(public)/not-found.tsx`:
+Create `src/app/(public)/[locale]/not-found.tsx`:
 
 ```tsx
 import Link from 'next/link';
@@ -2215,11 +3067,35 @@ export default function NotFound() {
 - [ ] **Step 13: Pindahkan halaman beranda ke grup publik**
 
 ```bash
-mkdir -p "src/app/(public)"
-git mv src/app/page.tsx "src/app/(public)/page.tsx"
+mkdir -p "src/app/(public)/[locale]"
+git mv src/app/page.tsx "src/app/(public)/[locale]/page.tsx"
 ```
 
-- [ ] **Step 14: Simpan logo**
+- [ ] **Step 14: Buat atribut `lang` mengikuti bahasa halaman**
+
+Root layout tidak menerima `params`, jadi bahasanya dibaca dari header yang dipasang middleware.
+
+Modify `src/app/layout.tsx`:
+
+```tsx
+import { headers } from 'next/headers';
+import { DEFAULT_LOCALE, LOCALE_HTML_LANG, isLocale } from '@/i18n';
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const dariMiddleware = (await headers()).get('x-lians-locale') ?? '';
+  const locale = isLocale(dariMiddleware) ? dariMiddleware : DEFAULT_LOCALE;
+
+  return (
+    <html lang={LOCALE_HTML_LANG[locale]} className={jakarta.variable}>
+      <body className="font-sans antialiased">{children}</body>
+    </html>
+  );
+}
+```
+
+Atribut `lang` yang benar bukan sekadar formalitas: pembaca layar memilih suara dan pelafalan berdasarkan itu, dan Google memakainya sebagai sinyal bahasa halaman.
+
+- [ ] **Step 15: Simpan logo**
 
 Salin berkas logo LIANS yang disediakan pemilik ke `public/logo-lians.png`. Bila belum tersedia, buat penampung sementara agar `next/image` tidak error, dan catat sebagai utang yang harus diganti sebelum peluncuran:
 
@@ -2227,28 +3103,33 @@ Salin berkas logo LIANS yang disediakan pemilik ke `public/logo-lians.png`. Bila
 cp ../website-rental-mobil/public/favicon.svg public/logo-lians.png
 ```
 
-- [ ] **Step 15: Jalankan tes dan build**
+- [ ] **Step 16: Jalankan tes dan build**
 
 Run: `npm test -- tests/components/layout.test.tsx && npm run build`
-Expected: PASS 3 tes, build sukses
+Expected: PASS 6 tes, build sukses
 
-- [ ] **Step 16: Verifikasi subdomain secara lokal**
+- [ ] **Step 17: Verifikasi subdomain dan bahasa secara lokal**
 
-Run: `npm run dev`, lalu buka `http://admin.localhost:3000`
-Expected: menghasilkan 404 Next.js (rute `/admin` belum dibuat di Task 13) — bukan halaman publik. Ini membuktikan penulisan-ulang hostname bekerja.
+Run: `npm run dev`, lalu periksa:
 
-- [ ] **Step 17: Commit**
+1. `http://admin.localhost:3000` → 404 Next.js (rute `/admin` belum dibuat di Task 14), bukan halaman publik. Ini membuktikan penulisan-ulang hostname bekerja.
+2. `http://localhost:3000/` → halaman berbahasa Indonesia, `<html lang="id-ID">`
+3. `http://localhost:3000/en` → navigasi berbahasa Inggris, `<html lang="en">`
+4. `http://localhost:3000/ko` → navigasi berbahasa Korea
+5. Klik pemilih bahasa dari `/en` → berpindah ke `/ko` pada halaman yang sama, bukan ke beranda
+
+- [ ] **Step 18: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: tema LIANS, layout publik, dan routing subdomain"
+git commit -m "feat: tema LIANS, layout publik, routing subdomain, dan routing bahasa"
 ```
 
 ---
-### Task 8: Katalog kendaraan dengan pencarian, filter, dan pengurutan
+### Task 9: Katalog kendaraan dengan pencarian, filter, dan pengurutan
 
 **Files:**
-- Create: `src/lib/vehicle-filter.ts`, `src/components/vehicle/VehicleCard.tsx`, `src/components/vehicle/VehicleGrid.tsx`, `src/components/vehicle/CatalogControls.tsx`, `src/app/(public)/mobil/page.tsx`
+- Create: `src/lib/vehicle-filter.ts`, `src/components/vehicle/VehicleCard.tsx`, `src/components/vehicle/VehicleGrid.tsx`, `src/components/vehicle/CatalogControls.tsx`, `src/app/(public)/[locale]/mobil/page.tsx`
 - Test: `tests/unit/vehicle-filter.test.ts`, `tests/components/vehicle.test.tsx`
 
 **Interfaces:**
@@ -2257,7 +3138,7 @@ git commit -m "feat: tema LIANS, layout publik, dan routing subdomain"
   - `type CatalogFilters = { q?: string; category?: string; maxPrice?: number; sort?: 'harga-asc' | 'harga-desc' | 'nama-asc' }` dari `@/lib/vehicle-filter`
   - `filterAndSortVehicles(vehicles: Vehicle[], filters: CatalogFilters): Vehicle[]` dari `@/lib/vehicle-filter`
   - `parseCatalogFilters(params: Record<string, string | string[] | undefined>): CatalogFilters` dari `@/lib/vehicle-filter`
-  - `<VehicleCard vehicle={Vehicle} />` dari `@/components/vehicle/VehicleCard`
+  - `<VehicleCard vehicle={Vehicle} locale={Locale} />` dari `@/components/vehicle/VehicleCard`
 
 Filter dijalankan di server terhadap hasil query. Katalog LIANS berisi puluhan kendaraan, bukan puluhan ribu — memfilter di memori jauh lebih sederhana daripada menyusun klausa SQL dinamis, dan tetap cepat.
 
@@ -2479,32 +3360,50 @@ const dasar = {
 
 describe('VehicleCard', () => {
   it('menampilkan nama dan tarif 24 jam dalam rupiah', () => {
-    render(<VehicleCard vehicle={dasar} />);
+    render(<VehicleCard vehicle={dasar} locale="id" />);
     expect(screen.getByText('Innova Zenix G')).toBeInTheDocument();
     expect(screen.getByText(/Rp 900\.000/)).toBeInTheDocument();
   });
 
   it('menampilkan tarif 12 jam bila tersedia', () => {
-    render(<VehicleCard vehicle={dasar} />);
+    render(<VehicleCard vehicle={dasar} locale="id" />);
     expect(screen.getByText(/Rp 650\.000/)).toBeInTheDocument();
   });
 
   it('menyembunyikan tarif 12 jam bila kendaraan tidak punya', () => {
-    render(<VehicleCard vehicle={{ ...dasar, rate12h: null }} />);
+    render(<VehicleCard vehicle={{ ...dasar, rate12h: null }} locale="id" />);
     expect(screen.queryByText(/12 jam/i)).not.toBeInTheDocument();
   });
 
   it('menautkan ke halaman detail kendaraan', () => {
-    render(<VehicleCard vehicle={dasar} />);
+    render(<VehicleCard vehicle={dasar} locale="id" />);
     expect(screen.getByRole('link', { name: /Innova Zenix G/ })).toHaveAttribute(
       'href',
       '/mobil/innova-zenix-g',
     );
   });
 
+  it('memberi awalan bahasa pada tautan detail', () => {
+    render(<VehicleCard vehicle={dasar} locale="zh" />);
+    expect(screen.getByRole('link', { name: /Innova Zenix G/ })).toHaveAttribute(
+      'href',
+      '/zh/mobil/innova-zenix-g',
+    );
+  });
+
   it('menandai kendaraan yang sedang tidak tersedia', () => {
-    render(<VehicleCard vehicle={{ ...dasar, status: 'unavailable' }} />);
+    render(<VehicleCard vehicle={{ ...dasar, status: 'unavailable' }} locale="id" />);
     expect(screen.getByText(/sedang tersewa/i)).toBeInTheDocument();
+  });
+
+  it('menerjemahkan label satuan tarif', () => {
+    render(<VehicleCard vehicle={dasar} locale="en" />);
+    expect(screen.getByText('per 24 hours')).toBeInTheDocument();
+  });
+
+  it('tidak menerjemahkan nama kendaraan', () => {
+    render(<VehicleCard vehicle={dasar} locale="ko" />);
+    expect(screen.getByText('Innova Zenix G')).toBeInTheDocument();
   });
 });
 ```
@@ -2524,17 +3423,19 @@ import Image from 'next/image';
 import { Users, Cog, Fuel, Briefcase } from 'lucide-react';
 import type { Vehicle } from '@/db/schema';
 import { formatRupiah } from '@/lib/format';
+import { getMessages, localeHref, type Locale } from '@/i18n';
 
 const LABEL_KATEGORI: Record<string, string> = {
   hatchback: 'Hatchback',
   sedan: 'Sedan',
   suv: 'SUV',
   mpv: 'MPV',
-  luxury: 'Mewah',
+  luxury: 'Luxury',
   bus: 'Bus / Hiace',
 };
 
-export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
+export function VehicleCard({ vehicle, locale }: { vehicle: Vehicle; locale: Locale }) {
+  const t = getMessages(locale);
   const gambar = vehicle.images[0];
   const tersedia = vehicle.status === 'available';
 
@@ -2551,7 +3452,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-muted">
-            Foto menyusul
+            {t.common.photoComingSoon}
           </div>
         )}
         <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-lians-700">
@@ -2559,43 +3460,43 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
         </span>
         {!tersedia ? (
           <span className="absolute right-3 top-3 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-            Sedang tersewa
+            {t.common.unavailable}
           </span>
         ) : null}
       </div>
 
       <div className="space-y-3 p-5">
         <h3 className="text-lg font-bold">
-          <Link href={`/mobil/${vehicle.slug}`} className="after:absolute after:inset-0">
+          <Link href={localeHref(`/mobil/${vehicle.slug}`, locale)} className="after:absolute after:inset-0">
             {vehicle.name}
           </Link>
         </h3>
 
         <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
           <li className="flex items-center gap-1">
-            <Users className="h-3.5 w-3.5" aria-hidden /> {vehicle.seats} kursi
+            <Users className="h-3.5 w-3.5" aria-hidden /> {vehicle.seats} {t.common.seats}
           </li>
           <li className="flex items-center gap-1">
             <Cog className="h-3.5 w-3.5" aria-hidden />
-            {vehicle.transmission === 'automatic' ? 'Matic' : 'Manual'}
+            {vehicle.transmission === 'automatic' ? t.common.automatic : t.common.manual}
           </li>
           <li className="flex items-center gap-1">
             <Fuel className="h-3.5 w-3.5" aria-hidden /> {vehicle.year}
           </li>
           <li className="flex items-center gap-1">
-            <Briefcase className="h-3.5 w-3.5" aria-hidden /> {vehicle.luggage} koper
+            <Briefcase className="h-3.5 w-3.5" aria-hidden /> {vehicle.luggage} {t.common.luggage}
           </li>
         </ul>
 
         <div className="flex items-end justify-between border-t border-slate-100 pt-3">
           <div>
             <p className="text-lg font-black text-lians-600">{formatRupiah(vehicle.rate24h)}</p>
-            <p className="text-xs text-muted">per 24 jam</p>
+            <p className="text-xs text-muted">{t.common.perDay24}</p>
           </div>
           {vehicle.rate12h !== null ? (
             <div className="text-right">
               <p className="text-sm font-bold text-slate-700">{formatRupiah(vehicle.rate12h)}</p>
-              <p className="text-xs text-muted">per 12 jam</p>
+              <p className="text-xs text-muted">{t.common.perDay12}</p>
             </div>
           ) : null}
         </div>
@@ -2609,14 +3510,14 @@ Create `src/components/vehicle/VehicleGrid.tsx`:
 
 ```tsx
 import type { Vehicle } from '@/db/schema';
+import { getMessages, type Locale } from '@/i18n';
 import { VehicleCard } from './VehicleCard';
 
-export function VehicleGrid({ vehicles }: { vehicles: Vehicle[] }) {
+export function VehicleGrid({ vehicles, locale }: { vehicles: Vehicle[]; locale: Locale }) {
   if (vehicles.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed border-slate-300 p-12 text-center text-muted">
-        Tidak ada kendaraan yang cocok dengan pencarian Anda. Coba ubah filter atau hubungi kami
-        lewat WhatsApp.
+        {getMessages(locale).catalog.empty}
       </p>
     );
   }
@@ -2624,7 +3525,7 @@ export function VehicleGrid({ vehicles }: { vehicles: Vehicle[] }) {
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {vehicles.map((v) => (
-        <VehicleCard key={v.id} vehicle={v} />
+        <VehicleCard key={v.id} vehicle={v} locale={locale} />
       ))}
     </div>
   );
@@ -2644,37 +3545,51 @@ Create `src/components/vehicle/CatalogControls.tsx`:
 
 ```tsx
 import type { CatalogFilters } from '@/lib/vehicle-filter';
-
-const KATEGORI = [
-  { value: '', label: 'Semua kategori' },
-  { value: 'hatchback', label: 'Hatchback' },
-  { value: 'sedan', label: 'Sedan' },
-  { value: 'suv', label: 'SUV' },
-  { value: 'mpv', label: 'MPV' },
-  { value: 'luxury', label: 'Mewah' },
-  { value: 'bus', label: 'Bus / Hiace' },
-];
-
-const URUTAN = [
-  { value: '', label: 'Urutan bawaan' },
-  { value: 'harga-asc', label: 'Harga termurah' },
-  { value: 'harga-desc', label: 'Harga termahal' },
-  { value: 'nama-asc', label: 'Nama A–Z' },
-];
+import { getMessages, type Locale } from '@/i18n';
 
 const kelasInput =
   'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-lians-500 focus:outline-none focus:ring-2 focus:ring-lians-200';
 
-export function CatalogControls({ filters }: { filters: CatalogFilters }) {
+export function CatalogControls({
+  filters,
+  locale,
+}: {
+  filters: CatalogFilters;
+  locale: Locale;
+}) {
+  const t = getMessages(locale);
+
+  const KATEGORI = [
+    { value: '', label: t.catalog.allCategories },
+    { value: 'hatchback', label: 'Hatchback' },
+    { value: 'sedan', label: 'Sedan' },
+    { value: 'suv', label: 'SUV' },
+    { value: 'mpv', label: 'MPV' },
+    { value: 'luxury', label: 'Luxury' },
+    { value: 'bus', label: 'Bus / Hiace' },
+  ];
+
+  const URUTAN = [
+    { value: '', label: t.catalog.sortDefault },
+    { value: 'harga-asc', label: t.catalog.sortPriceAsc },
+    { value: 'harga-desc', label: t.catalog.sortPriceDesc },
+    { value: 'nama-asc', label: t.catalog.sortNameAsc },
+  ];
+
   return (
     <form method="get" className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-5">
       <label className="lg:col-span-2">
-        <span className="mb-1 block text-xs font-semibold text-slate-600">Cari kendaraan</span>
-        <input name="q" defaultValue={filters.q ?? ''} placeholder="Avanza, Innova…" className={kelasInput} />
+        <span className="mb-1 block text-xs font-semibold text-slate-600">{t.catalog.search}</span>
+        <input
+          name="q"
+          defaultValue={filters.q ?? ''}
+          placeholder={t.catalog.searchPlaceholder}
+          className={kelasInput}
+        />
       </label>
 
       <label>
-        <span className="mb-1 block text-xs font-semibold text-slate-600">Kategori</span>
+        <span className="mb-1 block text-xs font-semibold text-slate-600">{t.catalog.category}</span>
         <select name="category" defaultValue={filters.category ?? ''} className={kelasInput}>
           {KATEGORI.map((k) => (
             <option key={k.value} value={k.value}>{k.label}</option>
@@ -2683,7 +3598,7 @@ export function CatalogControls({ filters }: { filters: CatalogFilters }) {
       </label>
 
       <label>
-        <span className="mb-1 block text-xs font-semibold text-slate-600">Harga maksimum</span>
+        <span className="mb-1 block text-xs font-semibold text-slate-600">{t.catalog.maxPrice}</span>
         <input
           name="maxPrice"
           type="number"
@@ -2696,7 +3611,7 @@ export function CatalogControls({ filters }: { filters: CatalogFilters }) {
       </label>
 
       <label>
-        <span className="mb-1 block text-xs font-semibold text-slate-600">Urutkan</span>
+        <span className="mb-1 block text-xs font-semibold text-slate-600">{t.catalog.sort}</span>
         <select name="sort" defaultValue={filters.sort ?? ''} className={kelasInput}>
           {URUTAN.map((u) => (
             <option key={u.value} value={u.value}>{u.label}</option>
@@ -2706,7 +3621,7 @@ export function CatalogControls({ filters }: { filters: CatalogFilters }) {
 
       <div className="sm:col-span-2 lg:col-span-5">
         <button type="submit" className="rounded-lg bg-lians-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lians-600">
-          Terapkan filter
+          {t.catalog.apply}
         </button>
       </div>
     </form>
@@ -2716,7 +3631,7 @@ export function CatalogControls({ filters }: { filters: CatalogFilters }) {
 
 - [ ] **Step 10: Buat halaman katalog**
 
-Create `src/app/(public)/mobil/page.tsx`:
+Create `src/app/(public)/[locale]/mobil/page.tsx`:
 
 ```tsx
 import type { Metadata } from 'next';
@@ -2724,46 +3639,76 @@ import { getPublishedVehicles } from '@/queries/vehicles';
 import { filterAndSortVehicles, parseCatalogFilters } from '@/lib/vehicle-filter';
 import { VehicleGrid } from '@/components/vehicle/VehicleGrid';
 import { CatalogControls } from '@/components/vehicle/CatalogControls';
+import { getMessages, fill, type Locale } from '@/i18n';
+import { buildAlternates } from '@/lib/seo';
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: 'Daftar Kendaraan Rental — LIANS Manado',
-  description:
-    'Pilihan armada rental mobil LIANS di Manado: hatchback, MPV, SUV, mobil mewah, dan Hiace pariwisata. Tarif 24 jam dan 12 jam.',
+const META: Record<Locale, { title: string; description: string }> = {
+  id: {
+    title: 'Daftar Kendaraan Rental — LIANS Manado',
+    description:
+      'Pilihan armada rental mobil LIANS di Manado: hatchback, MPV, SUV, mobil mewah, dan Hiace pariwisata. Tarif 24 jam dan 12 jam.',
+  },
+  en: {
+    title: 'Rental Fleet — LIANS Manado',
+    description:
+      'LIANS car rental fleet in Manado: hatchbacks, MPVs, SUVs, luxury cars, and Hiace tour vans. 24-hour and 12-hour rates.',
+  },
+  zh: {
+    title: '租车车型一览 — 万鸦老 LIANS',
+    description:
+      'LIANS 万鸦老租车车队：两厢车、MPV、SUV、豪华轿车与 Hiace 旅游车。提供 24 小时与 12 小时套餐。',
+  },
+  ko: {
+    title: '렌터카 차량 목록 — 마나도 LIANS',
+    description:
+      'LIANS 마나도 렌터카 차량: 해치백, MPV, SUV, 고급 차량, 하이에스 관광차. 24시간 및 12시간 요금제.',
+  },
 };
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return { ...META[locale], alternates: buildAlternates('/mobil', locale) };
+}
+
 export default async function MobilPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: Locale }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = await searchParams;
-  const filters = parseCatalogFilters(params);
+  const [{ locale }, sp] = await Promise.all([params, searchParams]);
+  const t = getMessages(locale);
+  const filters = parseCatalogFilters(sp);
   const semua = await getPublishedVehicles();
   const hasil = filterAndSortVehicles(semua, filters);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-12">
       <header className="space-y-2">
-        <h1 className="text-3xl font-black sm:text-4xl">Armada LIANS</h1>
-        <p className="max-w-2xl text-muted">
-          Semua kendaraan terawat dan siap jalan. Tarif sudah termasuk pajak, belum termasuk BBM dan
-          biaya sopir.
-        </p>
+        <h1 className="text-3xl font-black sm:text-4xl">{t.catalog.title}</h1>
+        <p className="max-w-2xl text-muted">{t.catalog.subtitle}</p>
       </header>
 
-      <CatalogControls filters={filters} />
+      <CatalogControls filters={filters} locale={locale} />
 
       <p className="text-sm text-muted">
-        Menampilkan {hasil.length} dari {semua.length} kendaraan
+        {fill(t.catalog.showing, { n: hasil.length, total: semua.length })}
       </p>
 
-      <VehicleGrid vehicles={hasil} />
+      <VehicleGrid vehicles={hasil} locale={locale} />
     </div>
   );
 }
 ```
+
+Judul dan deskripsi metadata ditulis per bahasa sebagai konstanta, bukan diambil dari kamus, karena keduanya adalah kalimat pemasaran yang wajar berbeda susunannya di tiap bahasa — bukan label antarmuka yang tinggal disalin.
 
 - [ ] **Step 11: Jalankan seluruh tes dan build**
 
@@ -2778,18 +3723,19 @@ git commit -m "feat: katalog kendaraan dengan pencarian, filter, dan pengurutan"
 ```
 
 ---
-### Task 9: Halaman detail kendaraan, SEO, dan sitemap
+### Task 10: Halaman detail kendaraan, SEO, dan sitemap
 
 **Files:**
-- Create: `src/app/(public)/mobil/[slug]/page.tsx`, `src/components/vehicle/VehicleGallery.tsx`, `src/lib/seo.ts`, `src/app/sitemap.ts`, `src/app/robots.ts`
+- Create: `src/app/(public)/[locale]/mobil/[slug]/page.tsx`, `src/components/vehicle/VehicleGallery.tsx`, `src/lib/seo.ts`, `src/app/sitemap.ts`, `src/app/robots.ts`
 - Modify: `src/app/layout.tsx` (metadata dasar + font)
 - Test: `tests/unit/seo.test.ts`
 
 **Interfaces:**
 - Consumes: `getVehicleBySlug`, `getPublishedVehicles`, `getSettings`
 - Produces:
-  - `buildAutoRentalJsonLd(args: { settings: SettingsInput; priceRange: string; url: string }): object` dari `@/lib/seo`
+  - `buildAutoRentalJsonLd(args: { settings: SettingsInput; priceRange: string; url: string; locale: Locale }): object` dari `@/lib/seo`
   - `buildVehicleJsonLd(args: { vehicle: Vehicle; url: string }): object` dari `@/lib/seo`
+  - `buildAlternates(path: string, locale: Locale): { canonical: string; languages: Record<string, string> }` dari `@/lib/seo`
   - `SITE_URL: string` dari `@/lib/seo`
 
 - [ ] **Step 1: Tulis tes SEO yang gagal**
@@ -2798,7 +3744,7 @@ Create `tests/unit/seo.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
-import { buildAutoRentalJsonLd, buildVehicleJsonLd } from '@/lib/seo';
+import { buildAutoRentalJsonLd, buildVehicleJsonLd, buildAlternates } from '@/lib/seo';
 import { DEFAULT_SETTINGS } from '@/queries/settings';
 
 describe('buildAutoRentalJsonLd', () => {
@@ -2806,6 +3752,7 @@ describe('buildAutoRentalJsonLd', () => {
     settings: DEFAULT_SETTINGS,
     priceRange: 'Rp 350.000 - Rp 2.500.000',
     url: 'https://lians.id',
+    locale: 'id',
   }) as Record<string, unknown>;
 
   it('memakai tipe AutoRental', () => {
@@ -2821,6 +3768,29 @@ describe('buildAutoRentalJsonLd', () => {
 
   it('menyertakan nama bisnis LIANS', () => {
     expect(jsonLd.name).toBe('LIANS');
+  });
+});
+
+describe('buildAlternates', () => {
+  const alt = buildAlternates('/mobil/innova-zenix-g', 'en');
+
+  it('menjadikan versi bahasa aktif sebagai canonical', () => {
+    expect(alt.canonical).toBe('https://lians.id/en/mobil/innova-zenix-g');
+  });
+
+  it('mendaftarkan keempat bahasa', () => {
+    expect(alt.languages['id-ID']).toBe('https://lians.id/mobil/innova-zenix-g');
+    expect(alt.languages['en']).toBe('https://lians.id/en/mobil/innova-zenix-g');
+    expect(alt.languages['zh-CN']).toBe('https://lians.id/zh/mobil/innova-zenix-g');
+    expect(alt.languages['ko-KR']).toBe('https://lians.id/ko/mobil/innova-zenix-g');
+  });
+
+  it('menunjuk x-default ke versi Indonesia', () => {
+    expect(alt.languages['x-default']).toBe('https://lians.id/mobil/innova-zenix-g');
+  });
+
+  it('tidak memberi awalan pada URL bahasa Indonesia', () => {
+    expect(buildAlternates('/', 'id').canonical).toBe('https://lians.id/');
   });
 });
 
@@ -2849,20 +3819,38 @@ Create `src/lib/seo.ts`:
 ```ts
 import type { Vehicle } from '@/db/schema';
 import type { SettingsInput } from '@/schemas/settings';
+import { LOCALES, LOCALE_HTML_LANG, DEFAULT_LOCALE, localeHref, pickLocale, type Locale } from '@/i18n';
 
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://lians.id';
+
+/**
+ * hreflang untuk keempat bahasa plus x-default.
+ * Tanpa ini Google bisa menyajikan halaman berbahasa Indonesia
+ * kepada orang yang mencari dalam bahasa Korea.
+ */
+export function buildAlternates(path: string, locale: Locale) {
+  const languages: Record<string, string> = {};
+
+  for (const l of LOCALES) {
+    languages[LOCALE_HTML_LANG[l]] = `${SITE_URL}${localeHref(path, l)}`;
+  }
+  languages['x-default'] = `${SITE_URL}${localeHref(path, DEFAULT_LOCALE)}`;
+
+  return { canonical: `${SITE_URL}${localeHref(path, locale)}`, languages };
+}
 
 export function buildAutoRentalJsonLd(args: {
   settings: SettingsInput;
   priceRange: string;
   url: string;
+  locale: Locale;
 }) {
-  const { settings, priceRange, url } = args;
+  const { settings, priceRange, url, locale } = args;
   return {
     '@context': 'https://schema.org',
     '@type': 'AutoRental',
     name: 'LIANS',
-    description: settings.heroSubtitle,
+    description: pickLocale(settings.heroSubtitle, locale) ?? '',
     url,
     telephone: settings.phone,
     priceRange,
@@ -2875,7 +3863,7 @@ export function buildAutoRentalJsonLd(args: {
       addressCountry: 'ID',
     },
     areaServed: { '@type': 'City', name: 'Manado' },
-    openingHours: settings.operatingHours,
+    openingHours: pickLocale(settings.operatingHours, locale) ?? '',
   };
 }
 
@@ -2969,7 +3957,7 @@ export function VehicleGallery({ images, alt }: { images: VehicleImage[]; alt: s
 
 - [ ] **Step 6: Buat halaman detail kendaraan**
 
-Create `src/app/(public)/mobil/[slug]/page.tsx`:
+Create `src/app/(public)/[locale]/mobil/[slug]/page.tsx`:
 
 ```tsx
 import type { Metadata } from 'next';
@@ -2980,45 +3968,68 @@ import { getPublishedVehicles, getVehicleBySlug } from '@/queries/vehicles';
 import { getSettings } from '@/queries/settings';
 import { formatRupiah } from '@/lib/format';
 import { VehicleGallery } from '@/components/vehicle/VehicleGallery';
-import { buildVehicleJsonLd, SITE_URL } from '@/lib/seo';
+import { buildVehicleJsonLd, buildAlternates, SITE_URL } from '@/lib/seo';
 import { waLink } from '@/lib/whatsapp';
+import { getMessages, fill, pickLocale, localeHref, LOCALES, type Locale } from '@/i18n';
 
 export const revalidate = 300;
 
 export async function generateStaticParams() {
   const semua = await getPublishedVehicles();
-  return semua.map((v) => ({ slug: v.slug }));
+  return LOCALES.flatMap((locale) => semua.map((v) => ({ locale, slug: v.slug })));
 }
+
+/** Judul halaman per bahasa. Nama kendaraan tidak diterjemahkan. */
+const JUDUL: Record<Locale, (nama: string, harga: string) => string> = {
+  id: (nama, harga) => `Sewa ${nama} di Manado — ${harga}/24 jam | LIANS`,
+  en: (nama, harga) => `Rent ${nama} in Manado — ${harga}/24 hours | LIANS`,
+  zh: (nama, harga) => `万鸦老租 ${nama} — ${harga}/24 小时 | LIANS`,
+  ko: (nama, harga) => `마나도 ${nama} 렌트 — ${harga}/24시간 | LIANS`,
+};
+
+const DESKRIPSI: Record<Locale, (v: { name: string; year: number; seats: number }) => string> = {
+  id: (v) => `Rental ${v.name} tahun ${v.year}, ${v.seats} kursi. Lepas kunci atau dengan sopir di Manado. Hubungi LIANS.`,
+  en: (v) => `Rent a ${v.year} ${v.name}, ${v.seats} seats. Self-drive or with driver in Manado. Contact LIANS.`,
+  zh: (v) => `${v.year} 年 ${v.name}，${v.seats} 座。万鸦老自驾或含司机租车，请联系 LIANS。`,
+  ko: (v) => `${v.year}년식 ${v.name}, ${v.seats}인승. 마나도 자차 운전 또는 기사 포함 렌트. LIANS로 문의하세요.`,
+};
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: Locale; slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const v = await getVehicleBySlug(slug);
-  if (!v) return { title: 'Kendaraan tidak ditemukan — LIANS' };
+  if (!v) return { title: 'LIANS' };
 
-  const judul = `Sewa ${v.name} di Manado — ${formatRupiah(v.rate24h)}/24 jam | LIANS`;
+  const judul = JUDUL[locale](v.name, formatRupiah(v.rate24h));
   return {
     title: judul,
-    description: `Rental ${v.name} tahun ${v.year}, ${v.seats} kursi, transmisi ${v.transmission === 'automatic' ? 'matic' : 'manual'}. Lepas kunci atau dengan sopir di Manado. Hubungi LIANS.`,
-    alternates: { canonical: `${SITE_URL}/mobil/${v.slug}` },
-    openGraph: {
-      title: judul,
-      images: v.images[0] ? [v.images[0].url] : [],
-    },
+    description: DESKRIPSI[locale](v),
+    alternates: buildAlternates(`/mobil/${v.slug}`, locale),
+    openGraph: { title: judul, images: v.images[0] ? [v.images[0].url] : [] },
   };
 }
 
-export default async function DetailMobilPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default async function DetailMobilPage({
+  params,
+}: {
+  params: Promise<{ locale: Locale; slug: string }>;
+}) {
+  const { locale, slug } = await params;
   const [vehicle, settings] = await Promise.all([getVehicleBySlug(slug), getSettings()]);
 
   if (!vehicle || !vehicle.isPublished) notFound();
 
+  const t = getMessages(locale);
   const tersedia = vehicle.status === 'available';
-  const jsonLd = buildVehicleJsonLd({ vehicle, url: `${SITE_URL}/mobil/${vehicle.slug}` });
+  const jsonLd = buildVehicleJsonLd({
+    vehicle,
+    url: `${SITE_URL}${localeHref(`/mobil/${vehicle.slug}`, locale)}`,
+  });
+  const fitur = pickLocale(vehicle.features, locale) ?? [];
+  const syarat = pickLocale(vehicle.rentalTerms, locale) ?? [];
   const pesanWa = `Halo LIANS, saya ingin menanyakan ketersediaan ${vehicle.name}.`;
 
   return (
@@ -3028,8 +4039,10 @@ export default async function DetailMobilPage({ params }: { params: Promise<{ sl
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <nav aria-label="Remah roti" className="mb-6 text-sm text-muted">
-        <Link href="/mobil" className="hover:text-lians-600">Kendaraan</Link>
+      <nav aria-label="breadcrumb" className="mb-6 text-sm text-muted">
+        <Link href={localeHref('/mobil', locale)} className="hover:text-lians-600">
+          {t.nav.vehicles}
+        </Link>
         <span className="mx-2">/</span>
         <span aria-current="page">{vehicle.name}</span>
       </nav>
@@ -3042,36 +4055,37 @@ export default async function DetailMobilPage({ params }: { params: Promise<{ sl
             <h1 className="text-3xl font-black sm:text-4xl">{vehicle.name}</h1>
             {!tersedia ? (
               <p className="mt-2 inline-block rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">
-                Sedang tersewa — hubungi kami untuk jadwal berikutnya
+                {t.vehicle.unavailableNote}
               </p>
             ) : null}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-lians-200 bg-lians-50 p-4">
-              <p className="text-xs font-semibold text-lians-700">Tarif 24 jam</p>
+              <p className="text-xs font-semibold text-lians-700">{t.vehicle.rate24}</p>
               <p className="text-2xl font-black text-lians-700">{formatRupiah(vehicle.rate24h)}</p>
             </div>
             {vehicle.rate12h !== null ? (
               <div className="rounded-xl border border-slate-200 p-4">
-                <p className="text-xs font-semibold text-slate-600">Tarif 12 jam</p>
+                <p className="text-xs font-semibold text-slate-600">{t.vehicle.rate12}</p>
                 <p className="text-2xl font-black">{formatRupiah(vehicle.rate12h)}</p>
               </div>
             ) : null}
           </div>
 
           <p className="text-sm text-muted">
-            Biaya sopir {formatRupiah(vehicle.driverFeeOverride ?? settings.driverFeePerDay)} per
-            hari, dihitung hanya untuk hari yang Anda pakai sopir.
+            {fill(t.vehicle.driverFeeNote, {
+              harga: formatRupiah(vehicle.driverFeeOverride ?? settings.driverFeePerDay),
+            })}
           </p>
 
           <dl className="grid grid-cols-2 gap-4 rounded-xl border border-slate-200 p-4 text-sm sm:grid-cols-3">
             {[
-              { Icon: Users, label: 'Kapasitas', value: `${vehicle.seats} kursi` },
-              { Icon: Cog, label: 'Transmisi', value: vehicle.transmission === 'automatic' ? 'Matic' : 'Manual' },
-              { Icon: Fuel, label: 'Bahan bakar', value: vehicle.fuelType },
-              { Icon: Calendar, label: 'Tahun', value: String(vehicle.year) },
-              { Icon: Briefcase, label: 'Bagasi', value: `${vehicle.luggage} koper` },
+              { Icon: Users, label: t.vehicle.capacity, value: `${vehicle.seats} ${t.common.seats}` },
+              { Icon: Cog, label: t.vehicle.transmission, value: vehicle.transmission === 'automatic' ? t.common.automatic : t.common.manual },
+              { Icon: Fuel, label: t.vehicle.fuel, value: vehicle.fuelType },
+              { Icon: Calendar, label: t.vehicle.year, value: String(vehicle.year) },
+              { Icon: Briefcase, label: t.vehicle.luggageLabel, value: `${vehicle.luggage} ${t.common.luggage}` },
             ].map(({ Icon, label, value }) => (
               <div key={label}>
                 <dt className="flex items-center gap-1.5 text-xs text-muted">
@@ -3082,11 +4096,11 @@ export default async function DetailMobilPage({ params }: { params: Promise<{ sl
             ))}
           </dl>
 
-          {vehicle.features.length > 0 ? (
+          {fitur.length > 0 ? (
             <section>
-              <h2 className="mb-2 font-bold">Fasilitas</h2>
+              <h2 className="mb-2 font-bold">{t.vehicle.features}</h2>
               <ul className="grid gap-2 sm:grid-cols-2">
-                {vehicle.features.map((f) => (
+                {fitur.map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm text-slate-700">
                     <CheckCircle2 className="h-4 w-4 text-lians-500" aria-hidden /> {f}
                   </li>
@@ -3095,12 +4109,12 @@ export default async function DetailMobilPage({ params }: { params: Promise<{ sl
             </section>
           ) : null}
 
-          {vehicle.rentalTerms.length > 0 ? (
+          {syarat.length > 0 ? (
             <section>
-              <h2 className="mb-2 font-bold">Syarat sewa</h2>
+              <h2 className="mb-2 font-bold">{t.vehicle.terms}</h2>
               <ul className="list-inside list-disc space-y-1 text-sm text-muted">
-                {vehicle.rentalTerms.map((t) => (
-                  <li key={t}>{t}</li>
+                {syarat.map((syaratItem) => (
+                  <li key={syaratItem}>{syaratItem}</li>
                 ))}
               </ul>
             </section>
@@ -3108,11 +4122,11 @@ export default async function DetailMobilPage({ params }: { params: Promise<{ sl
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href={`/booking?vehicle=${vehicle.slug}`}
+              href={localeHref(`/booking?vehicle=${vehicle.slug}`, locale)}
               aria-disabled={!tersedia}
               className="rounded-lg bg-lians-500 px-6 py-3 font-semibold text-white hover:bg-lians-600 aria-disabled:pointer-events-none aria-disabled:opacity-50"
             >
-              Booking sekarang
+              {t.common.bookNow}
             </Link>
             <a
               href={waLink(settings.whatsappNumber, pesanWa)}
@@ -3120,7 +4134,7 @@ export default async function DetailMobilPage({ params }: { params: Promise<{ sl
               rel="noopener noreferrer"
               className="rounded-lg border border-slate-300 px-6 py-3 font-semibold hover:border-lians-400"
             >
-              Tanya lewat WhatsApp
+              {t.common.askWhatsApp}
             </a>
           </div>
         </div>
@@ -3142,22 +4156,37 @@ Create `src/app/sitemap.ts`:
 ```ts
 import type { MetadataRoute } from 'next';
 import { getPublishedVehicles } from '@/queries/vehicles';
-import { SITE_URL } from '@/lib/seo';
+import { SITE_URL, buildAlternates } from '@/lib/seo';
+import { LOCALES, localeHref } from '@/i18n';
 
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const statis = ['', '/mobil', '/travel', '/booking', '/testimoni', '/tentang', '/kontak'].map(
-    (p) => ({ url: `${SITE_URL}${p}`, lastModified: new Date(), priority: p === '' ? 1 : 0.8 }),
+  const kendaraan = await getPublishedVehicles();
+
+  const halaman: { path: string; lastModified: Date; priority: number }[] = [
+    ...['/', '/mobil', '/travel', '/booking', '/testimoni', '/tentang', '/kontak'].map((path) => ({
+      path,
+      lastModified: new Date(),
+      priority: path === '/' ? 1 : 0.8,
+    })),
+    ...kendaraan.map((v) => ({
+      path: `/mobil/${v.slug}`,
+      lastModified: v.updatedAt,
+      priority: 0.7,
+    })),
+  ];
+
+  // Setiap halaman muncul empat kali — sekali per bahasa — masing-masing
+  // membawa daftar alternatifnya, sehingga Google tahu keempatnya bersaudara.
+  return halaman.flatMap((h) =>
+    LOCALES.map((locale) => ({
+      url: `${SITE_URL}${localeHref(h.path, locale)}`,
+      lastModified: h.lastModified,
+      priority: h.priority,
+      alternates: { languages: buildAlternates(h.path, locale).languages },
+    })),
   );
-
-  const kendaraan = (await getPublishedVehicles()).map((v) => ({
-    url: `${SITE_URL}/mobil/${v.slug}`,
-    lastModified: v.updatedAt,
-    priority: 0.7,
-  }));
-
-  return [...statis, ...kendaraan];
 }
 ```
 
@@ -3213,8 +4242,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 - [ ] **Step 10: Verifikasi halaman detail secara manual**
 
-Run: `npm run dev`, lalu buka `http://localhost:3000/mobil/innova-zenix-g`
-Expected: halaman detail tampil dengan tarif 24 dan 12 jam, dan `curl -s localhost:3000/sitemap.xml` memuat URL kendaraan hasil seed.
+Run: `npm run dev`, lalu periksa:
+
+1. `http://localhost:3000/mobil/innova-zenix-g` → tarif 24 dan 12 jam, fasilitas berbahasa Indonesia
+2. `http://localhost:3000/en/mobil/innova-zenix-g` → fasilitas berbahasa Inggris, nama mobil tetap "Innova Zenix G"
+3. `curl -s localhost:3000/sitemap.xml | grep -c innova-zenix-g` → **4** (satu per bahasa)
+4. `curl -s localhost:3000/en/mobil/innova-zenix-g | grep hreflang` → memuat keempat bahasa dan `x-default`
 
 - [ ] **Step 11: Jalankan tes dan build**
 
@@ -3230,15 +4263,15 @@ git commit -m "feat: halaman detail kendaraan, JSON-LD, sitemap, dan robots"
 
 ---
 
-### Task 10: Halaman travel
+### Task 11: Halaman travel
 
 **Files:**
-- Create: `src/components/travel/RouteCard.tsx`, `src/app/(public)/travel/page.tsx`
+- Create: `src/components/travel/RouteCard.tsx`, `src/app/(public)/[locale]/travel/page.tsx`
 - Test: `tests/components/travel.test.tsx`
 
 **Interfaces:**
 - Consumes: `getPublishedRoutes()`, `getSettings()`, `waLink`, `formatRupiah`
-- Produces: `<RouteCard route={TravelRoute} whatsappNumber={string} />` dari `@/components/travel/RouteCard`
+- Produces: `<RouteCard route={TravelRoute} whatsappNumber={string} locale={Locale} />` dari `@/components/travel/RouteCard`
 
 - [ ] **Step 1: Tulis tes yang gagal**
 
@@ -3255,8 +4288,8 @@ const rute = {
   origin: 'Manado',
   destination: 'Bandara Sam Ratulangi',
   price: 150000,
-  vehicleNote: 'Avanza / Xenia',
-  estimatedDuration: '30 menit',
+  vehicleNote: { id: 'Avanza / Xenia' },
+  estimatedDuration: { id: '30 menit' },
   isPublished: true,
   sortOrder: 0,
   createdAt: new Date(),
@@ -3265,35 +4298,50 @@ const rute = {
 
 describe('RouteCard', () => {
   it('menampilkan asal dan tujuan', () => {
-    render(<RouteCard route={rute} whatsappNumber="081234567890" />);
+    render(<RouteCard route={rute} whatsappNumber="081234567890" locale="id" />);
     expect(screen.getByText(/Manado/)).toBeInTheDocument();
     expect(screen.getByText(/Bandara Sam Ratulangi/)).toBeInTheDocument();
   });
 
   it('menampilkan tarif dalam rupiah bila tersedia', () => {
-    render(<RouteCard route={rute} whatsappNumber="081234567890" />);
+    render(<RouteCard route={rute} whatsappNumber="081234567890" locale="id" />);
     expect(screen.getByText(/Rp 150\.000/)).toBeInTheDocument();
   });
 
   it('mengganti tarif dengan ajakan menghubungi bila harga belum ditetapkan', () => {
-    render(<RouteCard route={{ ...rute, price: null }} whatsappNumber="081234567890" />);
+    render(<RouteCard route={{ ...rute, price: null }} whatsappNumber="081234567890" locale="id" />);
     expect(screen.getByText(/hubungi untuk harga/i)).toBeInTheDocument();
     expect(screen.queryByText(/Rp/)).not.toBeInTheDocument();
   });
 
   it('menautkan ke WhatsApp dengan pesan berisi nama rute', () => {
-    render(<RouteCard route={{ ...rute, price: null }} whatsappNumber="081234567890" />);
+    render(<RouteCard route={{ ...rute, price: null }} whatsappNumber="081234567890" locale="id" />);
     const tautan = screen.getByRole('link', { name: /hubungi untuk harga/i });
     expect(tautan.getAttribute('href')).toContain('wa.me/6281234567890');
     expect(decodeURIComponent(tautan.getAttribute('href') ?? '')).toContain('Bandara Sam Ratulangi');
   });
 
   it('menautkan ke form booking bila rute sudah bertarif', () => {
-    render(<RouteCard route={rute} whatsappNumber="081234567890" />);
+    render(<RouteCard route={rute} whatsappNumber="081234567890" locale="id" />);
     expect(screen.getByRole('link', { name: /pesan/i })).toHaveAttribute(
       'href',
       `/booking?route=${rute.id}`,
     );
+  });
+
+  it('menampilkan waktu tempuh dalam bahasa yang diminta', () => {
+    const berbahasa = {
+      ...rute,
+      estimatedDuration: { id: '30 menit', en: '30 minutes', ko: '30분' },
+    } as unknown as TravelRoute;
+    render(<RouteCard route={berbahasa} whatsappNumber="081234567890" locale="ko" />);
+    expect(screen.getByText(/30분/)).toBeInTheDocument();
+  });
+
+  it('jatuh ke bahasa Indonesia bila waktu tempuh belum diterjemahkan', () => {
+    const berbahasa = { ...rute, estimatedDuration: { id: '30 menit' } } as unknown as TravelRoute;
+    render(<RouteCard route={berbahasa} whatsappNumber="081234567890" locale="zh" />);
+    expect(screen.getByText(/30 menit/)).toBeInTheDocument();
   });
 });
 ```
@@ -3313,14 +4361,22 @@ import { ArrowRight, Clock, Car } from 'lucide-react';
 import type { TravelRoute } from '@/db/schema';
 import { formatRupiah } from '@/lib/format';
 import { waLink } from '@/lib/whatsapp';
+import { getMessages, pickLocale, localeHref, type Locale } from '@/i18n';
 
 export function RouteCard({
   route,
   whatsappNumber,
+  locale,
 }: {
   route: TravelRoute;
   whatsappNumber: string;
+  locale: Locale;
 }) {
+  const t = getMessages(locale);
+  const durasi = pickLocale(route.estimatedDuration, locale);
+  const catatan = pickLocale(route.vehicleNote, locale);
+
+  // Pesan WhatsApp selalu berbahasa Indonesia — yang membacanya staf LIANS.
   const pesan = `Halo LIANS, saya ingin menanyakan harga antar-jemput ${route.origin} ke ${route.destination}.`;
 
   return (
@@ -3332,14 +4388,14 @@ export function RouteCard({
       </div>
 
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-        {route.estimatedDuration ? (
+        {durasi ? (
           <li className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" aria-hidden /> {route.estimatedDuration}
+            <Clock className="h-3.5 w-3.5" aria-hidden /> {durasi}
           </li>
         ) : null}
-        {route.vehicleNote ? (
+        {catatan ? (
           <li className="flex items-center gap-1">
-            <Car className="h-3.5 w-3.5" aria-hidden /> {route.vehicleNote}
+            <Car className="h-3.5 w-3.5" aria-hidden /> {catatan}
           </li>
         ) : null}
       </ul>
@@ -3349,13 +4405,13 @@ export function RouteCard({
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-xl font-black text-lians-600">{formatRupiah(route.price)}</p>
-              <p className="text-xs text-muted">sekali jalan, sudah termasuk sopir</p>
+              <p className="text-xs text-muted">{t.travel.oneWayIncludingDriver}</p>
             </div>
             <Link
-              href={`/booking?route=${route.id}`}
+              href={localeHref(`/booking?route=${route.id}`, locale)}
               className="rounded-lg bg-lians-500 px-4 py-2 text-sm font-semibold text-white hover:bg-lians-600"
             >
-              Pesan
+              {t.common.order}
             </Link>
           </div>
         ) : (
@@ -3365,7 +4421,7 @@ export function RouteCard({
             rel="noopener noreferrer"
             className="inline-block rounded-lg border border-lians-300 px-4 py-2 text-sm font-semibold text-lians-700 hover:bg-lians-50"
           >
-            Hubungi untuk harga
+            {t.common.contactForPrice}
           </a>
         )}
       </div>
@@ -3377,47 +4433,77 @@ export function RouteCard({
 - [ ] **Step 4: Jalankan tes, pastikan lulus**
 
 Run: `npm test -- tests/components/travel.test.tsx`
-Expected: PASS, 5 tes
+Expected: PASS, 7 tes
 
 - [ ] **Step 5: Buat halaman travel**
 
-Create `src/app/(public)/travel/page.tsx`:
+Create `src/app/(public)/[locale]/travel/page.tsx`:
 
 ```tsx
 import type { Metadata } from 'next';
 import { getPublishedRoutes } from '@/queries/routes';
 import { getSettings } from '@/queries/settings';
 import { RouteCard } from '@/components/travel/RouteCard';
+import { getMessages, type Locale } from '@/i18n';
+import { buildAlternates } from '@/lib/seo';
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: 'Antar-Jemput Bandara & Travel Manado — LIANS',
-  description:
-    'Layanan antar-jemput Bandara Sam Ratulangi dan travel antar kota di Sulawesi Utara. Tarif tetap sekali jalan, sudah termasuk sopir.',
+const META: Record<Locale, { title: string; description: string }> = {
+  id: {
+    title: 'Antar-Jemput Bandara & Travel Manado — LIANS',
+    description:
+      'Layanan antar-jemput Bandara Sam Ratulangi dan travel antar kota di Sulawesi Utara. Tarif tetap sekali jalan, sudah termasuk sopir.',
+  },
+  en: {
+    title: 'Manado Airport Transfer & Intercity Travel — LIANS',
+    description:
+      'Sam Ratulangi Airport transfers and intercity travel across North Sulawesi. Fixed one-way fares, driver included.',
+  },
+  zh: {
+    title: '万鸦老机场接送与城际包车 — LIANS',
+    description: '沙姆·拉图兰吉机场接送及北苏拉威西城际包车。单程固定价，含司机。',
+  },
+  ko: {
+    title: '마나도 공항 픽업 및 시외 이동 — LIANS',
+    description: '삼 라툴랑기 공항 픽업과 북술라웨시 시외 이동. 편도 고정 요금, 기사 포함.',
+  },
 };
 
-export default async function TravelPage() {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return { ...META[locale], alternates: buildAlternates('/travel', locale) };
+}
+
+export default async function TravelPage({ params }: { params: Promise<{ locale: Locale }> }) {
+  const { locale } = await params;
+  const t = getMessages(locale);
   const [rute, settings] = await Promise.all([getPublishedRoutes(), getSettings()]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-12">
       <header className="space-y-2">
-        <h1 className="text-3xl font-black sm:text-4xl">Antar-Jemput & Travel</h1>
-        <p className="max-w-2xl text-muted">
-          Tarif berlaku sekali jalan dan sudah termasuk sopir serta BBM. Rute yang belum tercantum
-          tarifnya bisa Anda tanyakan langsung lewat WhatsApp.
-        </p>
+        <h1 className="text-3xl font-black sm:text-4xl">{t.travel.title}</h1>
+        <p className="max-w-2xl text-muted">{t.travel.subtitle}</p>
       </header>
 
       {rute.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-slate-300 p-12 text-center text-muted">
-          Belum ada rute yang ditampilkan. Hubungi kami untuk menanyakan tujuan Anda.
+          {t.travel.empty}
         </p>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {rute.map((r) => (
-            <RouteCard key={r.id} route={r} whatsappNumber={settings.whatsappNumber} />
+            <RouteCard
+              key={r.id}
+              route={r}
+              whatsappNumber={settings.whatsappNumber}
+              locale={locale}
+            />
           ))}
         </div>
       )}
@@ -3439,12 +4525,12 @@ git commit -m "feat: halaman antar-jemput dan travel"
 ```
 
 ---
-### Task 11: Form booking, Server Action, dan pesan WhatsApp
+### Task 12: Form booking, Server Action, dan pesan WhatsApp
 
 Tugas terbesar dan paling penting di sisi publik. Di sinilah aturan "jangan pernah percaya harga dari browser" ditegakkan.
 
 **Files:**
-- Create: `src/lib/rate-limit.ts`, `src/actions/booking.ts`, `src/components/booking/BookingForm.tsx`, `src/components/booking/PriceSummary.tsx`, `src/app/(public)/booking/page.tsx`, `src/app/(public)/booking/sukses/page.tsx`
+- Create: `src/lib/rate-limit.ts`, `src/actions/booking.ts`, `src/components/booking/BookingForm.tsx`, `src/components/booking/PriceSummary.tsx`, `src/app/(public)/[locale]/booking/page.tsx`, `src/app/(public)/[locale]/booking/sukses/page.tsx`
 - Modify: `src/lib/whatsapp.ts` (tambah `buildBookingMessage`)
 - Test: `tests/unit/whatsapp.test.ts`, `tests/components/booking-form.test.tsx`
 
@@ -3550,7 +4636,7 @@ Tambahkan ke `src/lib/whatsapp.ts`:
 
 ```ts
 import { formatRupiah } from '@/lib/format';
-import { formatTanggalID } from '@/lib/dates';
+import { formatTanggal } from '@/lib/dates';
 
 export type BookingMessageArgs = {
   bookingCode: string;
@@ -3565,6 +4651,11 @@ export type BookingMessageArgs = {
   notes?: string | null;
 };
 
+/**
+ * Pesan WhatsApp selalu berbahasa Indonesia, apa pun bahasa yang dipakai customer.
+ * Yang membaca pesan ini staf LIANS di Manado — menerjemahkannya ke bahasa
+ * customer justru membuat staf harus menebak isi pesanannya sendiri.
+ */
 export function buildBookingMessage(a: BookingMessageArgs): string {
   const baris: string[] = [
     `Halo LIANS, saya ingin konfirmasi pesanan.`,
@@ -3572,10 +4663,10 @@ export function buildBookingMessage(a: BookingMessageArgs): string {
     `Kode: ${a.bookingCode}`,
     `Nama: ${a.customerName}`,
     `Pesanan: ${a.itemName}`,
-    `Mulai: ${formatTanggalID(new Date(a.startDate))}`,
+    `Mulai: ${formatTanggal(new Date(a.startDate), 'id')}`,
   ];
 
-  if (a.endDate) baris.push(`Selesai: ${formatTanggalID(new Date(a.endDate))}`);
+  if (a.endDate) baris.push(`Selesai: ${formatTanggal(new Date(a.endDate), 'id')}`);
   if (a.days) baris.push(`Durasi: ${a.days} hari (paket ${a.rateType === '12h' ? '12' : '24'} jam)`);
   if (a.driverDays > 0) baris.push(`Pakai sopir: ${a.driverDays} hari`);
   if (a.notes) baris.push(`Catatan: ${a.notes}`);
@@ -3770,32 +4861,49 @@ Create `src/components/booking/PriceSummary.tsx`:
 ```tsx
 import { formatRupiah } from '@/lib/format';
 import type { PriceBreakdown } from '@/lib/pricing';
+import { getMessages, fill, type Locale } from '@/i18n';
 
 export function PriceSummary({
   breakdown,
   pesan,
+  locale,
 }: {
   breakdown: PriceBreakdown | null;
   pesan?: string;
+  locale: Locale;
 }) {
+  const t = getMessages(locale);
+
   if (!breakdown) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-muted">
-        {pesan ?? 'Lengkapi pilihan kendaraan dan tanggal untuk melihat perkiraan harga.'}
+        {pesan ?? t.booking.estimateHint}
       </div>
     );
   }
 
   const baris = [
-    { label: `Sewa ${breakdown.days} hari × ${formatRupiah(breakdown.ratePerDay)}`, nilai: breakdown.rentalCost },
+    {
+      label: fill(t.booking.rentalLine, {
+        days: breakdown.days,
+        harga: formatRupiah(breakdown.ratePerDay),
+      }),
+      nilai: breakdown.rentalCost,
+    },
     ...(breakdown.driverDays > 0
-      ? [{ label: `Sopir ${breakdown.driverDays} hari × ${formatRupiah(breakdown.driverFeePerDay)}`, nilai: breakdown.driverCost }]
+      ? [{
+          label: fill(t.booking.driverLine, {
+            days: breakdown.driverDays,
+            harga: formatRupiah(breakdown.driverFeePerDay),
+          }),
+          nilai: breakdown.driverCost,
+        }]
       : []),
   ];
 
   return (
     <div className="space-y-3 rounded-2xl border border-lians-200 bg-lians-50 p-5">
-      <h2 className="font-bold">Perkiraan Biaya</h2>
+      <h2 className="font-bold">{t.booking.estimate}</h2>
       <dl className="space-y-2 text-sm">
         {baris.map((b) => (
           <div key={b.label} className="flex justify-between gap-3">
@@ -3805,12 +4913,10 @@ export function PriceSummary({
         ))}
       </dl>
       <div className="flex justify-between border-t border-lians-200 pt-3">
-        <span className="font-bold">Total</span>
+        <span className="font-bold">{t.booking.total}</span>
         <span className="text-xl font-black text-lians-700">{formatRupiah(breakdown.total)}</span>
       </div>
-      <p className="text-xs text-muted">
-        Belum termasuk BBM dan tol. Harga final dikonfirmasi lewat WhatsApp.
-      </p>
+      <p className="text-xs text-muted">{t.booking.excludesNote}</p>
     </div>
   );
 }
@@ -3844,6 +4950,7 @@ const render1 = (onSubmit = vi.fn()) =>
       defaultVehicleSlug={null}
       defaultRouteId={null}
       onSubmit={onSubmit}
+      locale="id"
     />,
   );
 
@@ -3921,6 +5028,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { calculateRentalPrice, type PriceBreakdown, type RateType } from '@/lib/pricing';
 import { formatRupiah } from '@/lib/format';
+import { getMessages, fill, localeHref, type Locale } from '@/i18n';
 import { PriceSummary } from './PriceSummary';
 
 export type BookingVehicleOption = {
@@ -3963,6 +5071,7 @@ export function BookingForm({
   defaultVehicleSlug,
   defaultRouteId,
   onSubmit,
+  locale,
 }: {
   vehicles: BookingVehicleOption[];
   routes: BookingRouteOption[];
@@ -3970,7 +5079,9 @@ export function BookingForm({
   defaultVehicleSlug: string | null;
   defaultRouteId: string | null;
   onSubmit: SubmitFn;
+  locale: Locale;
 }) {
+  const t = getMessages(locale);
   const [mengirim, setMengirim] = useState(false);
 
   const { register, watch, handleSubmit, formState } = useForm<FormValues>({
@@ -4003,8 +5114,8 @@ export function BookingForm({
         breakdown: null,
         pesanHarga: rutePilihan
           ? rutePilihan.price === null
-            ? 'Rute ini belum bertarif tetap. Kami akan mengirimkan penawaran lewat WhatsApp.'
-            : `Tarif sekali jalan ${formatRupiah(rutePilihan.price)}, sudah termasuk sopir dan BBM.`
+            ? t.booking.routeNoPrice
+            : fill(t.booking.routeFixedPrice, { harga: formatRupiah(rutePilihan.price) })
           : undefined,
       };
     }
@@ -4025,13 +5136,8 @@ export function BookingForm({
 
     if (hasil.ok) return { breakdown: hasil.breakdown };
 
-    const pesan: Record<string, string> = {
-      DRIVER_DAYS_EXCEEDS_DURATION: 'Hari pakai sopir tidak boleh lebih dari durasi sewa.',
-      RATE_12H_UNAVAILABLE: 'Kendaraan ini tidak menyediakan paket 12 jam.',
-      DRIVER_DAYS_NEGATIVE: 'Hari pakai sopir tidak boleh negatif.',
-    };
-    return { breakdown: null, pesanHarga: pesan[hasil.error] };
-  }, [adalahTravel, rutePilihan, kendaraanTerpilih, nilai.startDate, nilai.endDate, nilai.rateType, nilai.driverDays, driverFeePerDay]);
+    return { breakdown: null, pesanHarga: t.pricingError[hasil.error] };
+  }, [adalahTravel, rutePilihan, kendaraanTerpilih, nilai.startDate, nilai.endDate, nilai.rateType, nilai.driverDays, driverFeePerDay, t]);
 
   const jumlahHari = breakdown?.days ?? null;
   const sopirBerlebih =
@@ -4070,44 +5176,47 @@ export function BookingForm({
       toast.error(hasil.message);
       return;
     }
-    window.location.href = `/booking/sukses?kode=${hasil.data.bookingCode}&wa=${encodeURIComponent(hasil.data.whatsappUrl)}`;
+    window.location.href = localeHref(
+      `/booking/sukses?kode=${hasil.data.bookingCode}&wa=${encodeURIComponent(hasil.data.whatsappUrl)}`,
+      locale,
+    );
   });
 
   return (
     <form onSubmit={kirim} className="grid gap-8 lg:grid-cols-[1fr_20rem]">
       <div className="space-y-5">
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold">Jenis layanan</span>
+          <span className="mb-1 block text-sm font-semibold">{t.booking.serviceType}</span>
           <select {...register('serviceType')} className={kelasInput}>
-            <option value="self-drive">Lepas kunci</option>
-            <option value="with-driver">Dengan sopir</option>
-            <option value="tourism">Bus / Hiace pariwisata</option>
-            <option value="travel">Antar-jemput / travel</option>
+            <option value="self-drive">{t.booking.selfDrive}</option>
+            <option value="with-driver">{t.booking.withDriver}</option>
+            <option value="tourism">{t.booking.tourism}</option>
+            <option value="travel">{t.booking.travelService}</option>
           </select>
         </label>
 
         {adalahTravel ? (
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold">Rute</span>
+            <span className="mb-1 block text-sm font-semibold">{t.booking.route}</span>
             <select {...register('routeId', { required: true })} className={kelasInput}>
-              <option value="">Pilih rute…</option>
+              <option value="">{t.booking.chooseRoute}</option>
               {routes.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.label}
-                  {r.price === null ? ' — hubungi untuk harga' : ` — ${formatRupiah(r.price)}`}
+                  {r.price === null ? ` — ${t.common.contactForPrice}` : ` — ${formatRupiah(r.price)}`}
                 </option>
               ))}
             </select>
           </label>
         ) : (
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold">Kendaraan</span>
+            <span className="mb-1 block text-sm font-semibold">{t.booking.vehicle}</span>
             <select {...register('vehicleId', { required: true })} className={kelasInput}>
-              <option value="">Pilih kendaraan…</option>
+              <option value="">{t.booking.chooseVehicle}</option>
               {vehicles.map((v) => (
                 <option key={v.id} value={v.id} disabled={v.status !== 'available'}>
-                  {v.name} — {formatRupiah(v.rate24h)}/24 jam
-                  {v.status !== 'available' ? ' (sedang tersewa)' : ''}
+                  {v.name} — {formatRupiah(v.rate24h)} / {t.common.perDay24}
+                  {v.status !== 'available' ? ` (${t.common.unavailable})` : ''}
                 </option>
               ))}
             </select>
@@ -4116,13 +5225,13 @@ export function BookingForm({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold">Tanggal mulai</span>
+            <span className="mb-1 block text-sm font-semibold">{t.booking.startDate}</span>
             <input type="date" {...register('startDate', { required: true })} className={kelasInput} />
           </label>
 
           {!adalahTravel ? (
             <label className="block">
-              <span className="mb-1 block text-sm font-semibold">Tanggal selesai</span>
+              <span className="mb-1 block text-sm font-semibold">{t.booking.endDate}</span>
               <input type="date" {...register('endDate', { required: true })} className={kelasInput} />
             </label>
           ) : null}
@@ -4130,14 +5239,14 @@ export function BookingForm({
 
         {!adalahTravel && kendaraanTerpilih?.rate12h !== null && kendaraanTerpilih ? (
           <fieldset>
-            <legend className="mb-1 text-sm font-semibold">Paket tarif</legend>
+            <legend className="mb-1 text-sm font-semibold">{t.booking.ratePackage}</legend>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 text-sm">
-                <input type="radio" value="24h" {...register('rateType')} /> 24 jam (
+                <input type="radio" value="24h" {...register('rateType')} /> {t.common.perDay24} (
                 {formatRupiah(kendaraanTerpilih.rate24h)})
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input type="radio" value="12h" {...register('rateType')} /> 12 jam (
+                <input type="radio" value="12h" {...register('rateType')} /> {t.common.perDay12} (
                 {formatRupiah(kendaraanTerpilih.rate12h)})
               </label>
             </div>
@@ -4146,7 +5255,7 @@ export function BookingForm({
 
         {!adalahTravel ? (
           <label className="block max-w-xs">
-            <span className="mb-1 block text-sm font-semibold">Hari pakai sopir</span>
+            <span className="mb-1 block text-sm font-semibold">{t.booking.driverDays}</span>
             <input
               type="number"
               min={0}
@@ -4155,12 +5264,12 @@ export function BookingForm({
               className={kelasInput}
             />
             <span className="mt-1 block text-xs text-muted">
-              Boleh lebih sedikit dari durasi sewa. Isi 0 bila tanpa sopir.
-              {jumlahHari !== null ? ` Maksimum ${jumlahHari} hari.` : ''}
+              {t.booking.driverDaysHint}
+              {jumlahHari !== null ? ` ${fill(t.booking.driverDaysMax, { n: jumlahHari })}` : ''}
             </span>
             {sopirBerlebih ? (
               <span role="alert" className="mt-1 block text-xs font-medium text-red-600">
-                Hari pakai sopir tidak boleh lebih dari {jumlahHari} hari sewa.
+                {fill(t.booking.driverDaysTooMany, { n: jumlahHari })}
               </span>
             ) : null}
           </label>
@@ -4168,23 +5277,23 @@ export function BookingForm({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold">Nama lengkap</span>
+            <span className="mb-1 block text-sm font-semibold">{t.booking.fullName}</span>
             <input {...register('customerName', { required: true })} className={kelasInput} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-sm font-semibold">Nomor WhatsApp</span>
+            <span className="mb-1 block text-sm font-semibold">{t.booking.whatsappNumber}</span>
             <input {...register('phone', { required: true })} placeholder="081234567890" className={kelasInput} />
           </label>
         </div>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold">Email (opsional)</span>
+          <span className="mb-1 block text-sm font-semibold">{t.booking.emailOptional}</span>
           <input type="email" {...register('email')} className={kelasInput} />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold">Catatan (opsional)</span>
-          <textarea rows={3} {...register('notes')} placeholder="Lokasi penjemputan, permintaan khusus…" className={kelasInput} />
+          <span className="mb-1 block text-sm font-semibold">{t.booking.notesOptional}</span>
+          <textarea rows={3} {...register('notes')} placeholder={t.booking.notesPlaceholder} className={kelasInput} />
         </label>
 
         <button
@@ -4192,12 +5301,12 @@ export function BookingForm({
           disabled={mengirim || sopirBerlebih || formState.isSubmitting}
           className="rounded-lg bg-lians-500 px-6 py-3 font-semibold text-white hover:bg-lians-600 disabled:opacity-50"
         >
-          {mengirim ? 'Mengirim…' : 'Kirim pesanan'}
+          {mengirim ? t.booking.submitting : t.booking.submit}
         </button>
       </div>
 
       <aside className="lg:sticky lg:top-24 lg:self-start">
-        <PriceSummary breakdown={breakdown} pesan={pesanHarga} />
+        <PriceSummary breakdown={breakdown} pesan={pesanHarga} locale={locale} />
       </aside>
     </form>
   );
@@ -4211,7 +5320,7 @@ Expected: PASS, 5 tes
 
 - [ ] **Step 12: Buat halaman booking dan halaman sukses**
 
-Create `src/app/(public)/booking/page.tsx`:
+Create `src/app/(public)/[locale]/booking/page.tsx`:
 
 ```tsx
 import type { Metadata } from 'next';
@@ -4220,20 +5329,36 @@ import { getPublishedRoutes } from '@/queries/routes';
 import { getSettings } from '@/queries/settings';
 import { BookingForm } from '@/components/booking/BookingForm';
 import { createBooking } from '@/actions/booking';
+import { getMessages, type Locale } from '@/i18n';
+import { buildAlternates } from '@/lib/seo';
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: 'Booking Rental Mobil — LIANS Manado',
-  description: 'Isi formulir pemesanan rental mobil LIANS. Konfirmasi cepat lewat WhatsApp.',
+const META: Record<Locale, { title: string; description: string }> = {
+  id: { title: 'Booking Rental Mobil — LIANS Manado', description: 'Isi formulir pemesanan rental mobil LIANS. Konfirmasi cepat lewat WhatsApp.' },
+  en: { title: 'Book a Car Rental — LIANS Manado', description: 'Fill in the LIANS booking form. Fast confirmation via WhatsApp.' },
+  zh: { title: '在线预订租车 — 万鸦老 LIANS', description: '填写 LIANS 预订表单，我们将通过 WhatsApp 快速确认。' },
+  ko: { title: '렌터카 예약 — 마나도 LIANS', description: 'LIANS 예약 양식을 작성하세요. WhatsApp으로 빠르게 확인해 드립니다.' },
 };
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return { ...META[locale], alternates: buildAlternates('/booking', locale) };
+}
+
 export default async function BookingPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: Locale }>;
   searchParams: Promise<{ vehicle?: string; route?: string }>;
 }) {
-  const params = await searchParams;
+  const [{ locale }, sp] = await Promise.all([params, searchParams]);
+  const t = getMessages(locale);
   const [vehicles, routes, settings] = await Promise.all([
     getPublishedVehicles(),
     getPublishedRoutes(),
@@ -4243,11 +5368,8 @@ export default async function BookingPage({
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-12">
       <header className="space-y-2">
-        <h1 className="text-3xl font-black sm:text-4xl">Booking Kendaraan</h1>
-        <p className="max-w-2xl text-muted">
-          Pesanan Anda langsung tercatat di sistem kami, lalu WhatsApp terbuka berisi ringkasannya.
-          Tim LIANS akan mengonfirmasi ketersediaan.
-        </p>
+        <h1 className="text-3xl font-black sm:text-4xl">{t.booking.title}</h1>
+        <p className="max-w-2xl text-muted">{t.booking.subtitle}</p>
       </header>
 
       <BookingForm
@@ -4266,38 +5388,40 @@ export default async function BookingPage({
           price: r.price,
         }))}
         driverFeePerDay={settings.driverFeePerDay}
-        defaultVehicleSlug={params.vehicle ?? null}
-        defaultRouteId={params.route ?? null}
+        defaultVehicleSlug={sp.vehicle ?? null}
+        defaultRouteId={sp.route ?? null}
         onSubmit={createBooking}
+        locale={locale}
       />
     </div>
   );
 }
 ```
 
-Create `src/app/(public)/booking/sukses/page.tsx`:
+Create `src/app/(public)/[locale]/booking/sukses/page.tsx`:
 
 ```tsx
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
+import { getMessages, fill, localeHref, type Locale } from '@/i18n';
 
-export const metadata = { title: 'Pesanan Terkirim — LIANS' };
+export const metadata = { title: 'LIANS', robots: { index: false } };
 
 export default async function SuksesPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ locale: Locale }>;
   searchParams: Promise<{ kode?: string; wa?: string }>;
 }) {
-  const { kode, wa } = await searchParams;
+  const [{ locale }, { kode, wa }] = await Promise.all([params, searchParams]);
+  const t = getMessages(locale);
 
   return (
     <div className="mx-auto max-w-lg px-4 py-20 text-center">
       <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-500" aria-hidden />
-      <h1 className="mt-4 text-2xl font-black">Pesanan Anda tercatat</h1>
-      <p className="mt-2 text-muted">
-        Kode pesanan Anda <strong className="text-ink">{kode ?? '-'}</strong>. Simpan kode ini untuk
-        memudahkan komunikasi dengan tim kami.
-      </p>
+      <h1 className="mt-4 text-2xl font-black">{t.booking.successTitle}</h1>
+      <p className="mt-2 text-muted">{fill(t.booking.successBody, { kode: kode ?? '-' })}</p>
 
       {wa ? (
         <a
@@ -4306,17 +5430,17 @@ export default async function SuksesPage({
           rel="noopener noreferrer"
           className="mt-6 inline-block rounded-lg bg-emerald-500 px-6 py-3 font-semibold text-white hover:bg-emerald-600"
         >
-          Lanjutkan ke WhatsApp
+          {t.booking.continueWhatsApp}
         </a>
       ) : null}
 
-      <p className="mt-8 text-sm text-muted">
-        Belum sempat mengirim chat? Tidak apa-apa — pesanan Anda sudah masuk dan tim kami akan
-        menghubungi Anda.
-      </p>
+      <p className="mt-8 text-sm text-muted">{t.booking.successFooter}</p>
 
-      <Link href="/mobil" className="mt-4 inline-block text-sm font-semibold text-lians-600">
-        Lihat kendaraan lain
+      <Link
+        href={localeHref('/mobil', locale)}
+        className="mt-4 inline-block text-sm font-semibold text-lians-600"
+      >
+        {t.booking.seeOtherVehicles}
       </Link>
     </div>
   );
@@ -4327,6 +5451,9 @@ export default async function SuksesPage({
 
 Run: `npm run dev`, buka `http://localhost:3000/booking?vehicle=innova-zenix-g`, isi 5 hari dengan sopir 3 hari, lalu kirim.
 Expected: halaman sukses menampilkan kode `LNS-…`, dan baris baru muncul di tabel `bookings` dengan `total_price` sesuai `5 × 900000 + 3 × 150000 = 4.950.000`.
+
+Ulangi dari `http://localhost:3000/ko/booking?vehicle=innova-zenix-g`.
+Expected: formulir berbahasa Korea, halaman sukses berbahasa Korea, tetapi **pesan WhatsApp yang terbuka tetap berbahasa Indonesia** — itu untuk staf, bukan untuk customer.
 
 - [ ] **Step 14: Jalankan tes dan build**
 
@@ -4341,16 +5468,16 @@ git commit -m "feat: form booking, Server Action, pembatas laju, dan pesan Whats
 ```
 
 ---
-### Task 12: Beranda, testimoni, tentang, dan kontak
+### Task 13: Beranda, testimoni, tentang, dan kontak
 
 **Files:**
-- Create: `src/components/testimonial/TestimonialCard.tsx`, `src/components/home/Hero.tsx`, `src/components/home/ServiceCards.tsx`, `src/app/(public)/testimoni/page.tsx`, `src/app/(public)/tentang/page.tsx`, `src/app/(public)/kontak/page.tsx`
-- Modify: `src/app/(public)/page.tsx` (beranda penuh)
+- Create: `src/components/testimonial/TestimonialCard.tsx`, `src/components/home/Hero.tsx`, `src/components/home/ServiceCards.tsx`, `src/app/(public)/[locale]/testimoni/page.tsx`, `src/app/(public)/[locale]/tentang/page.tsx`, `src/app/(public)/[locale]/kontak/page.tsx`
+- Modify: `src/app/(public)/[locale]/page.tsx` (beranda penuh)
 - Test: `tests/components/testimonial.test.tsx`
 
 **Interfaces:**
 - Consumes: `getFeaturedVehicles`, `getPublishedRoutes`, `getFeaturedTestimonials`, `getPublishedTestimonials`, `getSettings`, `buildAutoRentalJsonLd`, `formatRupiah`
-- Produces: `<TestimonialCard testimonial={Testimonial} />` dari `@/components/testimonial/TestimonialCard`
+- Produces: `<TestimonialCard testimonial={Testimonial} locale={Locale} />` dari `@/components/testimonial/TestimonialCard`
 
 - [ ] **Step 1: Tulis tes testimoni yang gagal**
 
@@ -4366,7 +5493,7 @@ const testimoni = {
   id: '44444444-4444-4444-8444-444444444444',
   customerName: 'Rina M.',
   rating: 5,
-  reviewText: 'Mobil bersih dan tepat waktu.',
+  reviewText: { id: 'Mobil bersih dan tepat waktu.', en: 'Clean car and on time.' },
   vehicleName: 'Innova Reborn',
   date: '2026-06-12',
   isFeatured: true,
@@ -4378,20 +5505,31 @@ const testimoni = {
 
 describe('TestimonialCard', () => {
   it('menampilkan nama, ulasan, dan kendaraan', () => {
-    render(<TestimonialCard testimonial={testimoni} />);
+    render(<TestimonialCard testimonial={testimoni} locale="id" />);
     expect(screen.getByText('Rina M.')).toBeInTheDocument();
     expect(screen.getByText(/Mobil bersih/)).toBeInTheDocument();
     expect(screen.getByText(/Innova Reborn/)).toBeInTheDocument();
   });
 
   it('menyatakan rating sebagai teks yang bisa dibaca pembaca layar', () => {
-    render(<TestimonialCard testimonial={testimoni} />);
+    render(<TestimonialCard testimonial={testimoni} locale="id" />);
     expect(screen.getByLabelText('Rating 5 dari 5')).toBeInTheDocument();
   });
 
   it('menampilkan tanggal dalam format Indonesia', () => {
-    render(<TestimonialCard testimonial={testimoni} />);
+    render(<TestimonialCard testimonial={testimoni} locale="id" />);
     expect(screen.getByText('12 Juni 2026')).toBeInTheDocument();
+  });
+
+  it('menampilkan ulasan dan tanggal sesuai bahasa yang diminta', () => {
+    render(<TestimonialCard testimonial={testimoni} locale="en" />);
+    expect(screen.getByText(/Clean car and on time/)).toBeInTheDocument();
+    expect(screen.getByText('12 June 2026')).toBeInTheDocument();
+  });
+
+  it('jatuh ke ulasan bahasa Indonesia bila terjemahan belum ada', () => {
+    render(<TestimonialCard testimonial={testimoni} locale="ko" />);
+    expect(screen.getByText(/Mobil bersih/)).toBeInTheDocument();
   });
 });
 ```
@@ -4408,15 +5546,25 @@ Create `src/components/testimonial/TestimonialCard.tsx`:
 ```tsx
 import { Star } from 'lucide-react';
 import type { Testimonial } from '@/db/schema';
-import { formatTanggalID } from '@/lib/dates';
+import { formatTanggal } from '@/lib/dates';
 import { cn } from '@/lib/cn';
+import { getMessages, fill, pickLocale, type Locale } from '@/i18n';
 
-export function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+export function TestimonialCard({
+  testimonial,
+  locale,
+}: {
+  testimonial: Testimonial;
+  locale: Locale;
+}) {
+  const t = getMessages(locale);
+  const ulasan = pickLocale(testimonial.reviewText, locale) ?? '';
+
   return (
     <figure className="flex h-full flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5">
       <div
         role="img"
-        aria-label={`Rating ${testimonial.rating} dari 5`}
+        aria-label={fill(t.testimonials.ratingLabel, { n: testimonial.rating })}
         className="flex gap-0.5"
       >
         {[1, 2, 3, 4, 5].map((i) => (
@@ -4431,9 +5579,7 @@ export function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
         ))}
       </div>
 
-      <blockquote className="flex-1 text-sm leading-relaxed text-slate-700">
-        “{testimonial.reviewText}”
-      </blockquote>
+      <blockquote className="flex-1 text-sm leading-relaxed text-slate-700">“{ulasan}”</blockquote>
 
       <figcaption className="border-t border-slate-100 pt-3 text-sm">
         <span className="font-semibold">{testimonial.customerName}</span>
@@ -4441,7 +5587,7 @@ export function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
           <span className="block text-xs text-muted">{testimonial.vehicleName}</span>
         ) : null}
         <span className="block text-xs text-muted">
-          {formatTanggalID(new Date(testimonial.date))}
+          {formatTanggal(new Date(testimonial.date), locale)}
         </span>
       </figcaption>
     </figure>
@@ -4452,7 +5598,7 @@ export function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 - [ ] **Step 4: Jalankan tes, pastikan lulus**
 
 Run: `npm test -- tests/components/testimonial.test.tsx`
-Expected: PASS, 3 tes
+Expected: PASS, 5 tes
 
 - [ ] **Step 5: Buat hero dan kartu layanan**
 
@@ -4461,22 +5607,33 @@ Create `src/components/home/Hero.tsx`:
 ```tsx
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
+import { getMessages, localeHref, type Locale } from '@/i18n';
 
-export function Hero({ title, subtitle }: { title: string; subtitle: string }) {
+export function Hero({
+  title,
+  subtitle,
+  locale,
+}: {
+  title: string;
+  subtitle: string;
+  locale: Locale;
+}) {
+  const t = getMessages(locale);
+
   return (
     <section className="border-b border-slate-200 bg-gradient-to-b from-lians-50 to-white">
       <div className="mx-auto max-w-6xl px-4 py-20 text-center sm:py-28">
         <p className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-lians-700 shadow-sm">
-          <MapPin className="h-3.5 w-3.5" aria-hidden /> Melayani Manado & Sulawesi Utara
+          <MapPin className="h-3.5 w-3.5" aria-hidden /> {t.home.servingArea}
         </p>
         <h1 className="mx-auto max-w-3xl text-4xl font-black leading-tight sm:text-5xl">{title}</h1>
         <p className="mx-auto mt-4 max-w-xl text-muted">{subtitle}</p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href="/mobil" className="rounded-lg bg-lians-500 px-6 py-3 font-semibold text-white hover:bg-lians-600">
-            Lihat armada
+          <Link href={localeHref('/mobil', locale)} className="rounded-lg bg-lians-500 px-6 py-3 font-semibold text-white hover:bg-lians-600">
+            {t.home.viewFleet}
           </Link>
-          <Link href="/booking" className="rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold hover:border-lians-400">
-            Booking sekarang
+          <Link href={localeHref('/booking', locale)} className="rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold hover:border-lians-400">
+            {t.common.bookNow}
           </Link>
         </div>
       </div>
@@ -4490,23 +5647,26 @@ Create `src/components/home/ServiceCards.tsx`:
 ```tsx
 import Link from 'next/link';
 import { Key, UserRound, Bus, PlaneTakeoff } from 'lucide-react';
+import { getMessages, localeHref, type Locale } from '@/i18n';
 
-const LAYANAN = [
-  { Icon: Key, title: 'Lepas Kunci', desc: 'Bawa sendiri, bebas ke mana saja. Tarif 24 jam atau 12 jam.', href: '/mobil' },
-  { Icon: UserRound, title: 'Dengan Sopir', desc: 'Sopir berpengalaman yang hafal jalanan Manado.', href: '/booking' },
-  { Icon: Bus, title: 'Bus & Hiace Pariwisata', desc: 'Rombongan keluarga, kantor, atau wisata sekolah.', href: '/mobil?category=bus' },
-  { Icon: PlaneTakeoff, title: 'Antar-Jemput Bandara', desc: 'Tarif tetap sekali jalan ke Sam Ratulangi dan sekitarnya.', href: '/travel' },
-];
+export function ServiceCards({ locale }: { locale: Locale }) {
+  const t = getMessages(locale);
 
-export function ServiceCards() {
+  const LAYANAN = [
+    { Icon: Key, title: t.home.serviceSelfDrive, desc: t.home.serviceSelfDriveDesc, href: '/mobil' },
+    { Icon: UserRound, title: t.home.serviceWithDriver, desc: t.home.serviceWithDriverDesc, href: '/booking' },
+    { Icon: Bus, title: t.home.serviceTourism, desc: t.home.serviceTourismDesc, href: '/mobil?category=bus' },
+    { Icon: PlaneTakeoff, title: t.home.serviceAirport, desc: t.home.serviceAirportDesc, href: '/travel' },
+  ];
+
   return (
     <section className="mx-auto max-w-6xl px-4 py-16">
-      <h2 className="text-center text-2xl font-black sm:text-3xl">Layanan Kami</h2>
+      <h2 className="text-center text-2xl font-black sm:text-3xl">{t.home.ourServices}</h2>
       <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {LAYANAN.map(({ Icon, title, desc, href }) => (
           <Link
             key={title}
-            href={href}
+            href={localeHref(href, locale)}
             className="rounded-2xl border border-slate-200 p-6 transition-colors hover:border-lians-300 hover:bg-lians-50"
           >
             <Icon className="h-8 w-8 text-lians-500" aria-hidden />
@@ -4522,9 +5682,10 @@ export function ServiceCards() {
 
 - [ ] **Step 6: Rakit beranda**
 
-Replace `src/app/(public)/page.tsx`:
+Replace `src/app/(public)/[locale]/page.tsx`:
 
 ```tsx
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getFeaturedVehicles } from '@/queries/vehicles';
 import { getPublishedRoutes } from '@/queries/routes';
@@ -4535,12 +5696,29 @@ import { ServiceCards } from '@/components/home/ServiceCards';
 import { VehicleGrid } from '@/components/vehicle/VehicleGrid';
 import { RouteCard } from '@/components/travel/RouteCard';
 import { TestimonialCard } from '@/components/testimonial/TestimonialCard';
-import { buildAutoRentalJsonLd, SITE_URL } from '@/lib/seo';
+import { buildAutoRentalJsonLd, buildAlternates, SITE_URL } from '@/lib/seo';
 import { formatRupiah } from '@/lib/format';
+import { getMessages, pickLocale, localeHref, type Locale } from '@/i18n';
 
 export const revalidate = 300;
 
-export default async function BerandaPage() {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const settings = await getSettings();
+  return {
+    title: pickLocale(settings.heroTitle, locale) ?? 'LIANS',
+    description: pickLocale(settings.heroSubtitle, locale) ?? '',
+    alternates: buildAlternates('/', locale),
+  };
+}
+
+export default async function BerandaPage({ params }: { params: Promise<{ locale: Locale }> }) {
+  const { locale } = await params;
+  const t = getMessages(locale);
   const [kendaraan, rute, testimoni, settings] = await Promise.all([
     getFeaturedVehicles(6),
     getPublishedRoutes(),
@@ -4554,43 +5732,57 @@ export default async function BerandaPage() {
       ? `${formatRupiah(Math.min(...tarif))} - ${formatRupiah(Math.max(...tarif))}`
       : 'Hubungi kami';
 
-  const jsonLd = buildAutoRentalJsonLd({ settings, priceRange, url: SITE_URL });
+  const jsonLd = buildAutoRentalJsonLd({
+    settings,
+    priceRange,
+    url: `${SITE_URL}${localeHref('/', locale)}`,
+    locale,
+  });
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <Hero title={settings.heroTitle} subtitle={settings.heroSubtitle} />
+      <Hero
+        title={pickLocale(settings.heroTitle, locale) ?? ''}
+        subtitle={pickLocale(settings.heroSubtitle, locale) ?? ''}
+        locale={locale}
+      />
 
-      {settings.promoBanner ? (
+      {pickLocale(settings.promoBanner, locale) ? (
         <p className="bg-lians-600 px-4 py-3 text-center text-sm font-semibold text-white">
-          {settings.promoBanner}
+          {pickLocale(settings.promoBanner, locale)}
         </p>
       ) : null}
 
-      <ServiceCards />
+      <ServiceCards locale={locale} />
 
       <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-6 flex items-end justify-between gap-4">
-          <h2 className="text-2xl font-black sm:text-3xl">Armada Pilihan</h2>
-          <Link href="/mobil" className="text-sm font-semibold text-lians-600">
-            Lihat semua →
+          <h2 className="text-2xl font-black sm:text-3xl">{t.home.featuredFleet}</h2>
+          <Link href={localeHref('/mobil', locale)} className="text-sm font-semibold text-lians-600">
+            {t.common.viewAll} →
           </Link>
         </div>
-        <VehicleGrid vehicles={kendaraan} />
+        <VehicleGrid vehicles={kendaraan} locale={locale} />
       </section>
 
       {rute.length > 0 ? (
         <section className="mx-auto max-w-6xl px-4 py-12">
           <div className="mb-6 flex items-end justify-between gap-4">
-            <h2 className="text-2xl font-black sm:text-3xl">Rute Antar-Jemput</h2>
-            <Link href="/travel" className="text-sm font-semibold text-lians-600">
-              Lihat semua →
+            <h2 className="text-2xl font-black sm:text-3xl">{t.home.popularRoutes}</h2>
+            <Link href={localeHref('/travel', locale)} className="text-sm font-semibold text-lians-600">
+              {t.common.viewAll} →
             </Link>
           </div>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {rute.slice(0, 3).map((r) => (
-              <RouteCard key={r.id} route={r} whatsappNumber={settings.whatsappNumber} />
+              <RouteCard
+                key={r.id}
+                route={r}
+                whatsappNumber={settings.whatsappNumber}
+                locale={locale}
+              />
             ))}
           </div>
         </section>
@@ -4599,10 +5791,12 @@ export default async function BerandaPage() {
       {testimoni.length > 0 ? (
         <section className="bg-slate-50 py-16">
           <div className="mx-auto max-w-6xl px-4">
-            <h2 className="mb-8 text-center text-2xl font-black sm:text-3xl">Kata Pelanggan</h2>
+            <h2 className="mb-8 text-center text-2xl font-black sm:text-3xl">
+              {t.home.whatCustomersSay}
+            </h2>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {testimoni.map((t) => (
-                <TestimonialCard key={t.id} testimonial={t} />
+              {testimoni.map((item) => (
+                <TestimonialCard key={item.id} testimonial={item} locale={locale} />
               ))}
             </div>
           </div>
@@ -4615,38 +5809,53 @@ export default async function BerandaPage() {
 
 - [ ] **Step 7: Buat halaman testimoni, tentang, dan kontak**
 
-Create `src/app/(public)/testimoni/page.tsx`:
+Create `src/app/(public)/[locale]/testimoni/page.tsx`:
 
 ```tsx
 import type { Metadata } from 'next';
 import { getPublishedTestimonials } from '@/queries/testimonials';
 import { TestimonialCard } from '@/components/testimonial/TestimonialCard';
+import { getMessages, type Locale } from '@/i18n';
+import { buildAlternates } from '@/lib/seo';
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: 'Testimoni Pelanggan — LIANS Manado',
-  description: 'Pengalaman pelanggan yang telah menyewa mobil di LIANS Manado.',
+const META: Record<Locale, { title: string; description: string }> = {
+  id: { title: 'Testimoni Pelanggan — LIANS Manado', description: 'Pengalaman pelanggan yang telah menyewa mobil di LIANS Manado.' },
+  en: { title: 'Customer Reviews — LIANS Manado', description: 'What customers say after renting with LIANS in Manado.' },
+  zh: { title: '客户评价 — 万鸦老 LIANS', description: '在万鸦老 LIANS 租车的客户真实评价。' },
+  ko: { title: '고객 후기 — 마나도 LIANS', description: '마나도 LIANS에서 렌트한 고객들의 후기입니다.' },
 };
 
-export default async function TestimoniPage() {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return { ...META[locale], alternates: buildAlternates('/testimoni', locale) };
+}
+
+export default async function TestimoniPage({ params }: { params: Promise<{ locale: Locale }> }) {
+  const { locale } = await params;
+  const t = getMessages(locale);
   const semua = await getPublishedTestimonials();
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-12">
       <header className="space-y-2">
-        <h1 className="text-3xl font-black sm:text-4xl">Testimoni Pelanggan</h1>
-        <p className="max-w-2xl text-muted">Apa kata mereka yang sudah menyewa di LIANS.</p>
+        <h1 className="text-3xl font-black sm:text-4xl">{t.testimonials.title}</h1>
+        <p className="max-w-2xl text-muted">{t.testimonials.subtitle}</p>
       </header>
 
       {semua.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-slate-300 p-12 text-center text-muted">
-          Belum ada testimoni yang ditampilkan.
+          {t.testimonials.empty}
         </p>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {semua.map((t) => (
-            <TestimonialCard key={t.id} testimonial={t} />
+          {semua.map((item) => (
+            <TestimonialCard key={item.id} testimonial={item} locale={locale} />
           ))}
         </div>
       )}
@@ -4655,36 +5864,51 @@ export default async function TestimoniPage() {
 }
 ```
 
-Create `src/app/(public)/tentang/page.tsx`:
+Create `src/app/(public)/[locale]/tentang/page.tsx`:
 
 ```tsx
 import type { Metadata } from 'next';
 import { getSettings } from '@/queries/settings';
+import { getMessages, fill, pickLocale, type Locale } from '@/i18n';
+import { buildAlternates } from '@/lib/seo';
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: 'Tentang LIANS — Rental Mobil Manado',
-  description: 'Profil LIANS, penyedia rental mobil dan antar-jemput di Manado, Sulawesi Utara.',
+const META: Record<Locale, { title: string; description: string }> = {
+  id: { title: 'Tentang LIANS — Rental Mobil Manado', description: 'Profil LIANS, penyedia rental mobil dan antar-jemput di Manado, Sulawesi Utara.' },
+  en: { title: 'About LIANS — Car Rental in Manado', description: 'About LIANS, a car rental and airport transfer provider in Manado, North Sulawesi.' },
+  zh: { title: '关于 LIANS — 万鸦老租车', description: '关于 LIANS：北苏拉威西万鸦老的租车与机场接送服务商。' },
+  ko: { title: 'LIANS 소개 — 마나도 렌터카', description: '북술라웨시 마나도의 렌터카 및 공항 픽업 업체 LIANS 소개.' },
 };
 
-export default async function TentangPage() {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return { ...META[locale], alternates: buildAlternates('/tentang', locale) };
+}
+
+export default async function TentangPage({ params }: { params: Promise<{ locale: Locale }> }) {
+  const { locale } = await params;
+  const t = getMessages(locale);
   const settings = await getSettings();
+  const teks = pickLocale(settings.aboutText, locale);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-12">
-      <h1 className="text-3xl font-black sm:text-4xl">Tentang LIANS</h1>
+      <h1 className="text-3xl font-black sm:text-4xl">{t.about.title}</h1>
 
-      {settings.aboutText ? (
-        settings.aboutText.split('\n\n').map((paragraf, i) => (
+      {teks ? (
+        teks.split('\n\n').map((paragraf, i) => (
           <p key={i} className="leading-relaxed text-slate-700">
             {paragraf}
           </p>
         ))
       ) : (
         <p className="leading-relaxed text-slate-700">
-          LIANS melayani rental mobil lepas kunci dan dengan sopir, bus serta Hiace pariwisata, dan
-          antar-jemput bandara di Manado dan sekitarnya. Kantor kami berada di {settings.address}.
+          {fill(t.about.fallback, { alamat: settings.address })}
         </p>
       )}
     </div>
@@ -4692,43 +5916,57 @@ export default async function TentangPage() {
 }
 ```
 
-Create `src/app/(public)/kontak/page.tsx`:
+Create `src/app/(public)/[locale]/kontak/page.tsx`:
 
 ```tsx
 import type { Metadata } from 'next';
 import { MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react';
 import { getSettings } from '@/queries/settings';
 import { waLink } from '@/lib/whatsapp';
+import { getMessages, pickLocale, type Locale } from '@/i18n';
+import { buildAlternates } from '@/lib/seo';
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: 'Kontak LIANS — Jalan Pomorow, Manado',
-  description:
-    'Hubungi LIANS di Jalan Pomorow (Depan Luwansa Hotel), Kelurahan Banjer, Kecamatan Tikala, Manado 95125.',
+const META: Record<Locale, { title: string; description: string }> = {
+  id: { title: 'Kontak LIANS — Jalan Pomorow, Manado', description: 'Hubungi LIANS di Jalan Pomorow (Depan Luwansa Hotel), Kelurahan Banjer, Kecamatan Tikala, Manado 95125.' },
+  en: { title: 'Contact LIANS — Jalan Pomorow, Manado', description: 'Reach LIANS at Jalan Pomorow (in front of Luwansa Hotel), Banjer, Tikala, Manado 95125.' },
+  zh: { title: '联系 LIANS — 万鸦老 Pomorow 路', description: '联系 LIANS：万鸦老 Tikala 区 Banjer Pomorow 路（Luwansa 酒店对面），邮编 95125。' },
+  ko: { title: 'LIANS 문의 — 마나도 Pomorow 거리', description: '마나도 티칼라 반저르 포모로우 거리(루완사 호텔 앞) LIANS로 문의하세요. 우편번호 95125.' },
 };
 
-export default async function KontakPage() {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: Locale }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  return { ...META[locale], alternates: buildAlternates('/kontak', locale) };
+}
+
+export default async function KontakPage({ params }: { params: Promise<{ locale: Locale }> }) {
+  const { locale } = await params;
+  const t = getMessages(locale);
   const settings = await getSettings();
   const petaSrc = `https://www.google.com/maps?q=${encodeURIComponent(settings.address)}&output=embed`;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
-      <h1 className="text-3xl font-black sm:text-4xl">Hubungi Kami</h1>
+      <h1 className="text-3xl font-black sm:text-4xl">{t.contact.title}</h1>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <ul className="space-y-5">
           <li className="flex gap-3">
             <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-lians-500" aria-hidden />
             <div>
-              <p className="font-semibold">Alamat</p>
+              <p className="font-semibold">{t.contact.address}</p>
               <p className="text-sm text-muted">{settings.address}</p>
             </div>
           </li>
           <li className="flex gap-3">
             <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-lians-500" aria-hidden />
             <div>
-              <p className="font-semibold">WhatsApp</p>
+              <p className="font-semibold">{t.contact.whatsapp}</p>
               <a
                 href={waLink(settings.whatsappNumber, 'Halo LIANS, saya ingin bertanya.')}
                 className="text-sm text-lians-600"
@@ -4740,7 +5978,7 @@ export default async function KontakPage() {
           <li className="flex gap-3">
             <Phone className="mt-0.5 h-5 w-5 shrink-0 text-lians-500" aria-hidden />
             <div>
-              <p className="font-semibold">Telepon</p>
+              <p className="font-semibold">{t.contact.phone}</p>
               <a href={`tel:${settings.phone}`} className="text-sm text-lians-600">
                 {settings.phone}
               </a>
@@ -4750,7 +5988,7 @@ export default async function KontakPage() {
             <li className="flex gap-3">
               <Mail className="mt-0.5 h-5 w-5 shrink-0 text-lians-500" aria-hidden />
               <div>
-                <p className="font-semibold">Email</p>
+                <p className="font-semibold">{t.contact.email}</p>
                 <a href={`mailto:${settings.email}`} className="text-sm text-lians-600">
                   {settings.email}
                 </a>
@@ -4760,15 +5998,15 @@ export default async function KontakPage() {
           <li className="flex gap-3">
             <Clock className="mt-0.5 h-5 w-5 shrink-0 text-lians-500" aria-hidden />
             <div>
-              <p className="font-semibold">Jam Operasional</p>
-              <p className="text-sm text-muted">{settings.operatingHours}</p>
+              <p className="font-semibold">{t.contact.hours}</p>
+              <p className="text-sm text-muted">{pickLocale(settings.operatingHours, locale)}</p>
             </div>
           </li>
         </ul>
 
         <div className="overflow-hidden rounded-2xl border border-slate-200">
           <iframe
-            title="Lokasi LIANS di Google Maps"
+            title={t.contact.mapTitle}
             src={settings.mapsUrl || petaSrc}
             className="h-80 w-full lg:h-full"
             loading="lazy"
@@ -4797,7 +6035,7 @@ git commit -m "feat: beranda, testimoni, tentang, dan kontak"
 
 ## Fase 3 — Panel Admin
 
-### Task 13: Autentikasi dan halaman login
+### Task 14: Autentikasi dan halaman login
 
 **Catatan penyimpangan dari spesifikasi.** Spesifikasi menyebut panel admin dijaga middleware Auth.js. Rencana ini menaruh penjaga sesi di layout admin, bukan di middleware, karena `bcryptjs` tidak dapat berjalan di Edge Runtime tempat middleware Next.js dieksekusi. Middleware tetap menangani penulisan-ulang hostname. Lapisan keamanannya menjadi: layout admin memeriksa sesi, dan setiap Server Action admin memeriksa sesinya sendiri — sehingga permintaan langsung ke action tetap tertolak walau seseorang melewati halaman.
 
@@ -5187,7 +6425,8 @@ import Link from 'next/link';
 import { getBookings } from '@/queries/bookings';
 import { getAllVehicles } from '@/queries/vehicles';
 import { formatRupiah } from '@/lib/format';
-import { formatTanggalID } from '@/lib/dates';
+import { formatTanggal } from '@/lib/dates';
+// Panel admin berbahasa Indonesia saja, jadi locale-nya selalu 'id'.
 
 export const dynamic = 'force-dynamic';
 
@@ -5248,7 +6487,7 @@ export default async function DasborPage() {
                       {b.customerName} — {b.vehicleNameSnapshot ?? b.routeNameSnapshot ?? '-'}
                     </p>
                     <p className="text-xs text-muted">
-                      {b.bookingCode} · {formatTanggalID(new Date(b.startDate))}
+                      {b.bookingCode} · {formatTanggal(new Date(b.startDate), 'id')}
                     </p>
                   </div>
                   <span className="font-bold text-lians-600">
@@ -5292,7 +6531,7 @@ export default function AdminError({ error, reset }: { error: Error; reset: () =
 Run: `npm run dev`, buka `http://admin.localhost:3000`
 Expected: dialihkan ke `/login`. Masuk dengan kredensial seed → dasbor tampil. Buka `http://localhost:3000/admin` → 404.
 
-- [ ] **Step 12: Jalankan tes dan build**
+- [ ] **Step 13: Jalankan tes dan build**
 
 Run: `npm test && npm run build`
 Expected: PASS semua (termasuk 8 tes middleware), build sukses
@@ -5305,16 +6544,19 @@ git commit -m "feat: autentikasi admin, login, dan dasbor"
 ```
 
 ---
-### Task 14: CRUD armada dan unggah foto Cloudinary
+### Task 15: CRUD armada dan unggah foto Cloudinary
 
 **Files:**
-- Create: `src/lib/cloudinary.ts`, `src/actions/upload.ts`, `src/actions/admin-vehicles.ts`, `src/components/admin/ImageUploader.tsx`, `src/components/admin/VehicleForm.tsx`, `src/components/admin/StringListInput.tsx`, `src/app/(admin)/admin/armada/page.tsx`, `src/app/(admin)/admin/armada/baru/page.tsx`, `src/app/(admin)/admin/armada/[id]/page.tsx`
+- Create: `src/lib/cloudinary.ts`, `src/actions/upload.ts`, `src/actions/admin-vehicles.ts`, `src/components/admin/ImageUploader.tsx`, `src/components/admin/VehicleForm.tsx`, `src/components/admin/StringListInput.tsx`, `src/components/admin/LocaleTabs.tsx`, `src/components/admin/LocalizedListInput.tsx`, `src/components/admin/LocalizedTextInput.tsx`, `src/app/(admin)/admin/armada/page.tsx`, `src/app/(admin)/admin/armada/baru/page.tsx`, `src/app/(admin)/admin/armada/[id]/page.tsx`
 - Test: `tests/unit/slug-unik.test.ts`
 
 **Interfaces:**
 - Consumes: `requireSession`, `vehicleInputSchema`, `slugify`, `getAllVehicles`, `getVehicleById`, `ok`/`fail`
 - Produces:
   - `getUploadSignature(): Promise<ActionResult<{ signature: string; timestamp: number; apiKey: string; cloudName: string; folder: string }>>` dari `@/actions/upload`
+  - `<LocaleTabs active={Locale} filled={Record<Locale, boolean>} onChange={(l: Locale) => void} />` dari `@/components/admin/LocaleTabs`
+  - `<LocalizedListInput label={string} values={Localized<string[]>} placeholder={string} onChange={(v: Localized<string[]>) => void} />` dari `@/components/admin/LocalizedListInput`
+  - `<LocalizedTextInput label={string} values={Localized<string>} multiline={boolean} hint={string} onChange={(v: Localized<string>) => void} />` dari `@/components/admin/LocalizedTextInput`
   - `createVehicle(input: unknown)`, `updateVehicle(id: string, input: unknown)`, `deleteVehicle(id: string)` dari `@/actions/admin-vehicles`, semuanya `Promise<ActionResult<{ id: string }>>`
   - `slugUnik(dasar: string, terpakai: string[]): string` dari `@/lib/slug`
 
@@ -5654,7 +6896,172 @@ export function ImageUploader({
 }
 ```
 
-- [ ] **Step 9: Buat input daftar teks dan form kendaraan**
+- [ ] **Step 9: Buat input bertab bahasa**
+
+Create `src/components/admin/LocaleTabs.tsx`:
+
+```tsx
+'use client';
+
+import { cn } from '@/lib/cn';
+import { LOCALES, LOCALE_LABELS, type Locale } from '@/i18n';
+
+/**
+ * Titik penanda pada tab memberi tahu sekilas bahasa mana yang masih kosong,
+ * sehingga staf tidak perlu mengklik satu per satu untuk memeriksa.
+ */
+export function LocaleTabs({
+  active,
+  filled,
+  onChange,
+}: {
+  active: Locale;
+  filled: Record<Locale, boolean>;
+  onChange: (locale: Locale) => void;
+}) {
+  return (
+    <div role="tablist" className="flex gap-1 border-b border-slate-200">
+      {LOCALES.map((locale) => (
+        <button
+          key={locale}
+          type="button"
+          role="tab"
+          aria-selected={locale === active}
+          onClick={() => onChange(locale)}
+          className={cn(
+            'flex items-center gap-1.5 border-b-2 px-3 py-1.5 text-xs font-semibold',
+            locale === active
+              ? 'border-lians-500 text-lians-700'
+              : 'border-transparent text-slate-500 hover:text-slate-700',
+          )}
+        >
+          {LOCALE_LABELS[locale]}
+          <span
+            aria-label={filled[locale] ? 'terisi' : 'belum diisi'}
+            className={cn(
+              'h-1.5 w-1.5 rounded-full',
+              filled[locale] ? 'bg-emerald-500' : 'bg-slate-300',
+            )}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+Create `src/components/admin/LocalizedTextInput.tsx`:
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { LOCALES, DEFAULT_LOCALE, type Locale } from '@/i18n';
+import type { Localized } from '@/i18n/localized';
+import { LocaleTabs } from './LocaleTabs';
+
+export function LocalizedTextInput({
+  label,
+  values,
+  hint,
+  multiline = false,
+  rows = 4,
+  onChange,
+}: {
+  label: string;
+  values: Localized<string>;
+  hint?: string;
+  multiline?: boolean;
+  rows?: number;
+  onChange: (next: Localized<string>) => void;
+}) {
+  const [aktif, setAktif] = useState<Locale>(DEFAULT_LOCALE);
+
+  const filled = Object.fromEntries(
+    LOCALES.map((l) => [l, Boolean(values[l]?.trim())]),
+  ) as Record<Locale, boolean>;
+
+  const set = (teks: string) => onChange({ ...values, [aktif]: teks });
+  const kelas = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
+
+  return (
+    <div className="space-y-2">
+      <span className="block text-sm font-semibold">
+        {label}
+        {aktif === DEFAULT_LOCALE ? <span className="text-red-500"> *</span> : null}
+      </span>
+
+      <LocaleTabs active={aktif} filled={filled} onChange={setAktif} />
+
+      {multiline ? (
+        <textarea
+          rows={rows}
+          value={values[aktif] ?? ''}
+          onChange={(e) => set(e.target.value)}
+          aria-label={`${label} (${aktif})`}
+          className={kelas}
+        />
+      ) : (
+        <input
+          value={values[aktif] ?? ''}
+          onChange={(e) => set(e.target.value)}
+          aria-label={`${label} (${aktif})`}
+          className={kelas}
+        />
+      )}
+
+      <span className="block text-xs text-muted">
+        {hint ??
+          'Bahasa Indonesia wajib diisi. Bahasa lain boleh dikosongkan — pengunjung akan melihat versi Indonesia.'}
+      </span>
+    </div>
+  );
+}
+```
+
+Create `src/components/admin/LocalizedListInput.tsx` — sama polanya, tetapi isi tiap bahasa berupa daftar. Bagian dalamnya memakai `StringListInput` yang dibuat di langkah berikutnya:
+
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { LOCALES, DEFAULT_LOCALE, type Locale } from '@/i18n';
+import type { Localized } from '@/i18n/localized';
+import { LocaleTabs } from './LocaleTabs';
+import { StringListInput } from './StringListInput';
+
+export function LocalizedListInput({
+  label,
+  values,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  values: Localized<string[]>;
+  placeholder: string;
+  onChange: (next: Localized<string[]>) => void;
+}) {
+  const [aktif, setAktif] = useState<Locale>(DEFAULT_LOCALE);
+
+  const filled = Object.fromEntries(
+    LOCALES.map((l) => [l, (values[l]?.length ?? 0) > 0]),
+  ) as Record<Locale, boolean>;
+
+  return (
+    <div className="space-y-2">
+      <LocaleTabs active={aktif} filled={filled} onChange={setAktif} />
+      <StringListInput
+        label={`${label} (${aktif})`}
+        values={values[aktif] ?? []}
+        placeholder={placeholder}
+        onChange={(daftar) => onChange({ ...values, [aktif]: daftar })}
+      />
+    </div>
+  );
+}
+```
+
+- [ ] **Step 10: Buat input daftar teks dan form kendaraan**
 
 Create `src/components/admin/StringListInput.tsx`:
 
@@ -5744,8 +7151,9 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { Vehicle, VehicleImage } from '@/db/schema';
 import type { ActionResult } from '@/actions/result';
+import type { Localized } from '@/i18n/localized';
 import { ImageUploader } from './ImageUploader';
-import { StringListInput } from './StringListInput';
+import { LocalizedListInput } from './LocalizedListInput';
 
 type Values = {
   name: string;
@@ -5772,8 +7180,10 @@ export function VehicleForm({
   onSubmit: (input: unknown) => Promise<ActionResult<{ id: string }>>;
 }) {
   const [images, setImages] = useState<VehicleImage[]>(vehicle?.images ?? []);
-  const [features, setFeatures] = useState<string[]>(vehicle?.features ?? []);
-  const [rentalTerms, setRentalTerms] = useState<string[]>(vehicle?.rentalTerms ?? []);
+  const [features, setFeatures] = useState<Localized<string[]>>(vehicle?.features ?? { id: [] });
+  const [rentalTerms, setRentalTerms] = useState<Localized<string[]>>(
+    vehicle?.rentalTerms ?? { id: [] },
+  );
   const [serviceTypes, setServiceTypes] = useState<string[]>(
     vehicle?.serviceTypes ?? ['self-drive'],
   );
@@ -5799,6 +7209,10 @@ export function VehicleForm({
   const kirim = handleSubmit(async (v) => {
     if (serviceTypes.length === 0) {
       toast.error('Pilih minimal satu jenis layanan.');
+      return;
+    }
+    if ((features.id?.length ?? 0) === 0) {
+      toast.error('Fasilitas versi bahasa Indonesia wajib diisi minimal satu.');
       return;
     }
     setMengirim(true);
@@ -5929,8 +7343,18 @@ export function VehicleForm({
         <ImageUploader images={images} onChange={setImages} />
       </div>
 
-      <StringListInput label="Fasilitas" values={features} placeholder="AC Dingin" onChange={setFeatures} />
-      <StringListInput label="Syarat sewa" values={rentalTerms} placeholder="Jaminan KTP + KK" onChange={setRentalTerms} />
+      <LocalizedListInput
+        label="Fasilitas"
+        values={features}
+        placeholder="AC Dingin"
+        onChange={setFeatures}
+      />
+      <LocalizedListInput
+        label="Syarat sewa"
+        values={rentalTerms}
+        placeholder="Jaminan KTP + KK"
+        onChange={setRentalTerms}
+      />
 
       <button
         type="submit"
@@ -5944,7 +7368,7 @@ export function VehicleForm({
 }
 ```
 
-- [ ] **Step 10: Buat halaman daftar, tambah, dan ubah armada**
+- [ ] **Step 11: Buat halaman daftar, tambah, dan ubah armada**
 
 Create `src/app/(admin)/admin/armada/page.tsx`:
 
@@ -6115,10 +7539,16 @@ export function DeleteButton({
 }
 ```
 
-- [ ] **Step 11: Verifikasi CRUD armada secara manual**
+- [ ] **Step 12: Verifikasi CRUD armada secara manual**
 
 Run: `npm run dev`, buka `http://admin.localhost:3000/armada/baru`
-Expected: tambah kendaraan baru dengan satu foto → tersimpan → muncul di `http://localhost:3000/mobil` tanpa restart server.
+
+Expected:
+1. Tambah kendaraan baru dengan satu foto dan fasilitas versi Indonesia + Inggris → tersimpan
+2. Muncul di `http://localhost:3000/mobil` tanpa restart server
+3. `http://localhost:3000/en/mobil/<slug>` menampilkan fasilitas berbahasa Inggris
+4. `http://localhost:3000/ko/mobil/<slug>` menampilkan fasilitas berbahasa Indonesia — jatuh-balik bekerja
+5. Tab bahasa yang belum diisi bertitik abu-abu, yang sudah diisi bertitik hijau
 
 - [ ] **Step 12: Jalankan tes dan build**
 
@@ -6129,12 +7559,12 @@ Expected: PASS semua, build sukses
 
 ```bash
 git add -A
-git commit -m "feat: CRUD armada dan unggah foto Cloudinary"
+git commit -m "feat: CRUD armada, input bertab bahasa, dan unggah foto Cloudinary"
 ```
 
 ---
 
-### Task 15: CRUD booking, rute, testimoni, dan pengaturan
+### Task 16: CRUD booking, rute, testimoni, dan pengaturan
 
 **Files:**
 - Create: `src/actions/admin-bookings.ts`, `src/actions/admin-routes.ts`, `src/actions/admin-testimonials.ts`, `src/actions/admin-settings.ts`, `src/components/admin/BookingStatusForm.tsx`, `src/components/admin/RouteForm.tsx`, `src/components/admin/TestimonialForm.tsx`, `src/components/admin/SettingsForm.tsx`, dan halaman `admin/booking`, `admin/booking/[id]`, `admin/rute`, `admin/rute/baru`, `admin/rute/[id]`, `admin/testimoni`, `admin/testimoni/baru`, `admin/testimoni/[id]`, `admin/pengaturan`
@@ -6391,7 +7821,8 @@ Create `src/app/(admin)/admin/booking/page.tsx`:
 import Link from 'next/link';
 import { getBookings } from '@/queries/bookings';
 import { formatRupiah } from '@/lib/format';
-import { formatTanggalID } from '@/lib/dates';
+import { formatTanggal } from '@/lib/dates';
+// Panel admin berbahasa Indonesia saja, jadi locale-nya selalu 'id'.
 
 export const dynamic = 'force-dynamic';
 
@@ -6466,7 +7897,7 @@ export default async function BookingListPage({
                   <span className="text-xs text-muted">{b.phone}</span>
                 </td>
                 <td className="p-4">{b.vehicleNameSnapshot ?? b.routeNameSnapshot ?? '—'}</td>
-                <td className="p-4">{formatTanggalID(new Date(b.startDate))}</td>
+                <td className="p-4">{formatTanggal(new Date(b.startDate), 'id')}</td>
                 <td className="p-4">{b.totalPrice === null ? 'Menunggu penawaran' : formatRupiah(b.totalPrice)}</td>
                 <td className="p-4">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${WARNA_STATUS[b.status]}`}>
@@ -6564,7 +7995,8 @@ import { updateBookingStatus, deleteBooking } from '@/actions/admin-bookings';
 import { BookingStatusForm } from '@/components/admin/BookingStatusForm';
 import { DeleteButton } from '@/components/admin/DeleteButton';
 import { formatRupiah } from '@/lib/format';
-import { formatTanggalID } from '@/lib/dates';
+import { formatTanggal } from '@/lib/dates';
+// Panel admin berbahasa Indonesia saja, jadi locale-nya selalu 'id'.
 import { waLink } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
@@ -6611,12 +8043,12 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
             ['Email', b.email ?? '—'],
             ['Layanan', b.serviceType],
             ['Pesanan', b.vehicleNameSnapshot ?? b.routeNameSnapshot ?? '—'],
-            ['Mulai', formatTanggalID(new Date(b.startDate))],
-            ['Selesai', b.endDate ? formatTanggalID(new Date(b.endDate)) : '—'],
+            ['Mulai', formatTanggal(new Date(b.startDate), 'id')],
+            ['Selesai', b.endDate ? formatTanggal(new Date(b.endDate), 'id') : '—'],
             ['Paket tarif', b.rateType ? `${b.rateType === '12h' ? '12' : '24'} jam` : '—'],
             ['Hari pakai sopir', String(b.driverDays)],
             ['Catatan customer', b.notes ?? '—'],
-            ['Dibuat', formatTanggalID(new Date(b.createdAt))],
+            ['Dibuat', formatTanggal(new Date(b.createdAt), 'id')],
           ].map(([label, nilai]) => (
             <div key={label} className="flex justify-between gap-4 border-b border-slate-100 pb-2 last:border-0">
               <dt className="text-muted">{label}</dt>
@@ -6670,13 +8102,13 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { TravelRoute } from '@/db/schema';
 import type { ActionResult } from '@/actions/result';
+import type { Localized } from '@/i18n/localized';
+import { LocalizedTextInput } from './LocalizedTextInput';
 
 type Values = {
   origin: string;
   destination: string;
   price: number | '';
-  vehicleNote: string;
-  estimatedDuration: string;
   isPublished: boolean;
   sortOrder: number;
 };
@@ -6691,13 +8123,18 @@ export function RouteForm({
   onSubmit: (input: unknown) => Promise<ActionResult<{ id: string }>>;
 }) {
   const [mengirim, setMengirim] = useState(false);
+  const [vehicleNote, setVehicleNote] = useState<Localized<string>>(
+    route?.vehicleNote ?? { id: '' },
+  );
+  const [estimatedDuration, setEstimatedDuration] = useState<Localized<string>>(
+    route?.estimatedDuration ?? { id: '' },
+  );
+
   const { register, handleSubmit } = useForm<Values>({
     defaultValues: {
       origin: route?.origin ?? 'Manado',
       destination: route?.destination ?? '',
       price: route?.price ?? '',
-      vehicleNote: route?.vehicleNote ?? '',
-      estimatedDuration: route?.estimatedDuration ?? '',
       isPublished: route?.isPublished ?? true,
       sortOrder: route?.sortOrder ?? 0,
     },
@@ -6708,8 +8145,8 @@ export function RouteForm({
     const hasil = await onSubmit({
       ...v,
       price: v.price === '' ? null : Number(v.price),
-      vehicleNote: v.vehicleNote || null,
-      estimatedDuration: v.estimatedDuration || null,
+      vehicleNote: vehicleNote.id?.trim() ? vehicleNote : null,
+      estimatedDuration: estimatedDuration.id?.trim() ? estimatedDuration : null,
     });
     setMengirim(false);
 
@@ -6740,18 +8177,24 @@ export function RouteForm({
           </span>
         </label>
         <label>
-          <span className="mb-1 block text-sm font-semibold">Catatan kendaraan</span>
-          <input {...register('vehicleNote')} placeholder="Avanza / Xenia" className={kelas} />
-        </label>
-        <label>
-          <span className="mb-1 block text-sm font-semibold">Perkiraan waktu tempuh</span>
-          <input {...register('estimatedDuration')} placeholder="45 menit" className={kelas} />
-        </label>
-        <label>
           <span className="mb-1 block text-sm font-semibold">Urutan tampil</span>
           <input type="number" {...register('sortOrder', { valueAsNumber: true })} className={kelas} />
         </label>
       </div>
+
+      <LocalizedTextInput
+        label="Catatan kendaraan"
+        values={vehicleNote}
+        onChange={setVehicleNote}
+        hint="Contoh: Avanza / Xenia. Boleh dikosongkan seluruhnya."
+      />
+
+      <LocalizedTextInput
+        label="Perkiraan waktu tempuh"
+        values={estimatedDuration}
+        onChange={setEstimatedDuration}
+        hint="Contoh: 45 menit / 45 minutes / 45 分钟 / 45분."
+      />
 
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" {...register('isPublished')} /> Tampilkan di situs publik
@@ -6769,7 +8212,9 @@ export function RouteForm({
 }
 ```
 
-Create `src/components/admin/TestimonialForm.tsx` dengan pola identik, berisi `customerName`, `rating` (select 1–5), `reviewText` (textarea, maks 500), `vehicleName`, `date` (input tanggal), `isFeatured`, `isPublished`, `sortOrder`; arahkan ke `/testimoni` saat sukses.
+Create `src/components/admin/TestimonialForm.tsx` dengan pola identik: `customerName`, `rating` (select 1–5), `vehicleName`, `date` (input tanggal), `isFeatured`, `isPublished`, `sortOrder` sebagai isian biasa, dan `reviewText` memakai `<LocalizedTextInput multiline rows={4} />` karena isi ulasan diterjemahkan. Arahkan ke `/testimoni` saat sukses.
+
+Nama pelanggan tidak diterjemahkan — itu nama orang.
 
 Buat halaman-halaman berikut mengikuti pola persis `admin/armada`:
 
@@ -6791,6 +8236,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { SettingsInput } from '@/schemas/settings';
 import type { ActionResult } from '@/actions/result';
+import { LocalizedTextInput } from './LocalizedTextInput';
 
 const kelas = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
@@ -6802,11 +8248,25 @@ export function SettingsForm({
   onSubmit: (input: unknown) => Promise<ActionResult<{ ok: true }>>;
 }) {
   const [menyimpan, setMenyimpan] = useState(false);
+  const [operatingHours, setOperatingHours] = useState(settings.operatingHours);
+  const [heroTitle, setHeroTitle] = useState(settings.heroTitle);
+  const [heroSubtitle, setHeroSubtitle] = useState(settings.heroSubtitle);
+  const [promoBanner, setPromoBanner] = useState(settings.promoBanner);
+  const [aboutText, setAboutText] = useState(settings.aboutText);
+
   const { register, handleSubmit } = useForm<SettingsInput>({ defaultValues: settings });
 
   const kirim = handleSubmit(async (v) => {
     setMenyimpan(true);
-    const hasil = await onSubmit({ ...v, socialLinks: settings.socialLinks });
+    const hasil = await onSubmit({
+      ...v,
+      socialLinks: settings.socialLinks,
+      operatingHours,
+      heroTitle,
+      heroSubtitle,
+      promoBanner,
+      aboutText,
+    });
     setMenyimpan(false);
 
     if (!hasil.ok) {
@@ -6839,10 +8299,11 @@ export function SettingsForm({
           <span className="mb-1 block text-sm font-semibold">Alamat</span>
           <textarea rows={2} {...register('address')} className={kelas} />
         </label>
-        <label>
-          <span className="mb-1 block text-sm font-semibold">Jam operasional</span>
-          <input {...register('operatingHours')} className={kelas} />
-        </label>
+        <LocalizedTextInput
+          label="Jam operasional"
+          values={operatingHours}
+          onChange={setOperatingHours}
+        />
         <label>
           <span className="mb-1 block text-sm font-semibold">URL sematan Google Maps</span>
           <input {...register('mapsUrl')} className={kelas} />
@@ -6864,26 +8325,31 @@ export function SettingsForm({
         </label>
       </section>
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
+      <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5">
         <h2 className="font-bold">Teks halaman</h2>
-        <label>
-          <span className="mb-1 block text-sm font-semibold">Judul hero</span>
-          <input {...register('heroTitle')} className={kelas} />
-        </label>
-        <label>
-          <span className="mb-1 block text-sm font-semibold">Subjudul hero</span>
-          <textarea rows={2} {...register('heroSubtitle')} className={kelas} />
-        </label>
-        <label>
-          <span className="mb-1 block text-sm font-semibold">Banner promo</span>
-          <input {...register('promoBanner')} placeholder="Diskon 10% sewa mingguan" className={kelas} />
-          <span className="mt-1 block text-xs text-muted">Kosongkan untuk menyembunyikan banner.</span>
-        </label>
-        <label>
-          <span className="mb-1 block text-sm font-semibold">Teks halaman Tentang</span>
-          <textarea rows={8} {...register('aboutText')} className={kelas} />
-          <span className="mt-1 block text-xs text-muted">Pisahkan paragraf dengan satu baris kosong.</span>
-        </label>
+
+        <LocalizedTextInput label="Judul hero" values={heroTitle} onChange={setHeroTitle} />
+        <LocalizedTextInput
+          label="Subjudul hero"
+          values={heroSubtitle}
+          onChange={setHeroSubtitle}
+          multiline
+          rows={2}
+        />
+        <LocalizedTextInput
+          label="Banner promo"
+          values={promoBanner}
+          onChange={setPromoBanner}
+          hint="Kosongkan seluruh bahasa untuk menyembunyikan banner."
+        />
+        <LocalizedTextInput
+          label="Teks halaman Tentang"
+          values={aboutText}
+          onChange={setAboutText}
+          multiline
+          rows={8}
+          hint="Pisahkan paragraf dengan satu baris kosong."
+        />
       </section>
 
       <button
@@ -7041,8 +8507,9 @@ Expected: PASS, 4 tes
 
 Run: `npm run dev`. Di `http://admin.localhost:3000`:
 1. Ubah biaya sopir jadi 200000 di Pengaturan → buka `http://localhost:3000/booking`, perkiraan sopir ikut berubah.
-2. Tambah rute tanpa tarif → muncul di `/travel` dengan tombol “Hubungi untuk harga”.
+2. Tambah rute tanpa tarif → muncul di `/travel` dengan tombol “Hubungi untuk harga”, dan di `/en/travel` dengan “Contact for price”.
 3. Ubah status satu booking jadi `confirmed` → hitungan “Menunggu konfirmasi” di dasbor berkurang.
+4. Isi judul hero versi Korea saja lalu simpan → `http://localhost:3000/ko` menampilkan judul Korea, `http://localhost:3000/zh` tetap menampilkan versi Indonesia.
 
 - [ ] **Step 12: Jalankan tes dan build**
 
@@ -7058,7 +8525,7 @@ git commit -m "feat: CRUD booking, rute travel, testimoni, pengaturan situs, dan
 
 ---
 
-### Task 16: Tes integrasi alur penuh dan penerbitan
+### Task 17: Tes integrasi alur penuh dan penerbitan
 
 **Files:**
 - Create: `tests/integration/alur-penuh.test.ts`, `README.md`, `vercel.json`
@@ -7106,8 +8573,8 @@ jalankan('alur penuh: admin membuat kendaraan → customer memesan → admin men
       fuelType: 'petrol',
       year: 2024,
       luggage: 2,
-      features: [],
-      rentalTerms: [],
+      features: { id: ['AC Dingin'], en: ['Cold AC'] },
+      rentalTerms: { id: ['Lepas kunci'] },
       images: [],
       status: 'available',
       isPublished: true,
@@ -7201,6 +8668,16 @@ jalankan('alur penuh: admin membuat kendaraan → customer memesan → admin men
     expect(sesudah?.totalPrice).toBe(sebelum?.totalPrice);
   });
 
+  it('menyajikan fasilitas dalam bahasa yang diminta, dengan jatuh-balik ke Indonesia', async () => {
+    const { pickLocale } = await import('@/i18n/localized');
+    const katalog = await getPublishedVehicles();
+    const v = katalog.find((x) => x.id === dibuat.vehicleId);
+
+    expect(pickLocale(v!.features, 'en')).toEqual(['Cold AC']);
+    expect(pickLocale(v!.features, 'ko')).toEqual(['AC Dingin']);
+    expect(pickLocale(v!.rentalTerms, 'zh')).toEqual(['Lepas kunci']);
+  });
+
   it('menghapus kendaraan tidak menghapus riwayat pesanannya', async () => {
     await deleteVehicle(dibuat.vehicleId!);
 
@@ -7220,9 +8697,9 @@ afterAll(async () => {
 - [ ] **Step 2: Jalankan tes integrasi**
 
 Run: `npm test -- tests/integration/alur-penuh.test.ts`
-Expected: PASS, 6 tes
+Expected: PASS, 7 tes
 
-Bila tes “harga tidak berubah” gagal, itu berarti halaman detail booking menghitung ulang dari tabel `vehicles` alih-alih membaca `priceBreakdown` — perbaiki di Task 15, jangan longgarkan tesnya.
+Bila tes “harga tidak berubah” gagal, itu berarti halaman detail booking menghitung ulang dari tabel `vehicles` alih-alih membaca `priceBreakdown` — perbaiki di Task 16, jangan longgarkan tesnya.
 
 - [ ] **Step 3: Jalankan seluruh rangkaian tes**
 
@@ -7236,7 +8713,8 @@ Create `README.md`:
 ```markdown
 # LIANS — Website Rental Mobil Manado
 
-Situs publik `lians.id` dan panel admin `admin.lians.id` dalam satu aplikasi Next.js.
+Situs publik `lians.id` empat bahasa (Indonesia, Inggris, Mandarin, Korea) dan panel admin
+`admin.lians.id` dalam satu aplikasi Next.js.
 
 ## Menjalankan secara lokal
 
@@ -7246,8 +8724,8 @@ Situs publik `lians.id` dan panel admin `admin.lians.id` dalam satu aplikasi Nex
     npm run db:seed              # perlu SEED_ADMIN_EMAIL dan SEED_ADMIN_PASSWORD
     npm run dev
 
-- Situs publik: http://localhost:3000
-- Panel admin: http://admin.localhost:3000
+- Situs publik: http://localhost:3000 (Indonesia), `/en`, `/zh`, `/ko`
+- Panel admin: http://admin.localhost:3000 (Indonesia saja)
 
 ## Perintah
 
@@ -7262,7 +8740,9 @@ Situs publik `lians.id` dan panel admin `admin.lians.id` dalam satu aplikasi Nex
 
 ## Arsitektur
 
-- `middleware.ts` mengarahkan `admin.*` ke grup rute `(admin)`, host lain ke `(public)`
+- `middleware.ts` mengarahkan `admin.*` ke grup rute `(admin)`, host lain ke `(public)/[locale]`
+- `src/i18n/` memuat kamus keempat bahasa; kamus Indonesia adalah sumber kebenaran kunci, sehingga label yang lupa diterjemahkan menggagalkan build
+- Terjemahan isi database disimpan sebagai `Localized<T>`; yang belum diisi jatuh ke bahasa Indonesia
 - `src/queries/` membaca database, `src/actions/` menulis — setiap action admin memeriksa sesi sendiri
 - `src/lib/pricing.ts` memuat seluruh logika harga sebagai fungsi murni, diuji dengan property-based testing
 - Harga pesanan dibekukan saat pemesanan; perubahan tarif tidak mengubah riwayat
@@ -7318,11 +8798,13 @@ Periksa satu per satu:
 
 1. `https://lians.id` memuat beranda dengan armada dari database
 2. `https://lians.id/mobil/<slug>` memuat halaman detail
-3. `https://lians.id/sitemap.xml` memuat seluruh URL kendaraan
-4. `https://lians.id/admin` mengembalikan 404
-5. `https://admin.lians.id` mengalihkan ke halaman login
-6. Login berhasil, ubah satu harga di admin, muat ulang halaman publik → harga baru tampil
-7. Kirim satu pesanan uji dari `https://lians.id/booking` → muncul di admin, lalu hapus
+3. `https://lians.id/en`, `/zh`, `/ko` memuat versi bahasa masing-masing
+4. Halaman detail memuat `hreflang` keempat bahasa plus `x-default`
+5. `https://lians.id/sitemap.xml` memuat setiap URL kendaraan **empat kali**, sekali per bahasa
+6. `https://lians.id/admin` mengembalikan 404
+7. `https://admin.lians.id` mengalihkan ke halaman login
+8. Login berhasil, ubah satu harga di admin, muat ulang halaman publik → harga baru tampil
+9. Kirim satu pesanan uji dari `https://lians.id/ko/booking` → muncul di admin dengan pesan WhatsApp berbahasa Indonesia, lalu hapus
 
 - [ ] **Step 10: Ganti logo penampung**
 
@@ -7332,7 +8814,8 @@ Ganti `public/logo-lians.png` dengan berkas logo LIANS sungguhan dari pemilik, l
 
 1. Buka https://search.google.com/search-console, tambahkan properti `lians.id`, verifikasi lewat DNS.
 2. Kirim `https://lians.id/sitemap.xml`.
-3. Buat profil Google Business dengan alamat Jalan Pomorow — ini sumber trafik terbesar untuk rental mobil lokal, lebih besar daripada pencarian organik.
+3. Periksa laporan **International Targeting** setelah beberapa hari — Google melaporkan di sana bila ada `hreflang` yang tidak berbalasan.
+4. Buat profil Google Business dengan alamat Jalan Pomorow — ini sumber trafik terbesar untuk rental mobil lokal, lebih besar daripada pencarian organik.
 
 - [ ] **Step 12: Commit**
 
@@ -7348,9 +8831,10 @@ git push
 
 **Utang yang harus dilunasi sebelum peluncuran:**
 
-1. Berkas logo LIANS sungguhan (Task 7 Step 14 memakai penampung sementara)
+1. Berkas logo LIANS sungguhan (Task 8 Step 15 memakai penampung sementara)
 2. Foto armada asli — data seed sengaja dibuat tanpa foto
 3. Nomor WhatsApp dan telepon LIANS yang benar di Pengaturan (nilai bawaan hanyalah contoh)
-4. Teks halaman Tentang
+4. Teks halaman Tentang dalam keempat bahasa
+5. Terjemahan Inggris, Mandarin, dan Korea untuk fasilitas & syarat sewa tiap kendaraan — situs tetap tayang tanpa ini karena jatuh-balik ke bahasa Indonesia, tetapi turis asing membaca teks Indonesia sampai diisi
 
-**Keputusan yang sengaja ditunda** — tercatat di spesifikasi sebagai di luar cakupan: pembayaran online, pengecekan ketersediaan otomatis, akun customer, email otomatis, peran pengguna bertingkat, versi bahasa Inggris, dan formulir ulasan publik.
+**Keputusan yang sengaja ditunda** — tercatat di spesifikasi sebagai di luar cakupan: pembayaran online, pengecekan ketersediaan otomatis, akun customer, email otomatis, peran pengguna bertingkat, panel admin multibahasa, terjemahan otomatis, dan formulir ulasan publik.

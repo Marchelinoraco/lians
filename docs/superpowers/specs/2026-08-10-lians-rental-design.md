@@ -14,7 +14,8 @@ Proyek referensi `../website-rental-mobil` dipakai sebagai acuan cakupan fitur d
 - **Nama:** LIANS
 - **Domain:** `lians.id`, panel admin di `admin.lians.id`
 - **Alamat:** Jalan Pomorow (Depan Luwansa Hotel), Kelurahan Banjer, Kecamatan Tikala, Manado 95125
-- **Bahasa:** Indonesia
+- **Bahasa situs publik:** Indonesia (bawaan), Inggris, Mandarin, Korea
+- **Bahasa panel admin:** Indonesia saja
 - **Mata uang:** IDR
 
 **Layanan yang ditawarkan:**
@@ -30,7 +31,8 @@ Proyek referensi `../website-rental-mobil` dipakai sebagai acuan cakupan fitur d
 2. Staf dapat menambah, mengubah, dan menghapus mobil, rute, testimoni, serta mengubah nomor WhatsApp dan teks halaman tanpa bantuan developer.
 3. Setiap pesanan masuk tercatat di database sebelum WhatsApp terbuka, sehingga tidak ada calon customer yang hilang.
 4. Harga yang tersimpan pada pesanan tidak berubah ketika tarif diperbarui di kemudian hari.
-5. Seluruh layanan berjalan pada paket gratis penyedia (di luar perpanjangan domain).
+5. Wisatawan berbahasa Inggris, Mandarin, dan Korea dapat membaca seluruh halaman publik dan memesan tanpa bantuan penerjemah.
+6. Seluruh layanan berjalan pada paket gratis penyedia (di luar perpanjangan domain).
 
 ## Batasan
 
@@ -45,6 +47,11 @@ Satu aplikasi Next.js 15 (App Router) melayani kedua domain. `middleware.ts` mem
 
 - hostname diawali `admin.` → ditulis-ulang ke grup rute `(admin)`
 - hostname lain → grup rute `(public)`
+
+Middleware yang sama juga menentukan bahasa dari awalan path pada host publik:
+
+- `lians.id/mobil` → bahasa Indonesia, ditulis-ulang ke `/id/mobil`
+- `lians.id/en/mobil`, `/zh/…`, `/ko/…` → bahasa bersangkutan
 
 `lians.id/admin` tidak dapat diakses; panel admin hanya hidup di subdomainnya. Penulisan-ulang bersifat internal sehingga URL yang dilihat pengunjung tidak berubah.
 
@@ -66,6 +73,7 @@ Satu aplikasi Next.js 15 (App Router) melayani kedua domain. `middleware.ts` mem
 | Form | React Hook Form + Zod | gratis |
 | Ikon | lucide-react | gratis |
 | Tanggal | date-fns | gratis |
+| Multibahasa | kamus TypeScript buatan sendiri (tanpa pustaka) | gratis |
 | Pengujian | Vitest + Testing Library + fast-check | gratis |
 
 **Neon dipilih di atas Supabase** karena proyek Supabase gratis dijeda setelah sekitar seminggu tanpa aktivitas — berbahaya bagi situs bisnis yang sepi di hari tertentu. Neon hanya menidurkan compute dan bangun otomatis dalam ratusan milidetik saat ada koneksi.
@@ -87,6 +95,67 @@ type ActionResult<T> =
 ```
 
 Bentuk seragam ini memungkinkan form menampilkan pesan error tepat di bawah input yang bersangkutan.
+
+## Multibahasa
+
+Situs publik tersedia dalam empat bahasa: **Indonesia** (bawaan), **Inggris**, **Mandarin**, dan **Korea**.
+
+### Alamat halaman
+
+Bahasa Indonesia tanpa awalan, bahasa lain memakai awalan dua huruf:
+
+| Bahasa | Contoh URL |
+|---|---|
+| Indonesia | `lians.id/mobil` |
+| Inggris | `lians.id/en/mobil` |
+| Mandarin | `lians.id/zh/mobil` |
+| Korea | `lians.id/ko/mobil` |
+
+Pasar utama mendapat URL terpendek dan seluruh kekuatan SEO menumpuk pada satu domain. Subdomain per bahasa ditolak karena Google memperlakukan tiap subdomain sebagai situs terpisah.
+
+**Tidak ada pengalihan otomatis** berdasarkan header `Accept-Language`. Pengalihan semacam itu membuat perayap Google mengindeks versi yang salah dan menjengkelkan pengguna Indonesia yang peramban­nya berbahasa Inggris. Sebagai gantinya, pemilih bahasa yang terlihat jelas di header.
+
+**Panel admin hanya berbahasa Indonesia.** Penggunanya staf lokal; menerjemahkan antarmuka admin ke empat bahasa berarti melipatgandakan pekerjaan untuk pengguna yang tidak ada.
+
+### Penyimpanan terjemahan
+
+Kolom yang dapat diterjemahkan menyimpan objek berkunci bahasa, bukan nilai tunggal:
+
+```ts
+type Locale = 'id' | 'en' | 'zh' | 'ko';
+type Localized<T> = { id: T } & Partial<Record<Locale, T>>;
+
+// features: { id: ['AC Dingin', 'Audio'], en: ['Cold AC', 'Audio'] }
+```
+
+Bahasa Indonesia wajib ada; tiga lainnya opsional. Satu fungsi `pickLocale(value, locale)` menangani jatuh-balik di satu tempat sehingga tidak ada halaman yang perlu tahu aturannya.
+
+Bentuk ini dipilih di atas kolom terpisah per bahasa (`features_en`, `features_zh`, …) karena menambah bahasa kelima kelak tidak memerlukan migrasi database — cukup menambah satu entri pada daftar `Locale`.
+
+### Aturan jatuh-balik
+
+Terjemahan yang belum diisi jatuh ke **bahasa Indonesia**, bukan disembunyikan. Halaman tidak pernah bolong, dan staf dapat menambahkan kendaraan lebih dulu lalu menerjemahkan belakangan.
+
+### Yang diterjemahkan
+
+`vehicles.features` · `vehicles.rentalTerms` · `travelRoutes.vehicleNote` · `travelRoutes.estimatedDuration` · `testimonials.reviewText` · pengaturan `heroTitle`, `heroSubtitle`, `aboutText`, `promoBanner`, `operatingHours` · seluruh label antarmuka.
+
+### Yang tidak diterjemahkan
+
+Nama kendaraan, nama kota dan bandara pada rute, nama pelanggan, nomor telepon, alamat, dan seluruh angka harga. Semuanya nama diri atau bilangan.
+
+### Label antarmuka
+
+Kamus berjenis kuat di `src/i18n/messages/{id,en,zh,ko}.ts`, dengan berkas Indonesia sebagai sumber kebenaran kunci:
+
+```ts
+type Messages = typeof import('./messages/id').default;
+const en: Messages = { … };   // kunci yang kurang = error TypeScript
+```
+
+Label yang lupa diterjemahkan menggagalkan `npm run build`, bukan diam-diam tayang dalam bahasa campur.
+
+Kamus ditulis sendiri alih-alih memasang `next-intl` karena middleware proyek ini sudah menangani routing hostname; menumpuk konvensi routing sebuah pustaka di atasnya menambah bagian yang bisa bertabrakan.
 
 ## Model Data
 
@@ -110,8 +179,8 @@ Enam tabel Postgres.
 | `fuelType` | enum | `petrol` `diesel` `electric` `hybrid` |
 | `year` | integer | |
 | `luggage` | integer | |
-| `features` | jsonb | array string |
-| `rentalTerms` | jsonb | array string |
+| `features` | jsonb | `Localized<string[]>` — Indonesia wajib, bahasa lain opsional |
+| `rentalTerms` | jsonb | `Localized<string[]>` |
 | `status` | enum | `available` `unavailable` |
 | `isPublished` | boolean | |
 | `sortOrder` | integer | |
@@ -129,8 +198,8 @@ Enam tabel Postgres.
 | `origin` | text | |
 | `destination` | text | |
 | `price` | integer nullable | kosong → tampilkan "Hubungi untuk harga" |
-| `vehicleNote` | text nullable | mis. "Avanza / Xenia" |
-| `estimatedDuration` | text nullable | mis. "45 menit" |
+| `vehicleNote` | jsonb nullable | `Localized<string>`, mis. `{ id: "Avanza / Xenia" }` |
+| `estimatedDuration` | jsonb nullable | `Localized<string>`, mis. `{ id: "45 menit", en: "45 minutes" }` |
 | `isPublished` | boolean | |
 | `sortOrder` | integer | |
 | `createdAt` / `updatedAt` | timestamptz | |
@@ -173,7 +242,7 @@ Enam tabel Postgres.
 | `id` | uuid PK | |
 | `customerName` | text | |
 | `rating` | integer | 1–5 |
-| `reviewText` | text | maks. 500 karakter |
+| `reviewText` | jsonb | `Localized<string>`, maks. 500 karakter per bahasa |
 | `vehicleName` | text nullable | |
 | `date` | date | |
 | `isFeatured` | boolean | tampil di beranda |
@@ -190,6 +259,8 @@ Tabel kunci-nilai (`key` text PK, `value` jsonb, `updatedAt`). Kunci yang dikelo
 `whatsappNumber` · `phone` · `email` · `address` · `operatingHours` · `mapsUrl` · `heroTitle` · `heroSubtitle` · `aboutText` · `socialLinks` · `promoBanner` · `driverFeePerDay`
 
 `driverFeePerDay` berada di sini, bukan di tiap kendaraan, karena tarif sopir sama rata untuk semua armada. Satu perubahan berlaku untuk seluruh katalog.
+
+Lima kunci menyimpan `Localized<string>` alih-alih string biasa: `heroTitle`, `heroSubtitle`, `aboutText`, `promoBanner`, dan `operatingHours`. Sisanya — nomor, alamat, tautan, dan tarif — sama di semua bahasa.
 
 ### `users`
 
@@ -257,6 +328,8 @@ Pesanan tersimpan **sebelum** WhatsApp dibuka. Bila customer mengurungkan niat m
 
 ### Publik (`lians.id`)
 
+Seluruh rute di bawah tersedia dalam empat bahasa: tanpa awalan untuk Indonesia, dan dengan awalan `/en`, `/zh`, `/ko` untuk sisanya.
+
 | Rute | Isi |
 |---|---|
 | `/` | Hero, layanan, armada unggulan, rute travel populer, testimoni pilihan, ajakan kontak |
@@ -292,9 +365,11 @@ Halaman detail per kendaraan adalah tambahan terhadap proyek referensi, yang han
 
 ## SEO & Data Lokal
 
-- `generateMetadata` per halaman, termasuk judul dan deskripsi unik per kendaraan.
+- `generateMetadata` per halaman, termasuk judul dan deskripsi unik per kendaraan, dalam bahasa halaman tersebut.
+- `hreflang` untuk keempat bahasa plus `x-default` pada setiap halaman, sehingga Google menyajikan versi yang tepat kepada tiap pencari.
+- `<html lang>` mengikuti bahasa aktif.
 - Data terstruktur JSON-LD `AutoRental` berisi alamat Jalan Pomorow, jam operasional, dan rentang harga.
-- `sitemap.ts` dan `robots.ts` yang dihasilkan dari database sehingga kendaraan baru otomatis masuk peta situs.
+- `sitemap.ts` dan `robots.ts` yang dihasilkan dari database; peta situs memuat keempat versi bahasa tiap URL sehingga kendaraan baru otomatis terindeks dalam semua bahasa.
 - Gambar Open Graph untuk pratinjau tautan WhatsApp.
 
 ## Desain Visual
@@ -310,7 +385,7 @@ Berbeda dari proyek referensi yang bertema gelap dengan aksen cyan dan fuchsia.
 Pengujian difokuskan pada bagian yang kesalahannya merugikan secara finansial atau operasional.
 
 - **Property-based (fast-check)** untuk `lib/pricing.ts`: total tidak pernah negatif; menambah hari tidak pernah menurunkan total; `driverDays > jumlahHari` selalu ditolak; `rateType: '12h'` pada kendaraan tanpa `rate12h` selalu ditolak; total selalu sama dengan jumlah komponen rinciannya; pesanan travel selalu menghasilkan total sama dengan tarif rute tanpa dipengaruhi tanggal.
-- **Unit** untuk helper tanggal, pembuat `bookingCode`, penyusun pesan WhatsApp, dan util filter katalog.
+- **Unit** untuk helper tanggal, pembuat `bookingCode`, penyusun pesan WhatsApp, util filter katalog, `pickLocale`, dan pembacaan bahasa dari path.
 - **Komponen** untuk form booking dan panel filter.
 - **Integrasi** untuk satu alur penuh: buat kendaraan di admin → tampil di katalog publik → buat pesanan → tampil di daftar pesanan admin.
 
@@ -333,5 +408,6 @@ Dicatat agar tidak menyusup ke dalam pekerjaan:
 - Akun customer dan riwayat pesanan mandiri
 - Email otomatis
 - Peran pengguna bertingkat di panel admin
-- Situs berbahasa Inggris
+- Panel admin multibahasa
+- Terjemahan otomatis (mesin penerjemah); seluruh terjemahan diketik manual oleh staf
 - Formulir ulasan publik
