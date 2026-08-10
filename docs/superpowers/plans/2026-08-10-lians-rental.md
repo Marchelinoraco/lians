@@ -4,9 +4,9 @@
 
 **Goal:** Membangun situs publik `lians.id` empat bahasa (Indonesia, Inggris, Mandarin, Korea) dan panel admin `admin.lians.id` untuk rental mobil LIANS Manado dalam satu aplikasi Next.js, dengan seluruh konten dikelola lewat CRUD di panel admin.
 
-**Architecture:** Satu aplikasi Next.js 15 App Router. `middleware.ts` membaca hostname dan menulis-ulang `admin.*` ke grup rute `(admin)`, host lain ke `(public)/[locale]` sesuai awalan bahasa pada path. Server Component membaca Postgres langsung lewat Drizzle tanpa lapisan REST internal; mutasi lewat Server Action yang memvalidasi dengan skema Zod yang sama dengan form di browser, lalu `revalidatePath`. Logika harga diisolasi sebagai fungsi murni tanpa ketergantungan React maupun database.
+**Architecture:** Satu aplikasi Next.js 16 App Router. `proxy.ts` membaca hostname dan menulis-ulang `admin.*` ke grup rute `(admin)`, host lain ke `(public)/[locale]` sesuai awalan bahasa pada path. Server Component membaca Postgres langsung lewat Drizzle tanpa lapisan REST internal; mutasi lewat Server Action yang memvalidasi dengan skema Zod yang sama dengan form di browser, lalu `revalidatePath`. Logika harga diisolasi sebagai fungsi murni tanpa ketergantungan React maupun database.
 
-**Tech Stack:** Next.js 15 (App Router) · React 19 · TypeScript strict · Tailwind CSS 4 · shadcn/ui · Drizzle ORM · Neon Postgres · Auth.js v5 · Cloudinary · React Hook Form · Zod · date-fns · lucide-react · Vitest · Testing Library · fast-check · kamus multibahasa buatan sendiri
+**Tech Stack:** Next.js 16 (App Router) · React 19 · TypeScript strict · Tailwind CSS 4 · shadcn/ui · Drizzle ORM · Neon Postgres · Auth.js v5 · Cloudinary · React Hook Form · Zod · date-fns · lucide-react · Vitest · Testing Library · fast-check · kamus multibahasa buatan sendiri
 
 **Spesifikasi:** `docs/superpowers/specs/2026-08-10-lians-rental-design.md`
 
@@ -17,6 +17,9 @@
 - Terjemahan yang belum diisi **selalu jatuh ke bahasa Indonesia**, tidak pernah disembunyikan.
 - Nama kendaraan, nama kota dan bandara, nama pelanggan, nomor telepon, alamat, dan seluruh angka harga **tidak diterjemahkan**.
 - Mata uang **IDR** di semua bahasa, diformat `Rp 350.000` (pemisah titik, tanpa desimal).
+- **Next.js 16**, bukan 15. `create-next-app@latest` memasang 16.3.0. Konsekuensi paling penting: berkas `middleware.ts` kini bernama `proxy.ts` dan fungsinya diekspor sebagai `proxy`. Perilaku, `matcher`, dan pola `request: { headers }` tidak berubah.
+- Konfigurasi Vitest berada di `vitest.config.mts` (bukan `.ts`) agar dimuat sebagai ESM tanpa peringatan.
+- `next.config.ts` mengunci `turbopack.root` ke akar repositori.
 - TypeScript `strict: true`. Tidak ada `any` di kode produksi.
 - Path alias `@/*` → `src/*`.
 - Semua harga disimpan sebagai **integer rupiah**, tidak pernah float.
@@ -34,7 +37,7 @@
 ```
 lians-web/
 ├── drizzle.config.ts            konfigurasi drizzle-kit
-├── middleware.ts                routing berbasis hostname + penjaga sesi admin
+├── proxy.ts                     routing berbasis hostname + bahasa (dulu middleware.ts)
 ├── vitest.config.ts             jsdom + alias @/
 ├── src/
 │   ├── app/
@@ -2445,24 +2448,24 @@ git commit -m "feat: lapisan query dan data awal"
 ### Task 8: Tema LIANS, layout publik, routing subdomain, dan routing bahasa
 
 **Files:**
-- Create: `middleware.ts`, `src/app/globals.css`, `src/components/layout/Header.tsx`, `src/components/layout/Footer.tsx`, `src/components/layout/WhatsAppFloat.tsx`, `src/components/layout/LanguageSwitcher.tsx`, `src/app/(public)/[locale]/layout.tsx`, `src/app/(public)/[locale]/error.tsx`, `src/app/(public)/[locale]/not-found.tsx`, `src/lib/cn.ts`
+- Create: `proxy.ts`, `src/app/globals.css`, `src/components/layout/Header.tsx`, `src/components/layout/Footer.tsx`, `src/components/layout/WhatsAppFloat.tsx`, `src/components/layout/LanguageSwitcher.tsx`, `src/app/(public)/[locale]/layout.tsx`, `src/app/(public)/[locale]/error.tsx`, `src/app/(public)/[locale]/not-found.tsx`, `src/lib/cn.ts`
 - Modify: `src/i18n/locale-path.ts` (tambah `toAppPath`), `src/app/layout.tsx` (atribut `lang` dinamis)
 - Move: `src/app/page.tsx` → `src/app/(public)/[locale]/page.tsx`
-- Test: `tests/components/layout.test.tsx`, `tests/unit/middleware.test.ts`
+- Test: `tests/components/layout.test.tsx`, `tests/unit/proxy.test.ts`
 
 **Interfaces:**
 - Consumes: `getSettings()` dari `@/queries/settings`, `formatRupiah` dari `@/lib/format`
 - Produces:
   - `cn(...inputs: ClassValue[]): string` dari `@/lib/cn`
   - `<Header settings={SettingsInput} />`, `<Footer settings={SettingsInput} />` dari `@/components/layout`
-  - `resolveHost(host: string, pathname: string): { kind: 'admin' | 'public' | 'blocked'; rewriteTo?: string }` dari `@/lib/host` — dipisah dari `middleware.ts` supaya bisa diuji tanpa runtime Next.js
+  - `resolveHost(host: string, pathname: string): { kind: 'admin' | 'public' | 'blocked'; rewriteTo?: string }` dari `@/lib/host` — dipisah dari `proxy.ts` supaya bisa diuji tanpa runtime Next.js
   - `toAppPath(pathname: string): string` dari `@/i18n/locale-path` — path publik → path internal berawalan bahasa
   - `<LanguageSwitcher current={Locale} path={string} />` dari `@/components/layout/LanguageSwitcher`
   - Token CSS `--lians-blue`, kelas utilitas tema
 
 - [ ] **Step 1: Tulis tes routing hostname yang gagal**
 
-Create `tests/unit/middleware.test.ts`:
+Create `tests/unit/proxy.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -2503,7 +2506,7 @@ describe('resolveHost', () => {
 
 - [ ] **Step 2: Jalankan tes, pastikan gagal**
 
-Run: `npm test -- tests/unit/middleware.test.ts`
+Run: `npm test -- tests/unit/proxy.test.ts`
 Expected: FAIL — `Failed to resolve import "@/lib/host"`
 
 - [ ] **Step 3: Implementasi resolveHost**
@@ -2533,19 +2536,21 @@ export function resolveHost(host: string, pathname: string): HostResolution {
 
 - [ ] **Step 4: Jalankan tes, pastikan lulus**
 
-Run: `npm test -- tests/unit/middleware.test.ts`
+Run: `npm test -- tests/unit/proxy.test.ts`
 Expected: PASS, 6 tes
 
-- [ ] **Step 5: Pasang middleware**
+- [ ] **Step 5: Pasang proxy**
 
-Create `middleware.ts` (di akar proyek, bukan di `src/`):
+Sejak Next.js 16, berkas `middleware.ts` berganti nama menjadi `proxy.ts` dan fungsinya diekspor sebagai `proxy`. Perilakunya identik.
+
+Create `proxy.ts` (di akar proyek, bukan di `src/`):
 
 ```ts
 import { NextResponse, type NextRequest } from 'next/server';
 import { resolveHost } from '@/lib/host';
 import { splitLocalePath, toAppPath } from '@/i18n/locale-path';
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const hasil = resolveHost(req.headers.get('host') ?? '', req.nextUrl.pathname);
 
   if (hasil.kind === 'blocked') {
@@ -3073,7 +3078,7 @@ git mv src/app/page.tsx "src/app/(public)/[locale]/page.tsx"
 
 - [ ] **Step 14: Buat atribut `lang` mengikuti bahasa halaman**
 
-Root layout tidak menerima `params`, jadi bahasanya dibaca dari header yang dipasang middleware.
+Root layout tidak menerima `params`, jadi bahasanya dibaca dari header yang dipasang proxy.
 
 Modify `src/app/layout.tsx`:
 
@@ -6037,7 +6042,7 @@ git commit -m "feat: beranda, testimoni, tentang, dan kontak"
 
 ### Task 14: Autentikasi dan halaman login
 
-**Catatan penyimpangan dari spesifikasi.** Spesifikasi menyebut panel admin dijaga middleware Auth.js. Rencana ini menaruh penjaga sesi di layout admin, bukan di middleware, karena `bcryptjs` tidak dapat berjalan di Edge Runtime tempat middleware Next.js dieksekusi. Middleware tetap menangani penulisan-ulang hostname. Lapisan keamanannya menjadi: layout admin memeriksa sesi, dan setiap Server Action admin memeriksa sesinya sendiri — sehingga permintaan langsung ke action tetap tertolak walau seseorang melewati halaman.
+**Catatan penyimpangan dari spesifikasi.** Spesifikasi menyebut panel admin dijaga middleware Auth.js. Rencana ini menaruh penjaga sesi di layout admin, bukan di proxy, karena `bcryptjs` tidak dapat berjalan di Edge Runtime tempat proxy Next.js dieksekusi. Proxy tetap menangani penulisan-ulang hostname. Lapisan keamanannya menjadi: layout admin memeriksa sesi, dan setiap Server Action admin memeriksa sesinya sendiri — sehingga permintaan langsung ke action tetap tertolak walau seseorang melewati halaman.
 
 **Files:**
 - Create: `src/lib/auth.ts`, `src/app/api/auth/[...nextauth]/route.ts`, `src/actions/auth-guard.ts`, `src/app/(admin)/admin/layout.tsx`, `src/app/(admin)/admin/login/page.tsx`, `src/components/admin/LoginForm.tsx`, `src/components/admin/AdminNav.tsx`, `src/app/(admin)/admin/error.tsx`
@@ -6404,7 +6409,7 @@ export function resolveHost(host: string, pathname: string): HostResolution {
 }
 ```
 
-Tambahkan kasus uji ke `tests/unit/middleware.test.ts`:
+Tambahkan kasus uji ke `tests/unit/proxy.test.ts`:
 
 ```ts
 it('mengarahkan /login pada host admin ke rute login tanpa penjaga', () => {
@@ -6534,7 +6539,7 @@ Expected: dialihkan ke `/login`. Masuk dengan kredensial seed → dasbor tampil.
 - [ ] **Step 13: Jalankan tes dan build**
 
 Run: `npm test && npm run build`
-Expected: PASS semua (termasuk 8 tes middleware), build sukses
+Expected: PASS semua (termasuk 8 tes proxy), build sukses
 
 - [ ] **Step 13: Commit**
 
@@ -8740,7 +8745,7 @@ Situs publik `lians.id` empat bahasa (Indonesia, Inggris, Mandarin, Korea) dan p
 
 ## Arsitektur
 
-- `middleware.ts` mengarahkan `admin.*` ke grup rute `(admin)`, host lain ke `(public)/[locale]`
+- `proxy.ts` mengarahkan `admin.*` ke grup rute `(admin)`, host lain ke `(public)/[locale]`
 - `src/i18n/` memuat kamus keempat bahasa; kamus Indonesia adalah sumber kebenaran kunci, sehingga label yang lupa diterjemahkan menggagalkan build
 - Terjemahan isi database disimpan sebagai `Localized<T>`; yang belum diisi jatuh ke bahasa Indonesia
 - `src/queries/` membaca database, `src/actions/` menulis — setiap action admin memeriksa sesi sendiri
