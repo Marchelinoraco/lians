@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Trash2 } from 'lucide-react';
+import { Trash2, KeyRound } from 'lucide-react';
 import type { ActionResult } from '@/actions/result';
 
 type Staf = { id: string; name: string; email: string };
@@ -16,11 +16,13 @@ export function StaffManager({
   emailSaya,
   onCreate,
   onDelete,
+  onReset,
 }: {
   staf: Staf[];
   emailSaya: string;
   onCreate: (input: unknown) => Promise<ActionResult<{ id: string }>>;
   onDelete: (id: string) => Promise<ActionResult<{ id: string }>>;
+  onReset: (input: unknown) => Promise<ActionResult<{ ok: true }>>;
 }) {
   const [mengirim, setMengirim] = useState(false);
   const { register, handleSubmit, reset } = useForm<Values>();
@@ -41,6 +43,24 @@ export function StaffManager({
     reset();
     window.location.reload();
   });
+
+  /**
+   * Tanpa jalur ini, staf yang lupa kata sandinya terkunci selamanya: sistem
+   * ini tidak mengirim email, jadi tidak ada tombol "lupa kata sandi".
+   */
+  async function resetSandi(s: Staf) {
+    const baru = window.prompt(
+      `Kata sandi baru untuk ${s.email} (minimal 10 karakter).\n\nCatat dan berikan langsung ke yang bersangkutan — kata sandi ini tidak bisa dilihat lagi setelah ini.`,
+    );
+    if (baru === null) return;
+
+    const hasil = await onReset({ userId: s.id, passwordBaru: baru });
+    if (!hasil.ok) {
+      toast.error(hasil.message);
+      return;
+    }
+    toast.success(`Kata sandi ${s.email} disetel ulang.`);
+  }
 
   async function hapus(s: Staf) {
     if (!window.confirm(`Hapus akun ${s.email}?`)) return;
@@ -64,18 +84,31 @@ export function StaffManager({
               <p className="text-sm font-semibold">{s.name}</p>
               <p className="text-xs text-muted">{s.email}</p>
             </div>
-            {s.email === emailSaya ? (
-              <span className="text-xs text-muted">akun Anda</span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void hapus(s)}
-                aria-label={`Hapus akun ${s.email}`}
-                className="rounded-lg border border-red-200 p-2 text-red-600 hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            )}
+            <div className="flex shrink-0 items-center gap-2">
+              {s.email === emailSaya ? (
+                <span className="text-xs text-muted">akun Anda</span>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void resetSandi(s)}
+                    aria-label={`Setel ulang kata sandi ${s.email}`}
+                    title="Setel ulang kata sandi"
+                    className="rounded-lg border border-slate-300 p-2 text-slate-600 hover:border-lians-400"
+                  >
+                    <KeyRound className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void hapus(s)}
+                    aria-label={`Hapus akun ${s.email}`}
+                    className="rounded-lg border border-red-200 p-2 text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+            </div>
           </li>
         ))}
       </ul>
