@@ -12,8 +12,8 @@ import { LocalizedListInput } from './LocalizedListInput';
 type Values = {
   name: string;
   category: Vehicle['category'];
-  rate24h: number;
-  rate12h: number | '';
+  rateLepasKunci: number | '';
+  ratePelayanan: number | '';
   seats: number;
   transmission: Vehicle['transmission'];
   fuelType: Vehicle['fuelType'];
@@ -47,8 +47,8 @@ export function VehicleForm({
     defaultValues: {
       name: vehicle?.name ?? '',
       category: vehicle?.category ?? 'mpv',
-      rate24h: vehicle?.rate24h ?? 0,
-      rate12h: vehicle?.rate12h ?? '',
+      rateLepasKunci: vehicle?.rateLepasKunci ?? '',
+      ratePelayanan: vehicle?.ratePelayanan ?? '',
       seats: vehicle?.seats ?? 7,
       transmission: vehicle?.transmission ?? 'manual',
       fuelType: vehicle?.fuelType ?? 'petrol',
@@ -69,11 +69,16 @@ export function VehicleForm({
       toast.error('Fasilitas versi bahasa Indonesia wajib diisi minimal satu.');
       return;
     }
+    if (v.rateLepasKunci === '' && v.ratePelayanan === '') {
+      toast.error('Isi minimal satu tarif: lepas kunci atau pelayanan.');
+      return;
+    }
 
     setMengirim(true);
     const hasil = await onSubmit({
       ...v,
-      rate12h: v.rate12h === '' ? null : Number(v.rate12h),
+      rateLepasKunci: v.rateLepasKunci === '' ? null : Number(v.rateLepasKunci),
+      ratePelayanan: v.ratePelayanan === '' ? null : Number(v.ratePelayanan),
       images,
       features,
       rentalTerms,
@@ -114,21 +119,31 @@ export function VehicleForm({
         </label>
 
         <label>
-          <span className="mb-1 block text-sm font-semibold">Tarif 24 jam (Rp)</span>
+          <span className="mb-1 block text-sm font-semibold">Tarif lepas kunci / hari (Rp)</span>
           <input
             type="number"
             min={0}
             step={50000}
-            {...register('rate24h', { valueAsNumber: true })}
+            {...register('rateLepasKunci')}
             className={kelas}
           />
+          <span className="mt-1 block text-xs text-muted">
+            Kendaraan saja. Kosongkan bila tidak dilepas-kunci — kategori ini lalu tidak muncul di
+            situs.
+          </span>
         </label>
 
         <label>
-          <span className="mb-1 block text-sm font-semibold">Tarif 12 jam (Rp)</span>
-          <input type="number" min={0} step={50000} {...register('rate12h')} className={kelas} />
+          <span className="mb-1 block text-sm font-semibold">Tarif pelayanan / hari (Rp)</span>
+          <input
+            type="number"
+            min={0}
+            step={50000}
+            {...register('ratePelayanan')}
+            className={kelas}
+          />
           <span className="mt-1 block text-xs text-muted">
-            Kosongkan bila tidak menyediakan paket 12 jam.
+            Sudah termasuk pengemudi dan BBM. Kosongkan bila tidak ditawarkan.
           </span>
         </label>
 

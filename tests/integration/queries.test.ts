@@ -30,7 +30,7 @@ jalankan('query terhadap data seed', () => {
   it('mengembalikan pengaturan lengkap dengan alamat LIANS', async () => {
     const s = await getSettings();
     expect(s.address).toContain('Pomorow');
-    expect(s.driverFeePerDay).toBeGreaterThan(0);
+    expect(s.operatingHours.id).toBeTruthy();
   });
 
   it('menyimpan teks hero dalam keempat bahasa', async () => {

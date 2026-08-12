@@ -8,14 +8,14 @@ import { DEFAULT_SETTINGS } from '@/queries/settings';
 import { slugify } from '@/lib/slug';
 
 const armada = [
-  { name: 'All New Brio', category: 'hatchback' as const, rate24h: 350000, rate12h: 250000, seats: 5, transmission: 'automatic' as const, year: 2024 },
-  { name: 'Toyota Avanza', category: 'mpv' as const, rate24h: 400000, rate12h: 300000, seats: 7, transmission: 'manual' as const, year: 2023 },
-  { name: 'Toyota Rush', category: 'suv' as const, rate24h: 500000, rate12h: 375000, seats: 7, transmission: 'automatic' as const, year: 2023 },
-  { name: 'Innova Reborn', category: 'mpv' as const, rate24h: 700000, rate12h: 500000, seats: 7, transmission: 'automatic' as const, year: 2022 },
-  { name: 'Innova Zenix G', category: 'mpv' as const, rate24h: 900000, rate12h: 650000, seats: 7, transmission: 'automatic' as const, year: 2024 },
-  { name: 'Toyota Fortuner', category: 'suv' as const, rate24h: 1200000, rate12h: 850000, seats: 7, transmission: 'automatic' as const, year: 2023 },
-  { name: 'Toyota Alphard', category: 'luxury' as const, rate24h: 2500000, rate12h: null, seats: 7, transmission: 'automatic' as const, year: 2022 },
-  { name: 'Hiace Commuter', category: 'bus' as const, rate24h: 1300000, rate12h: 950000, seats: 15, transmission: 'manual' as const, year: 2023 },
+  { name: 'All New Brio', category: 'hatchback' as const, rateLepasKunci: 350000, ratePelayanan: null, seats: 5, transmission: 'automatic' as const, year: 2024 },
+  { name: 'Toyota Avanza', category: 'mpv' as const, rateLepasKunci: 400000, ratePelayanan: null, seats: 7, transmission: 'manual' as const, year: 2023 },
+  { name: 'Toyota Rush', category: 'suv' as const, rateLepasKunci: 500000, ratePelayanan: null, seats: 7, transmission: 'automatic' as const, year: 2023 },
+  { name: 'Innova Reborn', category: 'mpv' as const, rateLepasKunci: 700000, ratePelayanan: null, seats: 7, transmission: 'automatic' as const, year: 2022 },
+  { name: 'Innova Zenix G', category: 'mpv' as const, rateLepasKunci: 900000, ratePelayanan: null, seats: 7, transmission: 'automatic' as const, year: 2024 },
+  { name: 'Toyota Fortuner', category: 'suv' as const, rateLepasKunci: 1200000, ratePelayanan: null, seats: 7, transmission: 'automatic' as const, year: 2023 },
+  { name: 'Toyota Alphard', category: 'luxury' as const, rateLepasKunci: 2500000, ratePelayanan: null, seats: 7, transmission: 'automatic' as const, year: 2022 },
+  { name: 'Hiace Commuter', category: 'bus' as const, rateLepasKunci: 1300000, ratePelayanan: null, seats: 15, transmission: 'manual' as const, year: 2023 },
 ];
 
 const durasi = (id: string, en: string, zh: string, ko: string) => ({ id, en, zh, ko });
@@ -35,7 +35,6 @@ async function seed() {
       ...m,
       slug: slugify(m.name),
       images: [],
-      driverFeeOverride: null,
       serviceTypes:
         m.category === 'bus' ? ['with-driver', 'tourism'] : ['self-drive', 'with-driver'],
       fuelType: 'petrol' as const,

@@ -129,16 +129,17 @@ jalankan('Server Action testimoni', () => {
 });
 
 jalankan('Server Action pengaturan', () => {
-  it('menyimpan tarif sopir dan memengaruhi pembacaan berikutnya', async () => {
+  it('menyimpan perubahan teks dan memengaruhi pembacaan berikutnya', async () => {
     bersesi();
     const asli = await getSettings();
+    const judulUji = { ...asli.heroTitle, id: `Uji ${Date.now()}` };
 
-    expect(await updateSettings({ ...asli, driverFeePerDay: 175000 })).toMatchObject({ ok: true });
-    expect((await getSettings()).driverFeePerDay).toBe(175000);
+    expect(await updateSettings({ ...asli, heroTitle: judulUji })).toMatchObject({ ok: true });
+    expect((await getSettings()).heroTitle.id).toBe(judulUji.id);
 
-    // Kembalikan ke nilai semula agar tes lain tidak terpengaruh.
-    await updateSettings({ ...asli, driverFeePerDay: asli.driverFeePerDay });
-    expect((await getSettings()).driverFeePerDay).toBe(asli.driverFeePerDay);
+    // Kembalikan ke nilai semula agar situs publik tidak tertinggal teks uji.
+    await updateSettings({ ...asli });
+    expect((await getSettings()).heroTitle.id).toBe(asli.heroTitle.id);
   });
 
   it('menolak nomor WhatsApp yang tidak valid', async () => {
@@ -249,12 +250,12 @@ afterAll(async () => {
   for (const id of stafDibuat) await db.delete(users).where(eq(users.id, id));
   for (const id of bookingDibuat) await db.delete(bookings).where(eq(bookings.id, id));
 
-  // Pastikan pengaturan kembali ke nilai bawaan bila tes gagal di tengah jalan.
+  // Pastikan judul hero kembali ke nilai bawaan bila tes gagal di tengah jalan.
   await db
     .insert(siteSettings)
-    .values({ key: 'driverFeePerDay', value: DEFAULT_SETTINGS.driverFeePerDay as never })
+    .values({ key: 'heroTitle', value: DEFAULT_SETTINGS.heroTitle as never })
     .onConflictDoUpdate({
       target: siteSettings.key,
-      set: { value: DEFAULT_SETTINGS.driverFeePerDay as never },
+      set: { value: DEFAULT_SETTINGS.heroTitle as never },
     });
 });

@@ -19,8 +19,8 @@ const tanpaSesi = () => authMock.mockResolvedValue(null);
 const kendaraanBaru = (nama: string) => ({
   name: nama,
   category: 'mpv' as const,
-  rate24h: 600000,
-  rate12h: 400000,
+  rateLepasKunci: 600000,
+  ratePelayanan: 900000,
   serviceTypes: ['self-drive' as const, 'with-driver' as const],
   seats: 7,
   transmission: 'automatic' as const,
@@ -73,12 +73,24 @@ jalankan('Server Action armada', () => {
     expect(rowB.slug).toBe('slug-kembar-2');
   });
 
-  it('menolak tarif 12 jam yang lebih mahal dari tarif 24 jam', async () => {
+  it('menerima kendaraan yang hanya punya satu kategori tarif', async () => {
     bersesi();
-    const hasil = await createVehicle({ ...kendaraanBaru('Tarif Aneh'), rate12h: 9_000_000 });
+    const hasil = await createVehicle({
+      ...kendaraanBaru(`Satu Tarif ${Date.now()}`),
+      rateLepasKunci: null,
+    });
+    expect(hasil.ok).toBe(true);
+    if (hasil.ok) dibuat.push(hasil.data.id);
+  });
+
+  it('menolak kendaraan tanpa tarif sama sekali', async () => {
+    bersesi();
+    const hasil = await createVehicle({
+      ...kendaraanBaru('Tanpa Tarif'),
+      rateLepasKunci: null,
+      ratePelayanan: null,
+    });
     expect(hasil.ok).toBe(false);
-    if (hasil.ok) return;
-    expect(hasil.fieldErrors?.rate12h?.[0]).toMatch(/12 jam/i);
   });
 
   it('menolak fasilitas tanpa versi bahasa Indonesia', async () => {
@@ -99,13 +111,13 @@ jalankan('Server Action armada', () => {
 
     const hasil = await updateVehicle(dibuatkan.data.id, {
       ...kendaraanBaru('Nama Baru'),
-      rate24h: 750000,
+      rateLepasKunci: 750000,
     });
     expect(hasil.ok).toBe(true);
 
     const v = await getVehicleBySlug('nama-baru');
     expect(v?.id).toBe(dibuatkan.data.id);
-    expect(v?.rate24h).toBe(750000);
+    expect(v?.rateLepasKunci).toBe(750000);
     expect(await getVehicleBySlug('nama-lama')).toBeNull();
   });
 

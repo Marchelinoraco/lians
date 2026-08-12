@@ -66,19 +66,6 @@ export function SettingsForm({
             <span className="mb-1 block text-sm font-semibold">Email</span>
             <input type="email" {...register('email')} className={kelas} />
           </label>
-          <label>
-            <span className="mb-1 block text-sm font-semibold">Biaya sopir per hari (Rp)</span>
-            <input
-              type="number"
-              min={0}
-              step={25000}
-              {...register('driverFeePerDay', { valueAsNumber: true })}
-              className={kelas}
-            />
-            <span className="mt-1 block text-xs text-muted">
-              Berlaku untuk seluruh armada. Perkiraan harga di form booking ikut berubah.
-            </span>
-          </label>
         </div>
 
         <label className="block">

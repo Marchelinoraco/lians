@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getBookingById } from '@/queries/bookings';
+import { adalahRincianLama } from '@/db/schema';
 import { getSettings } from '@/queries/settings';
 import { formatRupiah } from '@/lib/format';
 import { formatTanggal } from '@/lib/dates';
@@ -11,6 +12,18 @@ import { updateBookingStatus, updateAdminNotes, deleteBooking } from '@/actions/
 import { requireAdminPage } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Pesanan Fase 1 memakai paket 24/12 jam, pesanan Fase 2 memakai kategori.
+ * Keduanya harus terbaca agar riwayat tidak rusak saat model harga berganti.
+ */
+function LABEL_KATEGORI(b: { rateCategory: string | null; rateType: string | null }): string {
+  if (b.rateCategory === 'pelayanan') return 'Pelayanan (mobil + sopir + BBM)';
+  if (b.rateCategory === 'lepas-kunci') return 'Lepas kunci';
+  if (b.rateType === '24h') return '24 jam (model lama)';
+  if (b.rateType === '12h') return '12 jam (model lama)';
+  return '—';
+}
 
 const LABEL_LAYANAN: Record<string, string> = {
   'self-drive': 'Lepas kunci',
@@ -51,8 +64,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     ['Pesanan', booking.vehicleNameSnapshot ?? booking.routeNameSnapshot ?? '—'],
     ['Mulai', formatTanggal(new Date(booking.startDate), 'id')],
     ['Selesai', booking.endDate ? formatTanggal(new Date(booking.endDate), 'id') : '—'],
-    ['Paket tarif', booking.rateType === '12h' ? '12 jam' : booking.rateType === '24h' ? '24 jam' : '—'],
-    ['Hari pakai sopir', String(booking.driverDays)],
+    ['Kategori', LABEL_KATEGORI(booking)],
     ['Dibuat', formatTanggal(new Date(booking.createdAt), 'id')],
   ];
 
@@ -120,26 +132,46 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <h2 className="mb-4 font-bold">Harga saat dipesan</h2>
             {rincian ? (
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <dt>
-                    Sewa {rincian.days} hari × {formatRupiah(rincian.ratePerDay)}
-                  </dt>
-                  <dd>{formatRupiah(rincian.rentalCost)}</dd>
-                </div>
-                {rincian.driverDays > 0 ? (
+              adalahRincianLama(rincian) ? (
+                <dl className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <dt>
-                      Sopir {rincian.driverDays} hari × {formatRupiah(rincian.driverFeePerDay)}
+                      Sewa {rincian.days} hari × {formatRupiah(rincian.ratePerDay)}
                     </dt>
-                    <dd>{formatRupiah(rincian.driverCost)}</dd>
+                    <dd>{formatRupiah(rincian.rentalCost)}</dd>
                   </div>
-                ) : null}
-                <div className="flex justify-between border-t border-slate-200 pt-2 font-bold">
-                  <dt>Total</dt>
-                  <dd className="text-lians-700">{formatRupiah(rincian.total)}</dd>
-                </div>
-              </dl>
+                  {rincian.driverDays > 0 ? (
+                    <div className="flex justify-between">
+                      <dt>
+                        Sopir {rincian.driverDays} hari × {formatRupiah(rincian.driverFeePerDay)}
+                      </dt>
+                      <dd>{formatRupiah(rincian.driverCost)}</dd>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-between border-t border-slate-200 pt-2 font-bold">
+                    <dt>Total</dt>
+                    <dd className="text-lians-700">{formatRupiah(rincian.total)}</dd>
+                  </div>
+                  <p className="pt-2 text-xs text-muted">
+                    Pesanan ini dibuat dengan model harga lama: paket 24 jam dengan biaya sopir
+                    terpisah.
+                  </p>
+                </dl>
+              ) : (
+                <dl className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <dt>
+                      {rincian.category === 'pelayanan' ? 'Pelayanan' : 'Lepas kunci'} —{' '}
+                      {rincian.days} hari × {formatRupiah(rincian.ratePerDay)}
+                    </dt>
+                    <dd>{formatRupiah(rincian.total)}</dd>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-200 pt-2 font-bold">
+                    <dt>Total</dt>
+                    <dd className="text-lians-700">{formatRupiah(rincian.total)}</dd>
+                  </div>
+                </dl>
+              )
             ) : (
               <p className="text-sm text-muted">
                 Rute ini belum bertarif tetap saat dipesan. Kirimkan penawaran lewat WhatsApp, lalu

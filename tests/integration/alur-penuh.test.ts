@@ -17,7 +17,6 @@ const { createBooking } = await import('@/actions/booking');
 const { updateBookingStatus } = await import('@/actions/admin-bookings');
 const { getPublishedVehicles, getVehicleBySlug } = await import('@/queries/vehicles');
 const { getBookings } = await import('@/queries/bookings');
-const { getSettings } = await import('@/queries/settings');
 const { pickLocale } = await import('@/i18n/localized');
 
 const jalankan = process.env.DATABASE_URL ? describe : describe.skip;
@@ -52,8 +51,8 @@ jalankan('alur penuh: admin → publik → booking → admin', () => {
     const hasil = await createVehicle({
       name: nama,
       category: 'mpv',
-      rate24h: 800000,
-      rate12h: 600000,
+      rateLepasKunci: 800000,
+      ratePelayanan: 1200000,
       serviceTypes: ['self-drive', 'with-driver'],
       seats: 7,
       transmission: 'automatic',
@@ -86,17 +85,15 @@ jalankan('alur penuh: admin → publik → booking → admin', () => {
     expect(await getVehicleBySlug(v.slug)).toBeTruthy();
   });
 
-  it('3. customer memesan 5 hari dengan sopir 3 hari', async () => {
+  it('3. customer memesan 5 hari lepas kunci', async () => {
     const mulai = besok();
-    const settings = await getSettings();
 
     const hasil = await createBooking({
       serviceType: 'with-driver',
       vehicleId,
       startDate: iso(mulai),
-      endDate: iso(tambahHari(mulai, 5)),
-      rateType: '24h',
-      driverDays: 3,
+      endDate: iso(tambahHari(mulai, 4)),
+      rateCategory: 'lepas-kunci',
       customerName: 'Pelanggan Alur',
       phone: '081234567890',
     });
@@ -112,7 +109,9 @@ jalankan('alur penuh: admin → publik → booking → admin', () => {
       .limit(1);
     bersih.pesanan.push(row.id);
 
-    expect(row.totalPrice).toBe(5 * 800000 + 3 * settings.driverFeePerDay);
+    // Tanggal mulai + 4 hari, dihitung inklusif, berarti 5 hari.
+    expect(row.priceBreakdown?.days).toBe(5);
+    expect(row.totalPrice).toBe(5 * 800000);
     expect(row.status).toBe('pending');
     expect(decodeURIComponent(hasil.data.whatsappUrl)).toContain(bookingCode);
   });
@@ -149,8 +148,8 @@ jalankan('alur penuh: admin → publik → booking → admin', () => {
     await updateVehicle(vehicleId, {
       name: nama,
       category: 'mpv',
-      rate24h: 2_000_000,
-      rate12h: 600000,
+      rateLepasKunci: 2_000_000,
+      ratePelayanan: 1200000,
       serviceTypes: ['self-drive'],
       seats: 7,
       transmission: 'automatic',
@@ -190,7 +189,7 @@ jalankan('alur penuh: admin → publik → booking → admin', () => {
     expect(row.vehicleId).toBeNull();
     // Nama kendaraan tetap terbaca karena disimpan sebagai salinan beku.
     expect(row.vehicleNameSnapshot).toBe(nama);
-    expect(row.totalPrice).toBe(5 * 800000 + 450000);
+    expect(row.totalPrice).toBe(5 * 800000);
   });
 });
 

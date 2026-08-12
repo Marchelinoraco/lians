@@ -28,8 +28,8 @@ export default async function ArmadaPage() {
             <tr>
               <th className="p-4">Nama</th>
               <th className="p-4">Kategori</th>
-              <th className="p-4">24 jam</th>
-              <th className="p-4">12 jam</th>
+              <th className="p-4">Lepas kunci</th>
+              <th className="p-4">Pelayanan</th>
               <th className="p-4">Foto</th>
               <th className="p-4">Status</th>
               <th className="p-4">Tayang</th>
@@ -44,8 +44,12 @@ export default async function ArmadaPage() {
                   </Link>
                 </td>
                 <td className="p-4 capitalize">{v.category}</td>
-                <td className="p-4">{formatRupiah(v.rate24h)}</td>
-                <td className="p-4">{v.rate12h === null ? '—' : formatRupiah(v.rate12h)}</td>
+                <td className="p-4">
+                  {v.rateLepasKunci === null ? '—' : formatRupiah(v.rateLepasKunci)}
+                </td>
+                <td className="p-4">
+                  {v.ratePelayanan === null ? '—' : formatRupiah(v.ratePelayanan)}
+                </td>
                 <td className="p-4">{v.images.length}</td>
                 <td className="p-4">{v.status === 'available' ? 'Tersedia' : 'Tersewa'}</td>
                 <td className="p-4">{v.isPublished ? 'Ya' : 'Tidak'}</td>

@@ -24,14 +24,22 @@ jalankan('checkRateLimit', () => {
   });
 
   it('mengulang hitungan setelah jendela waktunya lewat', async () => {
-    // Jendela 1 detik: dua panggilan pertama menghabiskan batas,
-    // lalu setelah jendela lewat hitungannya kembali dari nol.
-    expect(await checkRateLimit(KUNCI_JENDELA, 1, 1000)).toBe(true);
-    expect(await checkRateLimit(KUNCI_JENDELA, 1, 1000)).toBe(false);
+    const SATU_JAM = 60 * 60 * 1000;
 
-    await new Promise((r) => setTimeout(r, 1300));
+    // Jendela satu jam supaya dua panggilan berurutan pasti jatuh di jendela
+    // yang sama, berapa pun lambatnya jaringan.
+    expect(await checkRateLimit(KUNCI_JENDELA, 1, SATU_JAM)).toBe(true);
+    expect(await checkRateLimit(KUNCI_JENDELA, 1, SATU_JAM)).toBe(false);
 
-    expect(await checkRateLimit(KUNCI_JENDELA, 1, 1000)).toBe(true);
+    // Kedaluwarsa disimulasikan dengan memundurkan window_start di database,
+    // bukan dengan menunggu jam dinding: menunggu membuat hasil tes bergantung
+    // pada latensi jaringan, bukan pada perilaku yang sedang diuji.
+    await db
+      .update(rateLimits)
+      .set({ windowStart: new Date(Date.now() - 2 * SATU_JAM) })
+      .where(eq(rateLimits.key, KUNCI_JENDELA));
+
+    expect(await checkRateLimit(KUNCI_JENDELA, 1, SATU_JAM)).toBe(true);
   });
 });
 
