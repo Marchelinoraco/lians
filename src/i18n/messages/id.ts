@@ -5,8 +5,6 @@ const id = {
   nav: {
     home: 'Beranda',
     vehicles: 'Kendaraan',
-    travel: 'Travel',
-    booking: 'Booking',
     testimonials: 'Testimoni',
     about: 'Tentang',
     contact: 'Kontak',
@@ -64,13 +62,6 @@ const id = {
     terms: 'Syarat sewa',
     unavailableNote: 'Sedang tersewa — hubungi kami untuk jadwal berikutnya',
   },
-  travel: {
-    title: 'Antar-Jemput & Travel',
-    subtitle:
-      'Tarif berlaku sekali jalan dan sudah termasuk sopir serta BBM. Rute yang belum tercantum tarifnya bisa Anda tanyakan langsung lewat WhatsApp.',
-    oneWayIncludingDriver: 'sekali jalan, sudah termasuk sopir',
-    empty: 'Belum ada rute yang ditampilkan. Hubungi kami untuk menanyakan tujuan Anda.',
-  },
   booking: {
     title: 'Booking Kendaraan',
     subtitle:
@@ -114,7 +105,6 @@ const id = {
     viewFleet: 'Lihat armada',
     ourServices: 'Layanan Kami',
     featuredFleet: 'Armada Pilihan',
-    popularRoutes: 'Rute Antar-Jemput',
     whatCustomersSay: 'Kata Pelanggan',
     serviceSelfDrive: 'Lepas Kunci',
     serviceSelfDriveDesc: 'Bawa sendiri, bebas ke mana saja. Tarif harian lepas kunci.',
@@ -122,8 +112,6 @@ const id = {
     serviceWithDriverDesc: 'Sopir berpengalaman yang hafal jalanan Manado.',
     serviceTourism: 'Bus & Hiace Pariwisata',
     serviceTourismDesc: 'Rombongan keluarga, kantor, atau wisata sekolah.',
-    serviceAirport: 'Antar-Jemput Bandara',
-    serviceAirportDesc: 'Tarif tetap sekali jalan ke Sam Ratulangi dan sekitarnya.',
   },
   testimonials: {
     title: 'Testimoni Pelanggan',

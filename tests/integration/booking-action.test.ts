@@ -9,13 +9,14 @@ vi.mock('next/headers', () => ({
 }));
 
 const { db } = await import('@/db');
-const { bookings, rateLimits } = await import('@/db/schema');
+const { bookings, rateLimits, travelRoutes } = await import('@/db/schema');
 const { createBooking } = await import('@/actions/booking');
 const { getPublishedVehicles } = await import('@/queries/vehicles');
-const { getPublishedRoutes } = await import('@/queries/routes');
+
 
 const jalankan = process.env.DATABASE_URL ? describe : describe.skip;
 const dibuat: string[] = [];
+const ruteDibuat: string[] = [];
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const besok = () => {
@@ -143,9 +144,19 @@ jalankan('createBooking', () => {
   });
 
   it('menyimpan pesanan travel tanpa tanggal selesai dan tanpa tarif bila rute belum bertarif', async () => {
-    const rute = (await getPublishedRoutes()).find((r) => r.price === null);
-    expect(rute).toBeTruthy();
-    if (!rute) return;
+    // Rute travel tidak lagi tayang di situs sejak menu Travel dihapus, jadi
+    // tes ini menyiapkan rutenya sendiri. Jalur travel tetap diuji karena
+    // Server Action masih mendukungnya dan Tahap 2C akan memakainya kembali.
+    const [rute] = await db
+      .insert(travelRoutes)
+      .values({
+        origin: 'Manado',
+        destination: `Uji Travel ${Date.now()}`,
+        price: null,
+        isPublished: true,
+      })
+      .returning();
+    ruteDibuat.push(rute.id);
 
     const hasil = await createBooking({
       serviceType: 'travel',
@@ -175,5 +186,6 @@ jalankan('createBooking', () => {
 
 afterAll(async () => {
   for (const id of dibuat) await db.delete(bookings).where(eq(bookings.id, id));
+  for (const id of ruteDibuat) await db.delete(travelRoutes).where(eq(travelRoutes.id, id));
   await db.delete(rateLimits).where(eq(rateLimits.key, `booking:${IP_UJI}`));
 });

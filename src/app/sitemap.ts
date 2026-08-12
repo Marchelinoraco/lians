@@ -9,7 +9,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const kendaraan = await getPublishedVehicles();
 
   const halaman: { path: string; lastModified: Date; priority: number }[] = [
-    ...['/', '/mobil', '/travel', '/booking', '/testimoni', '/tentang', '/kontak'].map((path) => ({
+    // /booking tidak diindeks: itu halaman aksi, bukan halaman tujuan pencarian.
+    ...['/', '/mobil', '/testimoni', '/tentang', '/kontak'].map((path) => ({
       path,
       lastModified: new Date(),
       priority: path === '/' ? 1 : 0.8,

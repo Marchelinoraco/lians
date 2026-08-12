@@ -4,8 +4,6 @@ const en: Messages = {
   nav: {
     home: 'Home',
     vehicles: 'Vehicles',
-    travel: 'Travel',
-    booking: 'Booking',
     testimonials: 'Reviews',
     about: 'About',
     contact: 'Contact',
@@ -63,13 +61,6 @@ const en: Messages = {
     terms: 'Rental terms',
     unavailableNote: 'Currently rented — contact us for the next available date',
   },
-  travel: {
-    title: 'Airport Transfer & Travel',
-    subtitle:
-      'Fares are one-way and include the driver and fuel. For routes without a listed fare, just ask us on WhatsApp.',
-    oneWayIncludingDriver: 'one way, driver included',
-    empty: 'No routes listed yet. Contact us about your destination.',
-  },
   booking: {
     title: 'Book a Vehicle',
     subtitle:
@@ -112,7 +103,6 @@ const en: Messages = {
     viewFleet: 'View the fleet',
     ourServices: 'Our Services',
     featuredFleet: 'Featured Vehicles',
-    popularRoutes: 'Transfer Routes',
     whatCustomersSay: 'What Customers Say',
     serviceSelfDrive: 'Self-Drive',
     serviceSelfDriveDesc: 'Drive it yourself, go anywhere. Daily self-drive rates.',
@@ -120,8 +110,6 @@ const en: Messages = {
     serviceWithDriverDesc: 'Experienced drivers who know every road in Manado.',
     serviceTourism: 'Tour Buses & Hiace',
     serviceTourismDesc: 'For families, company outings, and school trips.',
-    serviceAirport: 'Airport Transfer',
-    serviceAirportDesc: 'Fixed one-way fares to Sam Ratulangi and nearby areas.',
   },
   testimonials: {
     title: 'Customer Reviews',

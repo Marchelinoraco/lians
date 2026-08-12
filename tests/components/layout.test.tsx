@@ -12,17 +12,15 @@ describe('Footer', () => {
 
   it('menampilkan seluruh tautan navigasi utama', () => {
     render(<Footer settings={DEFAULT_SETTINGS} locale="id" />);
-    for (const label of [
-      'Beranda',
-      'Kendaraan',
-      'Travel',
-      'Booking',
-      'Testimoni',
-      'Tentang',
-      'Kontak',
-    ]) {
+    for (const label of ['Beranda', 'Kendaraan', 'Testimoni', 'Tentang', 'Kontak']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
+  });
+
+  it('tidak lagi menampilkan menu Travel maupun Booking', () => {
+    render(<Footer settings={DEFAULT_SETTINGS} locale="id" />);
+    expect(screen.queryByRole('link', { name: 'Travel' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Booking' })).not.toBeInTheDocument();
   });
 
   it('menautkan WhatsApp ke nomor dari pengaturan', () => {

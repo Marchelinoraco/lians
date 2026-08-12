@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Key, UserRound, Bus, PlaneTakeoff } from 'lucide-react';
+import { Key, UserRound, Bus } from 'lucide-react';
 import { getMessages, localeHref, type Locale } from '@/i18n';
 
 export function ServiceCards({ locale }: { locale: Locale }) {
@@ -24,18 +24,12 @@ export function ServiceCards({ locale }: { locale: Locale }) {
       desc: t.home.serviceTourismDesc,
       href: '/mobil?category=bus',
     },
-    {
-      Icon: PlaneTakeoff,
-      title: t.home.serviceAirport,
-      desc: t.home.serviceAirportDesc,
-      href: '/travel',
-    },
   ];
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-16">
       <h2 className="text-center text-2xl font-black sm:text-3xl">{t.home.ourServices}</h2>
-      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {LAYANAN.map(({ Icon, title, desc, href }) => (
           <Link
             key={title}

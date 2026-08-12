@@ -22,9 +22,9 @@ jalankan('query terhadap data seed', () => {
     expect(await getVehicleBySlug('mobil-tidak-ada')).toBeNull();
   });
 
-  it('menyertakan rute tanpa tarif', async () => {
-    const rute = await getPublishedRoutes();
-    expect(rute.some((r) => r.price === null)).toBe(true);
+  it('tidak lagi menayangkan rute travel sejak menunya dihapus', async () => {
+    // Datanya sengaja tidak dibuang agar keputusan ini dapat dibalik.
+    expect(await getPublishedRoutes()).toEqual([]);
   });
 
   it('mengembalikan pengaturan lengkap dengan alamat LIANS', async () => {

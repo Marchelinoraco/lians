@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-import { beforeAll } from 'vitest';
+import { beforeAll, expect } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 
 // Vitest tidak membaca .env.local sendiri. Tanpa ini, tes integrasi
@@ -10,13 +10,16 @@ config({ path: '.env.local', quiet: true });
  * Neon paket gratis menidurkan compute-nya saat menganggur, dan panggilan
  * pertama harus membangunkannya. Pada jaringan lambat, pembangunan itu melewati
  * batas koneksi 10 detik milik undici — sehingga tes PERTAMA di setiap berkas
- * gagal sementara sisanya lulus, sebuah pola yang mudah disalahartikan sebagai
- * bug kode.
+ * gagal sementara sisanya lulus, pola yang mudah disalahartikan sebagai bug.
  *
- * Satu kueri murah dengan beberapa percobaan menghilangkan seluruh kelas
- * kegagalan itu.
+ * Hanya dijalankan untuk tes integrasi. Tes unit tidak menyentuh database sama
+ * sekali; menghangatkan koneksi di sana membuat tes murni ikut gagal saat
+ * jaringan bermasalah — kegagalan yang sepenuhnya tidak relevan dengan apa yang
+ * sedang diuji.
  */
 beforeAll(async () => {
+  const berkas = expect.getState().testPath ?? '';
+  if (!berkas.includes('/integration/')) return;
   if (!process.env.DATABASE_URL) return;
 
   const { neon } = await import('@neondatabase/serverless');

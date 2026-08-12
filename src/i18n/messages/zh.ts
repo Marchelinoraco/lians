@@ -4,8 +4,6 @@ const zh: Messages = {
   nav: {
     home: '首页',
     vehicles: '车辆',
-    travel: '接送',
-    booking: '预订',
     testimonials: '评价',
     about: '关于我们',
     contact: '联系我们',
@@ -61,12 +59,6 @@ const zh: Messages = {
     terms: '租赁条款',
     unavailableNote: '目前已出租 — 请联系我们了解下一个可租日期',
   },
-  travel: {
-    title: '接送与包车',
-    subtitle: '价格为单程，已含司机与油费。未标价的路线可直接通过 WhatsApp 询问。',
-    oneWayIncludingDriver: '单程，含司机',
-    empty: '暂无路线。请联系我们咨询您的目的地。',
-  },
   booking: {
     title: '预订车辆',
     subtitle: '您的预订会立即记录在我们的系统中，随后 WhatsApp 会打开并显示摘要。LIANS 团队将确认可用性。',
@@ -107,7 +99,6 @@ const zh: Messages = {
     viewFleet: '查看车队',
     ourServices: '我们的服务',
     featuredFleet: '精选车辆',
-    popularRoutes: '接送路线',
     whatCustomersSay: '客户评价',
     serviceSelfDrive: '自驾租车',
     serviceSelfDriveDesc: '自己开，想去哪就去哪。按天计费的自驾套餐。',
@@ -115,8 +106,6 @@ const zh: Messages = {
     serviceWithDriverDesc: '经验丰富的司机，熟悉万鸦老的每一条路。',
     serviceTourism: '旅游巴士与 Hiace',
     serviceTourismDesc: '适合家庭出游、公司团建与学校旅行。',
-    serviceAirport: '机场接送',
-    serviceAirportDesc: '前往沙姆·拉图兰吉机场及周边地区，单程固定价。',
   },
   testimonials: {
     title: '客户评价',

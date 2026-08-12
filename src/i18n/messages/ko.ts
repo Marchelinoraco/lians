@@ -4,8 +4,6 @@ const ko: Messages = {
   nav: {
     home: '홈',
     vehicles: '차량',
-    travel: '픽업',
-    booking: '예약',
     testimonials: '후기',
     about: '소개',
     contact: '문의',
@@ -61,12 +59,6 @@ const ko: Messages = {
     terms: '대여 조건',
     unavailableNote: '현재 대여 중 — 다음 가능 일정은 문의해 주세요',
   },
-  travel: {
-    title: '픽업 및 이동 서비스',
-    subtitle: '요금은 편도 기준이며 기사와 연료비가 포함됩니다. 요금이 표시되지 않은 노선은 WhatsApp으로 문의해 주세요.',
-    oneWayIncludingDriver: '편도, 기사 포함',
-    empty: '등록된 노선이 아직 없습니다. 목적지를 문의해 주세요.',
-  },
   booking: {
     title: '차량 예약',
     subtitle: '예약은 즉시 시스템에 기록되며, 이어서 WhatsApp이 요약과 함께 열립니다. LIANS 팀이 예약 가능 여부를 확인해 드립니다.',
@@ -108,7 +100,6 @@ const ko: Messages = {
     viewFleet: '차량 보기',
     ourServices: '서비스 안내',
     featuredFleet: '추천 차량',
-    popularRoutes: '픽업 노선',
     whatCustomersSay: '고객 후기',
     serviceSelfDrive: '자차 운전',
     serviceSelfDriveDesc: '직접 운전해 어디든 자유롭게. 일 단위 자차 운전 요금.',
@@ -116,8 +107,6 @@ const ko: Messages = {
     serviceWithDriverDesc: '마나도 구석구석을 아는 숙련된 기사님.',
     serviceTourism: '관광버스 및 하이에스',
     serviceTourismDesc: '가족 여행, 회사 워크숍, 학교 단체 여행에 적합합니다.',
-    serviceAirport: '공항 픽업',
-    serviceAirportDesc: '삼 라툴랑기 공항과 인근 지역까지 편도 고정 요금.',
   },
   testimonials: {
     title: '고객 후기',
