@@ -120,6 +120,26 @@ export const customers = pgTable('customers', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const suppliers = pgTable('suppliers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  phone: text('phone'),
+  notes: text('notes'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const supplierVehicles = pgTable('supplier_vehicles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  supplierId: uuid('supplier_id')
+    .notNull()
+    .references(() => suppliers.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const bookings = pgTable('bookings', {
   id: uuid('id').primaryKey().defaultRandom(),
   bookingCode: text('booking_code').notNull().unique(),
@@ -133,6 +153,16 @@ export const bookings = pgTable('bookings', {
   serviceType: serviceTypeEnum('service_type').notNull(),
   vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
   routeId: uuid('route_id').references(() => travelRoutes.id, { onDelete: 'set null' }),
+  // Hanya terisi pada booking manual: pesanan dari situs selalu memakai armada
+  // LIANS sendiri, karena hanya kendaraan itu yang tayang di katalog publik.
+  supplierVehicleId: uuid('supplier_vehicle_id').references(() => supplierVehicles.id, {
+    onDelete: 'set null',
+  }),
+  supplierNameSnapshot: text('supplier_name_snapshot'),
+  // TOTAL yang LIANS bayar ke pemasok untuk pesanan ini — bukan per hari, dan
+  // terpisah dari totalPrice yang dibayar pelanggan. Selisihnya adalah margin.
+  supplierCost: integer('supplier_cost'),
+  supplierPaid: boolean('supplier_paid').notNull().default(false),
   vehicleNameSnapshot: text('vehicle_name_snapshot'),
   routeNameSnapshot: text('route_name_snapshot'),
   startDate: date('start_date').notNull(),
@@ -192,6 +222,9 @@ export type Booking = typeof bookings.$inferSelect;
 export type NewBooking = typeof bookings.$inferInsert;
 export type Customer = typeof customers.$inferSelect;
 export type NewCustomer = typeof customers.$inferInsert;
+export type Supplier = typeof suppliers.$inferSelect;
+export type NewSupplier = typeof suppliers.$inferInsert;
+export type SupplierVehicle = typeof supplierVehicles.$inferSelect;
 export type Testimonial = typeof testimonials.$inferSelect;
 export type NewTestimonial = typeof testimonials.$inferInsert;
 export type SiteSetting = typeof siteSettings.$inferSelect;
