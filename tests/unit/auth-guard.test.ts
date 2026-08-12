@@ -8,9 +8,14 @@ const redirectMock = vi.fn(() => {
 });
 vi.mock('next/navigation', () => ({ redirect: redirectMock }));
 
-const { requireSession, requireAdminPage, SesiTidakValidError } = await import(
-  '@/actions/auth-guard'
-);
+const {
+  requireSession,
+  requireAdminPage,
+  requireSuperAdmin,
+  requireSuperAdminPage,
+  sesiSekarang,
+  SesiTidakValidError,
+} = await import('@/actions/auth-guard');
 
 describe('requireSession', () => {
   beforeEach(() => authMock.mockReset());
@@ -61,5 +66,83 @@ describe('requireAdminPage', () => {
     authMock.mockResolvedValue({ user: {} });
     await expect(requireAdminPage()).rejects.toThrow('REDIRECT');
     expect(redirectMock).toHaveBeenCalledWith('/login');
+  });
+});
+
+describe('requireSuperAdmin', () => {
+  beforeEach(() => {
+    authMock.mockReset();
+    redirectMock.mockClear();
+  });
+
+  it('meneruskan super admin', async () => {
+    authMock.mockResolvedValue({ user: { id: 'u1', email: 'bos@lians.id', role: 'super_admin' } });
+    await expect(requireSuperAdmin()).resolves.toMatchObject({ id: 'u1', role: 'super_admin' });
+  });
+
+  it('menolak admin biasa', async () => {
+    authMock.mockResolvedValue({ user: { id: 'u2', email: 'staf@lians.id', role: 'admin' } });
+    await expect(requireSuperAdmin()).rejects.toBeInstanceOf(SesiTidakValidError);
+  });
+
+  it('menolak sesi tanpa peran sama sekali', async () => {
+    authMock.mockResolvedValue({ user: { id: 'u3', email: 'staf@lians.id' } });
+    await expect(requireSuperAdmin()).rejects.toBeInstanceOf(SesiTidakValidError);
+  });
+
+  it('menolak tanpa sesi', async () => {
+    authMock.mockResolvedValue(null);
+    await expect(requireSuperAdmin()).rejects.toBeInstanceOf(SesiTidakValidError);
+  });
+});
+
+describe('requireSuperAdminPage', () => {
+  beforeEach(() => {
+    authMock.mockReset();
+    redirectMock.mockClear();
+  });
+
+  it('meneruskan super admin tanpa mengalihkan', async () => {
+    authMock.mockResolvedValue({ user: { id: 'u1', email: 'bos@lians.id', role: 'super_admin' } });
+    await expect(requireSuperAdminPage()).resolves.toEqual({ id: 'u1', email: 'bos@lians.id' });
+    expect(redirectMock).not.toHaveBeenCalled();
+  });
+
+  // Dialihkan ke dasbor, bukan ke login: sesinya sah, ia hanya tidak berhak
+  // melihat halaman ini. Melemparnya ke login akan terasa seperti sesinya
+  // kedaluwarsa dan membuatnya mencoba login berulang-ulang.
+  it('mengalihkan admin biasa ke dasbor, bukan ke login', async () => {
+    authMock.mockResolvedValue({ user: { id: 'u2', email: 'staf@lians.id', role: 'admin' } });
+    await expect(requireSuperAdminPage()).rejects.toThrow('REDIRECT');
+    expect(redirectMock).toHaveBeenCalledWith('/');
+  });
+
+  it('mengalihkan ke login bila tidak ada sesi', async () => {
+    authMock.mockResolvedValue(null);
+    await expect(requireSuperAdminPage()).rejects.toThrow('REDIRECT');
+    expect(redirectMock).toHaveBeenCalledWith('/login');
+  });
+});
+
+describe('sesiSekarang', () => {
+  beforeEach(() => authMock.mockReset());
+
+  it('mengembalikan identitas beserta perannya', async () => {
+    authMock.mockResolvedValue({ user: { id: 'u1', email: 'bos@lians.id', role: 'super_admin' } });
+    await expect(sesiSekarang()).resolves.toEqual({
+      id: 'u1',
+      email: 'bos@lians.id',
+      role: 'super_admin',
+    });
+  });
+
+  it('menganggap sesi tanpa peran sebagai admin biasa', async () => {
+    authMock.mockResolvedValue({ user: { id: 'u1', email: 'staf@lians.id' } });
+    await expect(sesiSekarang()).resolves.toMatchObject({ role: 'admin' });
+  });
+
+  it('mengembalikan null tanpa sesi', async () => {
+    authMock.mockResolvedValue(null);
+    await expect(sesiSekarang()).resolves.toBeNull();
   });
 });

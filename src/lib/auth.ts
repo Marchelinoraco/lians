@@ -28,17 +28,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const cocok = await bcrypt.compare(password, user.passwordHash);
         if (!cocok) return null;
 
-        return { id: user.id, email: user.email, name: user.name };
+        // Disimpan ke variabel dulu, bukan dikembalikan sebagai literal:
+        // `role` bukan bagian dari tipe User bawaan Auth.js, dan pemeriksaan
+        // properti berlebih hanya berlaku untuk objek literal yang langsung
+        // dikembalikan. Nilainya dibaca lagi di callback jwt di bawah.
+        const identitas = { id: user.id, email: user.email, name: user.name, role: user.role };
+        return identitas;
       },
     }),
   ],
   callbacks: {
     jwt({ token, user }) {
-      if (user) token.sub = user.id;
+      if (user) {
+        token.sub = user.id;
+        token.role = (user as { role?: string }).role ?? 'admin';
+      }
       return token;
     },
     session({ session, token }) {
       if (token.sub) session.user.id = token.sub;
+      // Peran dititipkan lewat token, tidak dibaca ulang dari database:
+      // callback ini berjalan pada setiap permintaan ke panel admin.
+      (session.user as { role?: string }).role =
+        typeof token.role === 'string' ? token.role : 'admin';
       return session;
     },
   },

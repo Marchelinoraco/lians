@@ -136,6 +136,10 @@ async function seed() {
     email,
     name: 'Admin LIANS',
     passwordHash: await bcrypt.hash(password, 12),
+    // Akun pertama adalah pemiliknya. Kolom role berbawaan 'admin', jadi tanpa
+    // baris ini database yang baru diisi tidak punya seorang pun yang dapat
+    // membuka rekap keuangan.
+    role: 'super_admin',
   });
 
   console.log(`Selesai. Akun admin: ${email}`);

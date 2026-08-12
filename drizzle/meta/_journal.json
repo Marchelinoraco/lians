@@ -15,6 +15,13 @@
       "when": 1786542607025,
       "tag": "0001_rapid_ironclad",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786556247294,
+      "tag": "0002_lively_thaddeus_ross",
+      "breakpoints": true
     }
   ]
 }

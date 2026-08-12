@@ -38,6 +38,7 @@ export const bookingStatusEnum = pgEnum('booking_status', [
   'cancelled',
   'completed',
 ]);
+export const userRoleEnum = pgEnum('user_role', ['admin', 'super_admin']);
 
 export type VehicleImage = { url: string; publicId: string; alt: string };
 
@@ -157,6 +158,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   name: text('name').notNull(),
+  role: userRoleEnum('role').notNull().default('admin'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
