@@ -39,6 +39,7 @@ export const bookingStatusEnum = pgEnum('booking_status', [
   'completed',
 ]);
 export const userRoleEnum = pgEnum('user_role', ['admin', 'super_admin']);
+export const bookingSourceEnum = pgEnum('booking_source', ['website', 'manual']);
 
 export type VehicleImage = { url: string; publicId: string; alt: string };
 
@@ -174,6 +175,9 @@ export const bookings = pgTable('bookings', {
   priceBreakdown: jsonb('price_breakdown').$type<PriceBreakdownJson | null>(),
   notes: text('notes'),
   status: bookingStatusEnum('status').notNull().default('pending'),
+  // Memisahkan pesanan yang masuk lewat situs dari yang dicatat staf lewat
+  // telepon atau tatap muka, supaya rekap dapat membedakan keduanya.
+  source: bookingSourceEnum('source').notNull().default('website'),
   adminNotes: text('admin_notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
