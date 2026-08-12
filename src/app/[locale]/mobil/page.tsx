@@ -16,22 +16,22 @@ const META: Record<Locale, { title: string; description: string }> = {
   id: {
     title: 'Daftar Kendaraan Rental — LIANS Manado',
     description:
-      'Pilihan armada rental mobil LIANS di Manado: hatchback, MPV, SUV, mobil mewah, dan Hiace pariwisata. Tarif 24 jam dan 12 jam.',
+      'Pilihan armada rental mobil LIANS di Manado: hatchback, MPV, SUV, mobil mewah, dan Hiace pariwisata. Tarif harian lepas kunci maupun dengan pengemudi.',
   },
   en: {
     title: 'Rental Fleet — LIANS Manado',
     description:
-      'LIANS car rental fleet in Manado: hatchbacks, MPVs, SUVs, luxury cars, and Hiace tour vans. 24-hour and 12-hour rates.',
+      'LIANS car rental fleet in Manado: hatchbacks, MPVs, SUVs, luxury cars, and Hiace tour vans. Daily rates, self-drive or with a driver.',
   },
   zh: {
     title: '租车车型一览 — 万鸦老 LIANS',
     description:
-      'LIANS 万鸦老租车车队：两厢车、MPV、SUV、豪华轿车与 Hiace 旅游车。提供 24 小时与 12 小时套餐。',
+      'LIANS 万鸦老租车车队：两厢车、MPV、SUV、豪华轿车与 Hiace 旅游车。按天计费，可自驾或含司机。',
   },
   ko: {
     title: '렌터카 차량 목록 — 마나도 LIANS',
     description:
-      'LIANS 마나도 렌터카 차량: 해치백, MPV, SUV, 고급 차량, 하이에스 관광차. 24시간 및 12시간 요금제.',
+      'LIANS 마나도 렌터카 차량: 해치백, MPV, SUV, 고급 차량, 하이에스 관광차. 자차 운전 또는 기사 포함, 일 단위 요금.',
   },
 };
 

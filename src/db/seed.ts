@@ -48,16 +48,16 @@ async function seed() {
       rentalTerms:
         m.category === 'bus'
           ? {
-              id: ['Include driver', 'Durasi 12 jam', 'Area Manado dan sekitarnya'],
-              en: ['Driver included', '12-hour package', 'Manado area and surroundings'],
-              zh: ['含司机', '12 小时套餐', '万鸦老及周边地区'],
-              ko: ['기사 포함', '12시간 패키지', '마나도 및 인근 지역'],
+              id: ['Termasuk pengemudi dan BBM', 'Tarif per hari', 'Area Manado dan sekitarnya'],
+              en: ['Driver and fuel included', 'Daily rate', 'Manado area and surroundings'],
+              zh: ['含司机与油费', '按天计费', '万鸦老及周边地区'],
+              ko: ['기사와 연료 포함', '일 단위 요금', '마나도 및 인근 지역'],
             }
           : {
-              id: ['Lepas kunci', 'Durasi 24 jam', 'Jaminan KTP + KK'],
-              en: ['Self-drive', '24-hour package', 'ID card + family card as deposit'],
-              zh: ['自驾', '24 小时套餐', '需押身份证与家庭卡'],
-              ko: ['자차 운전', '24시간 패키지', '신분증 + 가족관계증명서 보증'],
+              id: ['Lepas kunci', 'Tarif per hari', 'Jaminan KTP + KK'],
+              en: ['Self-drive', 'Daily rate', 'ID card + family card as deposit'],
+              zh: ['自驾', '按天计费', '需押身份证与家庭卡'],
+              ko: ['자차 운전', '일 단위 요금', '신분증 + 가족관계증명서 보증'],
             },
       status: 'available' as const,
       isPublished: true,
