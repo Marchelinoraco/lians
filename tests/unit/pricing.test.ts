@@ -2,96 +2,73 @@ import { describe, it, expect } from 'vitest';
 import { calculateRentalPrice, calculateTravelPrice } from '@/lib/pricing';
 import type { VehiclePricing } from '@/lib/pricing';
 
-const innova: VehiclePricing = { rate24h: 700000, rate12h: 500000, driverFeeOverride: null };
-const brio: VehiclePricing = { rate24h: 350000, rate12h: null, driverFeeOverride: null };
+const innova: VehiclePricing = { rateLepasKunci: 700000, ratePelayanan: 1000000 };
+const bus: VehiclePricing = { rateLepasKunci: null, ratePelayanan: 1500000 };
 
 describe('calculateRentalPrice', () => {
-  it('sewa 5 hari dengan sopir 3 hari', () => {
+  it('menghitung 15 sampai 17 Agustus sebagai 3 hari lepas kunci', () => {
     const hasil = calculateRentalPrice({
       vehicle: innova,
-      startDate: new Date('2026-08-01'),
-      endDate: new Date('2026-08-06'),
-      rateType: '24h',
-      driverDays: 3,
-      driverFeePerDay: 150000,
-    });
-
-    expect(hasil.ok).toBe(true);
-    if (!hasil.ok) return;
-    expect(hasil.breakdown.days).toBe(5);
-    expect(hasil.breakdown.rentalCost).toBe(3500000);
-    expect(hasil.breakdown.driverCost).toBe(450000);
-    expect(hasil.breakdown.total).toBe(3950000);
-  });
-
-  it('paket 12 jam dihitung per hari kalender dengan tarif berbeda', () => {
-    const hasil = calculateRentalPrice({
-      vehicle: innova,
-      startDate: new Date('2026-08-01'),
-      endDate: new Date('2026-08-04'),
-      rateType: '12h',
-      driverDays: 0,
-      driverFeePerDay: 150000,
+      startDate: new Date('2026-08-15'),
+      endDate: new Date('2026-08-17'),
+      category: 'lepas-kunci',
     });
 
     expect(hasil.ok).toBe(true);
     if (!hasil.ok) return;
     expect(hasil.breakdown.days).toBe(3);
-    expect(hasil.breakdown.total).toBe(1500000);
+    expect(hasil.breakdown.ratePerDay).toBe(700000);
+    expect(hasil.breakdown.total).toBe(2100000);
   });
 
-  it('menolak paket 12 jam pada mobil tanpa tarif 12 jam', () => {
-    const hasil = calculateRentalPrice({
-      vehicle: brio,
-      startDate: new Date('2026-08-01'),
-      endDate: new Date('2026-08-02'),
-      rateType: '12h',
-      driverDays: 0,
-      driverFeePerDay: 150000,
-    });
-
-    expect(hasil).toEqual({ ok: false, error: 'RATE_12H_UNAVAILABLE' });
-  });
-
-  it('menolak hari sopir melebihi durasi sewa', () => {
+  it('memakai tarif pelayanan bila kategori itu dipilih', () => {
     const hasil = calculateRentalPrice({
       vehicle: innova,
-      startDate: new Date('2026-08-01'),
-      endDate: new Date('2026-08-03'),
-      rateType: '24h',
-      driverDays: 5,
-      driverFeePerDay: 150000,
-    });
-
-    expect(hasil).toEqual({ ok: false, error: 'DRIVER_DAYS_EXCEEDS_DURATION' });
-  });
-
-  it('menolak hari sopir negatif', () => {
-    const hasil = calculateRentalPrice({
-      vehicle: innova,
-      startDate: new Date('2026-08-01'),
-      endDate: new Date('2026-08-03'),
-      rateType: '24h',
-      driverDays: -1,
-      driverFeePerDay: 150000,
-    });
-
-    expect(hasil).toEqual({ ok: false, error: 'DRIVER_DAYS_NEGATIVE' });
-  });
-
-  it('memakai driverFeeOverride bila kendaraan punya tarif sopir sendiri', () => {
-    const hasil = calculateRentalPrice({
-      vehicle: { rate24h: 1500000, rate12h: null, driverFeeOverride: 250000 },
-      startDate: new Date('2026-08-01'),
-      endDate: new Date('2026-08-02'),
-      rateType: '24h',
-      driverDays: 1,
-      driverFeePerDay: 150000,
+      startDate: new Date('2026-08-15'),
+      endDate: new Date('2026-08-17'),
+      category: 'pelayanan',
     });
 
     expect(hasil.ok).toBe(true);
     if (!hasil.ok) return;
-    expect(hasil.breakdown.driverCost).toBe(250000);
+    expect(hasil.breakdown.total).toBe(3000000);
+    expect(hasil.breakdown.category).toBe('pelayanan');
+  });
+
+  it('menghitung sewa satu hari untuk tanggal mulai dan selesai yang sama', () => {
+    const hasil = calculateRentalPrice({
+      vehicle: innova,
+      startDate: new Date('2026-08-15'),
+      endDate: new Date('2026-08-15'),
+      category: 'lepas-kunci',
+    });
+
+    expect(hasil.ok).toBe(true);
+    if (!hasil.ok) return;
+    expect(hasil.breakdown.days).toBe(1);
+    expect(hasil.breakdown.total).toBe(700000);
+  });
+
+  it('menolak kategori yang tidak disediakan kendaraan', () => {
+    const hasil = calculateRentalPrice({
+      vehicle: bus,
+      startDate: new Date('2026-08-15'),
+      endDate: new Date('2026-08-17'),
+      category: 'lepas-kunci',
+    });
+
+    expect(hasil).toEqual({ ok: false, error: 'CATEGORY_UNAVAILABLE' });
+  });
+
+  it('menolak tanggal selesai sebelum tanggal mulai', () => {
+    const hasil = calculateRentalPrice({
+      vehicle: innova,
+      startDate: new Date('2026-08-17'),
+      endDate: new Date('2026-08-15'),
+      category: 'lepas-kunci',
+    });
+
+    expect(hasil).toEqual({ ok: false, error: 'END_BEFORE_START' });
   });
 });
 

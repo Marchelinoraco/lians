@@ -2,124 +2,106 @@ import { describe, it } from 'vitest';
 import fc from 'fast-check';
 import { addDays } from 'date-fns';
 import { calculateRentalPrice, calculateTravelPrice } from '@/lib/pricing';
+import type { RateCategory } from '@/lib/pricing';
 
 const rupiah = fc.integer({ min: 50_000, max: 5_000_000 });
 const awal = new Date('2026-08-01');
-
-const skenario = fc
-  .record({
-    rate24h: rupiah,
-    rate12h: fc.option(rupiah, { nil: null }),
-    durasi: fc.integer({ min: 1, max: 60 }),
-    driverFeePerDay: rupiah,
-    pakai12h: fc.boolean(),
-  })
-  .chain((r) =>
-    fc.record({
-      base: fc.constant(r),
-      driverDays: fc.integer({ min: 0, max: r.durasi }),
-    }),
-  );
+const kategori = fc.constantFrom<RateCategory>('lepas-kunci', 'pelayanan');
 
 describe('properti harga sewa', () => {
   it('total tidak pernah negatif', () => {
     fc.assert(
-      fc.property(skenario, ({ base, driverDays }) => {
+      fc.property(rupiah, rupiah, fc.integer({ min: 0, max: 60 }), kategori, (a, b, n, k) => {
         const hasil = calculateRentalPrice({
-          vehicle: { rate24h: base.rate24h, rate12h: base.rate12h, driverFeeOverride: null },
+          vehicle: { rateLepasKunci: a, ratePelayanan: b },
           startDate: awal,
-          endDate: addDays(awal, base.durasi),
-          rateType: base.pakai12h && base.rate12h !== null ? '12h' : '24h',
-          driverDays,
-          driverFeePerDay: base.driverFeePerDay,
+          endDate: addDays(awal, n),
+          category: k,
         });
-        if (!hasil.ok) return true;
-        return hasil.breakdown.total >= 0;
+        return !hasil.ok || hasil.breakdown.total >= 0;
       }),
     );
   });
 
-  it('total selalu sama dengan jumlah komponen rinciannya', () => {
+  it('total selalu sama dengan hari dikali tarif', () => {
     fc.assert(
-      fc.property(skenario, ({ base, driverDays }) => {
+      fc.property(rupiah, rupiah, fc.integer({ min: 0, max: 60 }), kategori, (a, b, n, k) => {
         const hasil = calculateRentalPrice({
-          vehicle: { rate24h: base.rate24h, rate12h: base.rate12h, driverFeeOverride: null },
+          vehicle: { rateLepasKunci: a, ratePelayanan: b },
           startDate: awal,
-          endDate: addDays(awal, base.durasi),
-          rateType: base.pakai12h && base.rate12h !== null ? '12h' : '24h',
-          driverDays,
-          driverFeePerDay: base.driverFeePerDay,
+          endDate: addDays(awal, n),
+          category: k,
         });
         if (!hasil.ok) return true;
-        const b = hasil.breakdown;
-        return b.total === b.rentalCost + b.driverCost;
+        const d = hasil.breakdown;
+        return d.total === d.days * d.ratePerDay;
       }),
     );
   });
 
   it('menambah durasi tidak pernah menurunkan total', () => {
     fc.assert(
-      fc.property(rupiah, rupiah, fc.integer({ min: 1, max: 30 }), (rate24h, fee, durasi) => {
+      fc.property(rupiah, fc.integer({ min: 0, max: 30 }), (tarif, n) => {
         const buat = (d: number) =>
           calculateRentalPrice({
-            vehicle: { rate24h, rate12h: null, driverFeeOverride: null },
+            vehicle: { rateLepasKunci: tarif, ratePelayanan: tarif },
             startDate: awal,
             endDate: addDays(awal, d),
-            rateType: '24h',
-            driverDays: 0,
-            driverFeePerDay: fee,
+            category: 'lepas-kunci',
           });
-        const pendek = buat(durasi);
-        const panjang = buat(durasi + 1);
+        const pendek = buat(n);
+        const panjang = buat(n + 1);
         if (!pendek.ok || !panjang.ok) return false;
         return panjang.breakdown.total >= pendek.breakdown.total;
       }),
     );
   });
 
-  it('hari sopir melebihi durasi selalu ditolak', () => {
+  it('sewa tanggal yang sama selalu dihitung satu hari', () => {
     fc.assert(
-      fc.property(
-        rupiah,
-        rupiah,
-        fc.integer({ min: 1, max: 30 }),
-        fc.integer({ min: 1, max: 30 }),
-        (rate24h, fee, durasi, kelebihan) => {
-          const hasil = calculateRentalPrice({
-            vehicle: { rate24h, rate12h: null, driverFeeOverride: null },
-            startDate: awal,
-            endDate: addDays(awal, durasi),
-            rateType: '24h',
-            driverDays: durasi + kelebihan,
-            driverFeePerDay: fee,
-          });
-          return !hasil.ok && hasil.error === 'DRIVER_DAYS_EXCEEDS_DURATION';
-        },
-      ),
+      fc.property(rupiah, kategori, (tarif, k) => {
+        const hasil = calculateRentalPrice({
+          vehicle: { rateLepasKunci: tarif, ratePelayanan: tarif },
+          startDate: awal,
+          endDate: awal,
+          category: k,
+        });
+        return hasil.ok && hasil.breakdown.days === 1 && hasil.breakdown.total === tarif;
+      }),
     );
   });
 
-  it('paket 12 jam pada mobil tanpa tarif 12 jam selalu ditolak', () => {
+  it('kategori tanpa tarif selalu ditolak', () => {
     fc.assert(
-      fc.property(rupiah, fc.integer({ min: 1, max: 30 }), (rate24h, durasi) => {
+      fc.property(rupiah, fc.integer({ min: 0, max: 30 }), (tarif, n) => {
         const hasil = calculateRentalPrice({
-          vehicle: { rate24h, rate12h: null, driverFeeOverride: null },
+          vehicle: { rateLepasKunci: null, ratePelayanan: tarif },
           startDate: awal,
-          endDate: addDays(awal, durasi),
-          rateType: '12h',
-          driverDays: 0,
-          driverFeePerDay: 150000,
+          endDate: addDays(awal, n),
+          category: 'lepas-kunci',
         });
-        return !hasil.ok && hasil.error === 'RATE_12H_UNAVAILABLE';
+        return !hasil.ok && hasil.error === 'CATEGORY_UNAVAILABLE';
+      }),
+    );
+  });
+
+  it('tanggal selesai sebelum tanggal mulai selalu ditolak', () => {
+    fc.assert(
+      fc.property(rupiah, fc.integer({ min: 1, max: 30 }), (tarif, n) => {
+        const hasil = calculateRentalPrice({
+          vehicle: { rateLepasKunci: tarif, ratePelayanan: tarif },
+          startDate: addDays(awal, n),
+          endDate: awal,
+          category: 'lepas-kunci',
+        });
+        return !hasil.ok && hasil.error === 'END_BEFORE_START';
       }),
     );
   });
 
   it('harga travel tidak terpengaruh tanggal maupun durasi', () => {
     fc.assert(
-      fc.property(fc.option(rupiah, { nil: null }), (harga) => {
-        return calculateTravelPrice(harga) === harga;
-      }),
+      fc.property(fc.option(rupiah, { nil: null }), (harga) => calculateTravelPrice(harga) === harga),
     );
   });
 });

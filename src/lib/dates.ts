@@ -3,11 +3,11 @@ import { id as idLocale, enUS, zhCN, ko as koLocale } from 'date-fns/locale';
 import type { Locale } from '@/i18n/config';
 
 /**
- * Jumlah hari sewa = selisih hari kalender, minimum 1.
- * 1 Agustus sampai 3 Agustus = 2 hari (dua periode 24 jam).
+ * Jumlah hari sewa dihitung inklusif: tanggal mulai dan tanggal selesai
+ * dua-duanya dihitung. 15 sampai 17 Agustus = 3 hari.
  */
 export function countRentalDays(start: Date, end: Date): number {
-  return Math.max(1, differenceInCalendarDays(end, start));
+  return Math.max(1, differenceInCalendarDays(end, start) + 1);
 }
 
 const DATE_FNS_LOCALE = { id: idLocale, en: enUS, zh: zhCN, ko: koLocale };
