@@ -31,6 +31,7 @@ export const serviceTypeEnum = pgEnum('service_type', [
   'travel',
 ]);
 export const rateTypeEnum = pgEnum('rate_type', ['24h', '12h']);
+export const rateCategoryEnum = pgEnum('rate_category', ['lepas-kunci', 'pelayanan']);
 export const bookingStatusEnum = pgEnum('booking_status', [
   'pending',
   'confirmed',
@@ -46,9 +47,12 @@ export const vehicles = pgTable('vehicles', {
   name: text('name').notNull(),
   category: vehicleCategoryEnum('category').notNull(),
   images: jsonb('images').$type<VehicleImage[]>().notNull().default([]),
-  rate24h: integer('rate_24h').notNull(),
+  // Kolom Fase 1 dipertahankan agar kendaraan lama tetap terbaca; tidak diisi lagi.
+  rate24h: integer('rate_24h'),
   rate12h: integer('rate_12h'),
   driverFeeOverride: integer('driver_fee_override'),
+  rateLepasKunci: integer('rate_lepas_kunci'),
+  ratePelayanan: integer('rate_pelayanan'),
   serviceTypes: jsonb('service_types').$type<string[]>().notNull().default([]),
   seats: integer('seats').notNull(),
   transmission: transmissionEnum('transmission').notNull(),
@@ -77,7 +81,8 @@ export const travelRoutes = pgTable('travel_routes', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export type PriceBreakdownJson = {
+/** Bentuk rincian harga Fase 1. Masih tersimpan pada pesanan lama. */
+export type PriceBreakdownLama = {
   days: number;
   ratePerDay: number;
   rentalCost: number;
@@ -86,6 +91,21 @@ export type PriceBreakdownJson = {
   driverCost: number;
   total: number;
 };
+
+/** Bentuk rincian harga Fase 2. */
+export type PriceBreakdownBaru = {
+  days: number;
+  category: 'lepas-kunci' | 'pelayanan';
+  ratePerDay: number;
+  total: number;
+};
+
+export type PriceBreakdownJson = PriceBreakdownLama | PriceBreakdownBaru;
+
+/** Membedakan keduanya tanpa menebak: hanya bentuk lama punya driverDays. */
+export function adalahRincianLama(r: PriceBreakdownJson): r is PriceBreakdownLama {
+  return 'driverDays' in r;
+}
 
 export const bookings = pgTable('bookings', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -101,6 +121,7 @@ export const bookings = pgTable('bookings', {
   startDate: date('start_date').notNull(),
   endDate: date('end_date'),
   rateType: rateTypeEnum('rate_type'),
+  rateCategory: rateCategoryEnum('rate_category'),
   driverDays: integer('driver_days').notNull().default(0),
   totalPrice: integer('total_price'),
   priceBreakdown: jsonb('price_breakdown').$type<PriceBreakdownJson | null>(),
