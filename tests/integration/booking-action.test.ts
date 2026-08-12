@@ -9,7 +9,7 @@ vi.mock('next/headers', () => ({
 }));
 
 const { db } = await import('@/db');
-const { bookings, rateLimits, travelRoutes } = await import('@/db/schema');
+const { bookings, rateLimits, travelRoutes, customers } = await import('@/db/schema');
 const { createBooking } = await import('@/actions/booking');
 const { getPublishedVehicles } = await import('@/queries/vehicles');
 
@@ -185,7 +185,20 @@ jalankan('createBooking', () => {
 });
 
 afterAll(async () => {
+  // Pelanggan dibaca sebelum pesanannya dihapus: tautannya diatur set null,
+  // jadi setelah pesanan hilang tidak ada lagi jejak pelanggan mana yang lahir
+  // dari tes ini. Tanpa ini, nama-nama uji menumpuk di daftar Pelanggan.
+  const pelangganUji = new Set<string>();
+  for (const id of dibuat) {
+    const [row] = await db
+      .select({ customerId: bookings.customerId })
+      .from(bookings)
+      .where(eq(bookings.id, id));
+    if (row?.customerId) pelangganUji.add(row.customerId);
+  }
+
   for (const id of dibuat) await db.delete(bookings).where(eq(bookings.id, id));
+  for (const id of pelangganUji) await db.delete(customers).where(eq(customers.id, id));
   for (const id of ruteDibuat) await db.delete(travelRoutes).where(eq(travelRoutes.id, id));
   await db.delete(rateLimits).where(eq(rateLimits.key, `booking:${IP_UJI}`));
 });

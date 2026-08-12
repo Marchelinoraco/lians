@@ -7,6 +7,7 @@ import { bookingInputSchema } from '@/schemas/booking';
 import { calculateRentalPrice, calculateTravelPrice } from '@/lib/pricing';
 import { generateBookingCode } from '@/lib/booking-code';
 import { buildBookingMessage, waLink } from '@/lib/whatsapp';
+import { cocokkanAtauBuatPelanggan } from '@/lib/customer-match';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { getVehicleById } from '@/queries/vehicles';
 import { getRouteById } from '@/queries/routes';
@@ -82,11 +83,20 @@ export async function createBooking(
 
   const bookingCode = generateBookingCode(new Date());
 
+  // Daftar pelanggan dibangun dari seluruh jalur masuk, bukan hanya dari input
+  // manual admin. Nama dan telepon tetap disalin ke pesanan di bawah.
+  const customerId = await cocokkanAtauBuatPelanggan({
+    name: data.customerName,
+    phone: data.phone,
+    email: data.email,
+  });
+
   await db.insert(bookings).values({
     bookingCode,
     customerName: data.customerName,
     phone: data.phone,
     email: data.email || null,
+    customerId,
     serviceType: data.serviceType,
     vehicleId: data.serviceType === 'travel' ? null : data.vehicleId,
     routeId: data.serviceType === 'travel' ? data.routeId : null,

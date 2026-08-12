@@ -11,7 +11,7 @@ vi.mock('next/headers', () => ({
 }));
 
 const { db } = await import('@/db');
-const { vehicles, bookings, rateLimits } = await import('@/db/schema');
+const { vehicles, bookings, rateLimits, customers } = await import('@/db/schema');
 const { createVehicle, updateVehicle, deleteVehicle } = await import('@/actions/admin-vehicles');
 const { createBooking } = await import('@/actions/booking');
 const { updateBookingStatus } = await import('@/actions/admin-bookings');
@@ -194,7 +194,20 @@ jalankan('alur penuh: admin → publik → booking → admin', () => {
 });
 
 afterAll(async () => {
+  // Pelanggan dibaca sebelum pesanannya dihapus: tautannya diatur set null,
+  // jadi setelah pesanan hilang tidak ada lagi jejak pelanggan mana yang lahir
+  // dari tes ini. Tanpa ini, nama-nama uji menumpuk di daftar Pelanggan.
+  const pelangganUji = new Set<string>();
+  for (const id of bersih.pesanan) {
+    const [row] = await db
+      .select({ customerId: bookings.customerId })
+      .from(bookings)
+      .where(eq(bookings.id, id));
+    if (row?.customerId) pelangganUji.add(row.customerId);
+  }
+
   for (const id of bersih.pesanan) await db.delete(bookings).where(eq(bookings.id, id));
+  for (const id of pelangganUji) await db.delete(customers).where(eq(customers.id, id));
   for (const id of bersih.kendaraan) await db.delete(vehicles).where(eq(vehicles.id, id));
   await db.delete(rateLimits).where(eq(rateLimits.key, `booking:${IP_UJI}`));
 });

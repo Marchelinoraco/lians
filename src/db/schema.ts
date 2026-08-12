@@ -108,12 +108,28 @@ export function adalahRincianLama(r: PriceBreakdownJson): r is PriceBreakdownLam
   return 'driverDays' in r;
 }
 
+export const customers = pgTable('customers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  // Disimpan ternormalisasi (62…) supaya 0811… dan +62811… mengenali orang
+  // yang sama. Tanpa itu satu pelanggan bisa punya beberapa catatan.
+  phone: text('phone').notNull().unique(),
+  email: text('email'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const bookings = pgTable('bookings', {
   id: uuid('id').primaryKey().defaultRandom(),
   bookingCode: text('booking_code').notNull().unique(),
   customerName: text('customer_name').notNull(),
   phone: text('phone').notNull(),
   email: text('email'),
+  // Boleh kosong: pesanan Fase 1 dibuat sebelum tabel pelanggan ada. Nama dan
+  // telepon tetap disalin ke pesanan, jadi tautan yang hilang tidak merusak
+  // riwayat — alasannya sama dengan salinan harga.
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
   serviceType: serviceTypeEnum('service_type').notNull(),
   vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
   routeId: uuid('route_id').references(() => travelRoutes.id, { onDelete: 'set null' }),
@@ -174,6 +190,8 @@ export type TravelRoute = typeof travelRoutes.$inferSelect;
 export type NewTravelRoute = typeof travelRoutes.$inferInsert;
 export type Booking = typeof bookings.$inferSelect;
 export type NewBooking = typeof bookings.$inferInsert;
+export type Customer = typeof customers.$inferSelect;
+export type NewCustomer = typeof customers.$inferInsert;
 export type Testimonial = typeof testimonials.$inferSelect;
 export type NewTestimonial = typeof testimonials.$inferInsert;
 export type SiteSetting = typeof siteSettings.$inferSelect;
