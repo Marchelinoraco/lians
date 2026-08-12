@@ -27,19 +27,8 @@ export function PriceSummary({
         days: breakdown.days,
         harga: formatRupiah(breakdown.ratePerDay),
       }),
-      nilai: breakdown.rentalCost,
+      nilai: breakdown.total,
     },
-    ...(breakdown.driverDays > 0
-      ? [
-          {
-            label: fill(t.booking.driverLine, {
-              days: breakdown.driverDays,
-              harga: formatRupiah(breakdown.driverFeePerDay),
-            }),
-            nilai: breakdown.driverCost,
-          },
-        ]
-      : []),
   ];
 
   return (

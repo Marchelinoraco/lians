@@ -13,7 +13,6 @@ const { bookings, rateLimits } = await import('@/db/schema');
 const { createBooking } = await import('@/actions/booking');
 const { getPublishedVehicles } = await import('@/queries/vehicles');
 const { getPublishedRoutes } = await import('@/queries/routes');
-const { getSettings } = await import('@/queries/settings');
 
 const jalankan = process.env.DATABASE_URL ? describe : describe.skip;
 const dibuat: string[] = [];
@@ -32,17 +31,17 @@ const plusHari = (dari: Date, n: number) => {
 
 jalankan('createBooking', () => {
   it('menyimpan pesanan sewa dan menghitung harga dari tarif di database', async () => {
-    const [mobil] = (await getPublishedVehicles()).filter((v) => v.status === 'available');
-    const settings = await getSettings();
+    const [mobil] = (await getPublishedVehicles()).filter(
+      (v) => v.status === 'available' && v.rateLepasKunci !== null,
+    );
     const mulai = besok();
 
     const hasil = await createBooking({
       serviceType: 'with-driver',
       vehicleId: mobil.id,
       startDate: iso(mulai),
-      endDate: iso(plusHari(mulai, 5)),
-      rateType: '24h',
-      driverDays: 3,
+      endDate: iso(plusHari(mulai, 2)),
+      rateCategory: 'lepas-kunci',
       customerName: 'Uji Otomatis',
       phone: '081234567890',
       email: '',
@@ -60,25 +59,25 @@ jalankan('createBooking', () => {
       .limit(1);
     dibuat.push(row.id);
 
-    // Persis kasus yang diminta pemilik: sewa 5 hari, sopir 3 hari.
+    // Tanggal mulai + 2 hari, dihitung inklusif, berarti 3 hari.
     expect(row.status).toBe('pending');
-    expect(row.priceBreakdown?.days).toBe(5);
-    expect(row.priceBreakdown?.rentalCost).toBe(5 * mobil.rate24h);
-    expect(row.priceBreakdown?.driverCost).toBe(3 * settings.driverFeePerDay);
-    expect(row.totalPrice).toBe(5 * mobil.rate24h + 3 * settings.driverFeePerDay);
+    expect(row.rateCategory).toBe('lepas-kunci');
+    expect(row.priceBreakdown?.days).toBe(3);
+    expect(row.totalPrice).toBe(3 * mobil.rateLepasKunci!);
   });
 
   it('mengabaikan harga yang dikirim browser dan memakai tarif database', async () => {
-    const [mobil] = (await getPublishedVehicles()).filter((v) => v.status === 'available');
+    const [mobil] = (await getPublishedVehicles()).filter(
+      (v) => v.status === 'available' && v.rateLepasKunci !== null,
+    );
     const mulai = besok();
 
     const hasil = await createBooking({
       serviceType: 'self-drive',
       vehicleId: mobil.id,
       startDate: iso(mulai),
-      endDate: iso(plusHari(mulai, 1)),
-      rateType: '24h',
-      driverDays: 0,
+      endDate: iso(mulai),
+      rateCategory: 'lepas-kunci',
       customerName: 'Uji Curang',
       phone: '081234567890',
       // Angka-angka ini sengaja dikirim untuk mencoba menipu server.
@@ -96,26 +95,32 @@ jalankan('createBooking', () => {
       .limit(1);
     dibuat.push(row.id);
 
-    expect(row.totalPrice).toBe(mobil.rate24h);
+    // Tanggal mulai sama dengan tanggal selesai = sewa satu hari.
+    expect(row.totalPrice).toBe(mobil.rateLepasKunci);
     expect(row.totalPrice).not.toBe(1);
   });
 
-  it('menolak hari sopir yang melebihi durasi sewa', async () => {
-    const [mobil] = (await getPublishedVehicles()).filter((v) => v.status === 'available');
-    const mulai = besok();
+  it('menolak kategori yang tarifnya tidak diisi admin', async () => {
+    const mobil = (await getPublishedVehicles()).find(
+      (v) => v.status === 'available' && v.ratePelayanan === null,
+    );
+    expect(mobil).toBeTruthy();
+    if (!mobil) return;
 
+    const mulai = besok();
     const hasil = await createBooking({
       serviceType: 'with-driver',
       vehicleId: mobil.id,
       startDate: iso(mulai),
       endDate: iso(plusHari(mulai, 2)),
-      rateType: '24h',
-      driverDays: 9,
+      rateCategory: 'pelayanan',
       customerName: 'Uji Tolak',
       phone: '081234567890',
     });
 
     expect(hasil.ok).toBe(false);
+    if (hasil.ok) return;
+    expect(hasil.message).toMatch(/kategori/i);
   });
 
   it('menolak nomor telepon yang bukan format Indonesia', async () => {
@@ -127,8 +132,7 @@ jalankan('createBooking', () => {
       vehicleId: mobil.id,
       startDate: iso(mulai),
       endDate: iso(plusHari(mulai, 1)),
-      rateType: '24h',
-      driverDays: 0,
+      rateCategory: 'lepas-kunci',
       customerName: 'Uji',
       phone: '12345',
     });

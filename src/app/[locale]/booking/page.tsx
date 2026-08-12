@@ -64,9 +64,8 @@ export default async function BookingPage({
           id: v.id,
           slug: v.slug,
           name: v.name,
-          rate24h: v.rate24h,
-          rate12h: v.rate12h,
-          driverFeeOverride: v.driverFeeOverride,
+          rateLepasKunci: v.rateLepasKunci,
+          ratePelayanan: v.ratePelayanan,
           status: v.status,
         }))}
         routes={routes.map((r) => ({
@@ -74,7 +73,6 @@ export default async function BookingPage({
           label: `${r.origin} → ${r.destination}`,
           price: r.price,
         }))}
-        driverFeePerDay={settings.driverFeePerDay}
         defaultVehicleSlug={sp.vehicle ?? null}
         defaultRouteId={sp.route ?? null}
         onSubmit={createBooking}

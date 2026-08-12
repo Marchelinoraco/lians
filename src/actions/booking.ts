@@ -14,9 +14,13 @@ import { getSettings } from '@/queries/settings';
 import { fail, ok, type ActionResult } from './result';
 
 const PESAN_KESALAHAN: Record<string, string> = {
-  RATE_12H_UNAVAILABLE: 'Kendaraan ini tidak menyediakan paket 12 jam.',
-  DRIVER_DAYS_EXCEEDS_DURATION: 'Hari pakai sopir tidak boleh melebihi durasi sewa.',
-  DRIVER_DAYS_NEGATIVE: 'Hari pakai sopir tidak boleh negatif.',
+  CATEGORY_UNAVAILABLE: 'Kendaraan ini tidak tersedia untuk kategori yang dipilih.',
+  END_BEFORE_START: 'Tanggal selesai tidak boleh sebelum tanggal mulai.',
+};
+
+const LABEL_KATEGORI: Record<string, string> = {
+  'lepas-kunci': 'Lepas kunci',
+  pelayanan: 'Pelayanan (mobil + sopir + BBM)',
 };
 
 export async function createBooking(
@@ -41,6 +45,7 @@ export async function createBooking(
   let priceBreakdown = null;
   let itemName: string;
   let days: number | null = null;
+  let categoryLabel: string | null = null;
 
   if (data.serviceType === 'travel') {
     const route = await getRouteById(data.routeId);
@@ -58,15 +63,12 @@ export async function createBooking(
     // Angka yang dikirim browser hanya untuk tampilan dan tidak pernah dipercaya.
     const hasil = calculateRentalPrice({
       vehicle: {
-        rate24h: vehicle.rate24h,
-        rate12h: vehicle.rate12h,
-        driverFeeOverride: vehicle.driverFeeOverride,
+        rateLepasKunci: vehicle.rateLepasKunci,
+        ratePelayanan: vehicle.ratePelayanan,
       },
       startDate: new Date(data.startDate),
       endDate: new Date(data.endDate),
-      rateType: data.rateType,
-      driverDays: data.driverDays,
-      driverFeePerDay: settings.driverFeePerDay,
+      category: data.rateCategory,
     });
 
     if (!hasil.ok) return fail(PESAN_KESALAHAN[hasil.error] ?? 'Perhitungan harga gagal.');
@@ -75,6 +77,7 @@ export async function createBooking(
     totalPrice = hasil.breakdown.total;
     priceBreakdown = hasil.breakdown;
     days = hasil.breakdown.days;
+    categoryLabel = LABEL_KATEGORI[data.rateCategory] ?? null;
   }
 
   const bookingCode = generateBookingCode(new Date());
@@ -91,8 +94,7 @@ export async function createBooking(
     routeNameSnapshot: data.serviceType === 'travel' ? itemName : null,
     startDate: data.startDate,
     endDate: data.serviceType === 'travel' ? null : data.endDate,
-    rateType: data.serviceType === 'travel' ? null : data.rateType,
-    driverDays: data.driverDays,
+    rateCategory: data.serviceType === 'travel' ? null : data.rateCategory,
     totalPrice,
     priceBreakdown,
     notes: data.notes || null,
@@ -105,9 +107,8 @@ export async function createBooking(
     itemName,
     startDate: data.startDate,
     endDate: data.serviceType === 'travel' ? null : data.endDate,
-    rateType: data.serviceType === 'travel' ? null : data.rateType,
     days,
-    driverDays: data.driverDays,
+    categoryLabel,
     totalPrice,
     notes: data.notes,
   });

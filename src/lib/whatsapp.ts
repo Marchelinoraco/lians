@@ -19,9 +19,8 @@ export type BookingMessageArgs = {
   itemName: string;
   startDate: string;
   endDate?: string | null;
-  rateType?: '24h' | '12h' | null;
   days?: number | null;
-  driverDays: number;
+  categoryLabel?: string | null;
   totalPrice: number | null;
   notes?: string | null;
 };
@@ -42,8 +41,8 @@ export function buildBookingMessage(a: BookingMessageArgs): string {
   ];
 
   if (a.endDate) baris.push(`Selesai: ${formatTanggal(new Date(a.endDate), 'id')}`);
-  if (a.days) baris.push(`Durasi: ${a.days} hari (paket ${a.rateType === '12h' ? '12' : '24'} jam)`);
-  if (a.driverDays > 0) baris.push(`Pakai sopir: ${a.driverDays} hari`);
+  if (a.days) baris.push(`Durasi: ${a.days} hari`);
+  if (a.categoryLabel) baris.push(`Kategori: ${a.categoryLabel}`);
   if (a.notes) baris.push(`Catatan: ${a.notes}`);
 
   baris.push(``);

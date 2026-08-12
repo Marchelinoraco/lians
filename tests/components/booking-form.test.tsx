@@ -8,151 +8,138 @@ const kendaraan = [
     id: '11111111-1111-4111-8111-111111111111',
     slug: 'innova-zenix-g',
     name: 'Innova Zenix G',
-    rate24h: 900000,
-    rate12h: 650000,
-    driverFeeOverride: null,
+    rateLepasKunci: 900000,
+    ratePelayanan: 1300000,
     status: 'available' as const,
   },
   {
     id: '22222222-2222-4222-8222-222222222222',
-    slug: 'all-new-brio',
-    name: 'All New Brio',
-    rate24h: 350000,
-    rate12h: null,
-    driverFeeOverride: null,
+    slug: 'hiace-commuter',
+    name: 'Hiace Commuter',
+    rateLepasKunci: null,
+    ratePelayanan: 1500000,
     status: 'available' as const,
   },
 ];
 
-const rute = [
-  { id: '33333333-3333-4333-8333-333333333333', label: 'Manado → Bandara', price: 150000 },
-  { id: '44444444-4444-4444-8444-444444444444', label: 'Manado → Likupang', price: null },
-];
-
-const render1 = (onSubmit = vi.fn()) =>
+const render1 = (onSubmit = vi.fn(), defaultVehicleSlug: string | null = null) =>
   render(
     <BookingForm
       vehicles={kendaraan}
-      routes={rute}
-      driverFeePerDay={150000}
-      defaultVehicleSlug={null}
+      routes={[]}
+      defaultVehicleSlug={defaultVehicleSlug}
       defaultRouteId={null}
       onSubmit={onSubmit}
       locale="id"
     />,
   );
 
+async function isiTanggal(user: ReturnType<typeof userEvent.setup>, mulai: string, selesai: string) {
+  await user.type(screen.getByLabelText(/tanggal mulai/i), mulai);
+  await user.type(screen.getByLabelText(/tanggal selesai/i), selesai);
+}
+
 describe('BookingForm', () => {
-  it('menampilkan perkiraan harga setelah kendaraan dan tanggal diisi', async () => {
+  it('menghitung 15 sampai 17 sebagai 3 hari lepas kunci', async () => {
     const user = userEvent.setup();
     render1();
 
-    await user.selectOptions(screen.getByLabelText(/kendaraan/i), kendaraan[0].id);
-    await user.type(screen.getByLabelText(/tanggal mulai/i), '2099-08-01');
-    await user.type(screen.getByLabelText(/tanggal selesai/i), '2099-08-06');
+    await user.selectOptions(screen.getByLabelText(/^kendaraan$/i), kendaraan[0].id);
+    await isiTanggal(user, '2099-08-15', '2099-08-17');
 
-    // Angka ini muncul dua kali: sebagai baris rincian dan sebagai total.
-    expect(await screen.findAllByText(/Rp 4\.500\.000/)).toHaveLength(2);
+    expect(await screen.findAllByText(/Rp 2\.700\.000/)).not.toHaveLength(0);
   });
 
-  it('menambahkan biaya sopir sesuai hari yang dipilih', async () => {
+  it('memakai tarif pelayanan saat kategori itu dipilih', async () => {
     const user = userEvent.setup();
     render1();
 
-    await user.selectOptions(screen.getByLabelText(/kendaraan/i), kendaraan[0].id);
-    await user.type(screen.getByLabelText(/tanggal mulai/i), '2099-08-01');
-    await user.type(screen.getByLabelText(/tanggal selesai/i), '2099-08-06');
-    await user.clear(screen.getByLabelText(/hari pakai sopir/i));
-    await user.type(screen.getByLabelText(/hari pakai sopir/i), '3');
+    await user.selectOptions(screen.getByLabelText(/^kendaraan$/i), kendaraan[0].id);
+    await isiTanggal(user, '2099-08-15', '2099-08-17');
+    await user.click(screen.getByRole('radio', { name: /pelayanan/i }));
 
-    expect(await screen.findByText(/Rp 4\.950\.000/)).toBeInTheDocument();
+    expect(await screen.findAllByText(/Rp 3\.900\.000/)).not.toHaveLength(0);
   });
 
-  it('menyembunyikan pilihan paket tarif untuk kendaraan tanpa tarif 12 jam', async () => {
+  it('menghitung sewa satu hari untuk tanggal mulai dan selesai yang sama', async () => {
     const user = userEvent.setup();
     render1();
 
-    await user.selectOptions(screen.getByLabelText(/kendaraan/i), kendaraan[1].id);
+    await user.selectOptions(screen.getByLabelText(/^kendaraan$/i), kendaraan[0].id);
+    await isiTanggal(user, '2099-08-15', '2099-08-15');
+
+    expect(await screen.findAllByText(/Rp 900\.000/)).not.toHaveLength(0);
+  });
+
+  it('menampilkan kedua kategori bila kendaraan menyediakan keduanya', async () => {
+    const user = userEvent.setup();
+    render1();
+
+    await user.selectOptions(screen.getByLabelText(/^kendaraan$/i), kendaraan[0].id);
+    expect(screen.getByRole('radio', { name: /lepas kunci/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /pelayanan/i })).toBeInTheDocument();
+  });
+
+  it('menyembunyikan kategori yang tarifnya tidak diisi admin', async () => {
+    const user = userEvent.setup();
+    render1();
+
+    await user.selectOptions(screen.getByLabelText(/^kendaraan$/i), kendaraan[1].id);
+    expect(screen.queryByRole('radio', { name: /lepas kunci/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /pelayanan/i })).toBeInTheDocument();
+  });
+
+  it('memakai kategori yang tersedia walau bawaan form lepas kunci', async () => {
+    const user = userEvent.setup();
+    render1();
+
+    // Hiace tidak dilepas-kunci; perkiraan harga harus tetap muncul memakai
+    // tarif pelayanan, bukan macet karena kategori bawaan tidak tersedia.
+    await user.selectOptions(screen.getByLabelText(/^kendaraan$/i), kendaraan[1].id);
+    await isiTanggal(user, '2099-08-15', '2099-08-16');
+
+    expect(await screen.findAllByText(/Rp 3\.000\.000/)).not.toHaveLength(0);
+  });
+
+  it('tidak menampilkan pilihan kategori sebelum kendaraan dipilih', () => {
+    render1();
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
   });
 
-  it('memperingatkan bila hari sopir melebihi durasi sewa', async () => {
-    const user = userEvent.setup();
+  it('tidak lagi menawarkan jenis layanan antar-jemput', () => {
     render1();
-
-    await user.selectOptions(screen.getByLabelText(/kendaraan/i), kendaraan[0].id);
-    await user.type(screen.getByLabelText(/tanggal mulai/i), '2099-08-01');
-    await user.type(screen.getByLabelText(/tanggal selesai/i), '2099-08-03');
-    await user.clear(screen.getByLabelText(/hari pakai sopir/i));
-    await user.type(screen.getByLabelText(/hari pakai sopir/i), '9');
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(/tidak boleh lebih dari 2 hari/i);
+    expect(screen.queryByRole('option', { name: /antar-jemput/i })).not.toBeInTheDocument();
   });
 
-  it('menonaktifkan tombol kirim saat hari sopir berlebih', async () => {
-    const user = userEvent.setup();
-    render1();
-
-    await user.selectOptions(screen.getByLabelText(/kendaraan/i), kendaraan[0].id);
-    await user.type(screen.getByLabelText(/tanggal mulai/i), '2099-08-01');
-    await user.type(screen.getByLabelText(/tanggal selesai/i), '2099-08-03');
-    await user.clear(screen.getByLabelText(/hari pakai sopir/i));
-    await user.type(screen.getByLabelText(/hari pakai sopir/i), '9');
-
-    expect(screen.getByRole('button', { name: /kirim pesanan/i })).toBeDisabled();
-  });
-
-  it('mengganti isian kendaraan dengan pilihan rute saat layanan travel dipilih', async () => {
-    const user = userEvent.setup();
-    render1();
-
-    await user.selectOptions(screen.getByLabelText(/jenis layanan/i), 'travel');
-    expect(screen.getByLabelText(/rute/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/tanggal selesai/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/hari pakai sopir/i)).not.toBeInTheDocument();
-  });
-
-  it('menjelaskan tarif tetap saat rute bertarif dipilih', async () => {
-    const user = userEvent.setup();
-    render1();
-
-    await user.selectOptions(screen.getByLabelText(/jenis layanan/i), 'travel');
-    await user.selectOptions(screen.getByLabelText(/rute/i), rute[0].id);
-
-    expect(await screen.findByText(/Tarif sekali jalan Rp 150\.000/)).toBeInTheDocument();
-  });
-
-  it('menjelaskan bahwa penawaran menyusul untuk rute tanpa tarif', async () => {
-    const user = userEvent.setup();
-    render1();
-
-    await user.selectOptions(screen.getByLabelText(/jenis layanan/i), 'travel');
-    await user.selectOptions(screen.getByLabelText(/rute/i), rute[1].id);
-
-    expect(await screen.findByText(/belum bertarif tetap/i)).toBeInTheDocument();
-  });
-
-  it('mengirim payload travel tanpa endDate, rateType, dan dengan driverDays nol', async () => {
+  it('mengirim rateCategory dan tidak lagi mengirim hari sopir', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue({ ok: false, message: 'berhenti di sini' });
     render1(onSubmit);
 
-    await user.selectOptions(screen.getByLabelText(/jenis layanan/i), 'travel');
-    await user.selectOptions(screen.getByLabelText(/rute/i), rute[0].id);
-    await user.type(screen.getByLabelText(/tanggal mulai/i), '2099-08-01');
-    await user.type(screen.getByLabelText(/nama lengkap/i), 'Sari');
+    await user.selectOptions(screen.getByLabelText(/^kendaraan$/i), kendaraan[0].id);
+    await isiTanggal(user, '2099-08-15', '2099-08-17');
+    await user.type(screen.getByLabelText(/nama lengkap/i), 'Budi');
     await user.type(screen.getByLabelText(/nomor whatsapp/i), '081234567890');
     await user.click(screen.getByRole('button', { name: /kirim pesanan/i }));
 
     expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        serviceType: 'travel',
-        routeId: rute[0].id,
-        driverDays: 0,
-      }),
+      expect.objectContaining({ rateCategory: 'lepas-kunci' }),
     );
     const payload = onSubmit.mock.calls[0][0] as Record<string, unknown>;
-    expect(payload).not.toHaveProperty('endDate');
+    expect(payload).not.toHaveProperty('driverDays');
     expect(payload).not.toHaveProperty('rateType');
+  });
+
+  it('memilih kategori pelayanan sejak awal untuk kendaraan tanpa lepas kunci', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn().mockResolvedValue({ ok: false, message: 'berhenti' });
+    render1(onSubmit, 'hiace-commuter');
+
+    await isiTanggal(user, '2099-08-15', '2099-08-16');
+    await user.type(screen.getByLabelText(/nama lengkap/i), 'Sari');
+    await user.type(screen.getByLabelText(/nomor whatsapp/i), '081234567890');
+    await user.click(screen.getByRole('button', { name: /kirim pesanan/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ rateCategory: 'pelayanan' }));
   });
 });

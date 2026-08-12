@@ -17,31 +17,30 @@ describe('normalizePhone', () => {
 
 describe('buildBookingMessage', () => {
   const sewa = {
-    bookingCode: 'LNS-20260810-A7K2',
+    bookingCode: 'LNS-20260815-A7K2',
     customerName: 'Budi Santoso',
     itemName: 'Innova Zenix G',
-    startDate: '2026-08-01',
-    endDate: '2026-08-06',
-    rateType: '24h' as const,
-    days: 5,
-    driverDays: 3,
-    totalPrice: 3950000,
+    startDate: '2026-08-15',
+    endDate: '2026-08-17',
+    days: 3,
+    categoryLabel: 'Pelayanan (mobil + sopir + BBM)',
+    totalPrice: 3000000,
     notes: 'Jemput di bandara',
   };
 
   it('menyertakan kode booking', () => {
-    expect(buildBookingMessage(sewa)).toContain('LNS-20260810-A7K2');
+    expect(buildBookingMessage(sewa)).toContain('LNS-20260815-A7K2');
   });
 
   it('menyertakan nama kendaraan dan total dalam rupiah', () => {
     const pesan = buildBookingMessage(sewa);
     expect(pesan).toContain('Innova Zenix G');
-    expect(pesan).toContain('Rp 3.950.000');
+    expect(pesan).toContain('Rp 3.000.000');
   });
 
-  it('menjelaskan jumlah hari sewa dan hari pakai sopir', () => {
+  it('menyebut kategori sewa dan jumlah hari', () => {
     const pesan = buildBookingMessage(sewa);
-    expect(pesan).toContain('5 hari');
+    expect(pesan).toContain('Pelayanan');
     expect(pesan).toContain('3 hari');
   });
 
@@ -55,22 +54,16 @@ describe('buildBookingMessage', () => {
       customerName: 'Sari',
       itemName: 'Manado → Likupang',
       startDate: '2026-08-01',
-      driverDays: 0,
       totalPrice: null,
     });
     expect(pesan).toMatch(/menunggu penawaran harga/i);
     expect(pesan).not.toContain('Rp');
   });
 
-  it('tidak menyebut sopir bila hari sopir nol', () => {
-    const pesan = buildBookingMessage({ ...sewa, driverDays: 0 });
-    expect(pesan).not.toMatch(/sopir/i);
-  });
-
   it('selalu berbahasa Indonesia karena yang membacanya staf LIANS', () => {
     const pesan = buildBookingMessage(sewa);
     expect(pesan).toContain('Halo LIANS');
-    expect(pesan).toContain('1 Agustus 2026');
+    expect(pesan).toContain('15 Agustus 2026');
   });
 });
 
