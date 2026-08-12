@@ -85,6 +85,25 @@ tanpa penjaga di halaman, angka ringkasan ikut terkirim dalam badan respons.
 **Pesan WhatsApp selalu berbahasa Indonesia**, apa pun bahasa yang dipakai customer. Yang membaca
 pesan itu staf LIANS di Manado.
 
+**Dua peran: `admin` dan `super_admin`.** Satu-satunya beda: kartu nilai pesanan di dasbor dan
+halaman Rekap Keuangan hanya untuk super admin. Admin biasa tetap melihat pesanan satu per satu
+berikut harganya, dan tetap boleh mengelola armada, pelanggan, pemasok, pengaturan, serta akun staf.
+Penjaganya ada di dalam `hitungRekap()` sendiri, bukan hanya di halamannya — selama angka uang hanya
+lahir dari satu fungsi itu, halaman baru tidak bisa membocorkannya karena penulisnya lupa memasang
+penjaga. Menaikkan sebuah akun: `node --env-file=.env.local scripts/jadikan-super-admin.mjs <email>`.
+
+**Booking manual berbeda dari booking website.** Tanggalnya hanya keterangan — harga diketik admin,
+tidak dihitung dari durasi. Itu memang gunanya: mencatat sewa campuran, harga negosiasi, dan paket
+khusus yang tidak muat di rumus.
+
+**Pemasok hanya muncul pada booking manual.** Booking dari situs selalu memakai armada LIANS sendiri,
+karena hanya kendaraan itu yang tayang di katalog publik. `supplierCost` adalah total per pesanan,
+bukan per hari, dan terpisah dari `totalPrice` yang dibayar pelanggan — selisihnya margin.
+
+**Nomor telepon pelanggan disimpan ternormalisasi** (`62…`) agar `0811…` dan `+62811…` tidak
+menghasilkan dua catatan untuk orang yang sama. Daftar pelanggan terisi sendiri dari setiap pesanan
+yang masuk, dari situs maupun dicatat manual.
+
 ## Pengujian
 
 ```bash
@@ -105,5 +124,8 @@ logikanya sehat.
 ## Yang belum dikerjakan
 
 Tercatat di `docs/superpowers/specs/` sebagai di luar cakupan rilis ini: pembayaran online,
-pengecekan ketersediaan otomatis, akun customer, email otomatis, peran pengguna bertingkat, panel
-admin multibahasa, dan formulir ulasan publik.
+pengecekan ketersediaan otomatis, akun customer, email otomatis, panel admin multibahasa, dan
+formulir ulasan publik.
+
+Menyusul di Tahap 2C dan 2D: halaman Ticketing dan Tours berikut formulirnya, Syarat dan Ketentuan,
+Blog, Galeri, serta logo Our Clients di Beranda.
