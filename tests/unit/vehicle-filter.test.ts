@@ -9,9 +9,8 @@ const buat = (over: Partial<Vehicle>): Vehicle =>
     name: 'Mobil',
     category: 'mpv',
     images: [],
-    rate24h: 500000,
-    rate12h: null,
-    driverFeeOverride: null,
+    rateLepasKunci: 500000,
+    ratePelayanan: null,
     serviceTypes: ['self-drive'],
     seats: 7,
     transmission: 'manual',
@@ -29,9 +28,9 @@ const buat = (over: Partial<Vehicle>): Vehicle =>
   }) as Vehicle;
 
 const armada = [
-  buat({ name: 'All New Brio', category: 'hatchback', rate24h: 350000 }),
-  buat({ name: 'Toyota Avanza', category: 'mpv', rate24h: 400000 }),
-  buat({ name: 'Toyota Fortuner', category: 'suv', rate24h: 1200000 }),
+  buat({ name: 'All New Brio', category: 'hatchback', rateLepasKunci: 350000 }),
+  buat({ name: 'Toyota Avanza', category: 'mpv', rateLepasKunci: 400000 }),
+  buat({ name: 'Toyota Fortuner', category: 'suv', rateLepasKunci: 1200000 }),
 ];
 
 describe('filterAndSortVehicles', () => {
@@ -56,12 +55,12 @@ describe('filterAndSortVehicles', () => {
 
   it('mengurutkan dari harga termurah', () => {
     const hasil = filterAndSortVehicles(armada, { sort: 'harga-asc' });
-    expect(hasil.map((v) => v.rate24h)).toEqual([350000, 400000, 1200000]);
+    expect(hasil.map((v) => v.rateLepasKunci)).toEqual([350000, 400000, 1200000]);
   });
 
   it('mengurutkan dari harga termahal', () => {
     const hasil = filterAndSortVehicles(armada, { sort: 'harga-desc' });
-    expect(hasil.map((v) => v.rate24h)).toEqual([1200000, 400000, 350000]);
+    expect(hasil.map((v) => v.rateLepasKunci)).toEqual([1200000, 400000, 350000]);
   });
 
   it('mengurutkan berdasarkan nama', () => {

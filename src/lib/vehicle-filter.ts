@@ -1,4 +1,5 @@
 import type { Vehicle } from '@/db/schema';
+import { tarifTerendah } from '@/lib/vehicle-rate';
 
 export type CatalogSort = 'harga-asc' | 'harga-desc' | 'nama-asc';
 
@@ -49,15 +50,22 @@ export function filterAndSortVehicles(vehicles: Vehicle[], filters: CatalogFilte
       return false;
     }
     if (filters.category && v.category !== filters.category) return false;
-    if (filters.maxPrice !== undefined && v.rate24h > filters.maxPrice) return false;
+    if (filters.maxPrice !== undefined) {
+      const tarif = tarifTerendah(v);
+      if (tarif === null || tarif > filters.maxPrice) return false;
+    }
     return true;
   });
 
+  // Kendaraan tanpa tarif sama sekali didorong ke belakang, bukan dianggap gratis.
+  const urut = (a: Vehicle, b: Vehicle) =>
+    (tarifTerendah(a) ?? Infinity) - (tarifTerendah(b) ?? Infinity);
+
   switch (filters.sort) {
     case 'harga-asc':
-      return [...hasil].sort((a, b) => a.rate24h - b.rate24h);
+      return [...hasil].sort(urut);
     case 'harga-desc':
-      return [...hasil].sort((a, b) => b.rate24h - a.rate24h);
+      return [...hasil].sort((a, b) => urut(b, a));
     case 'nama-asc':
       return [...hasil].sort((a, b) => a.name.localeCompare(b.name, 'id'));
     default:

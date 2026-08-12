@@ -11,6 +11,7 @@ import { RouteCard } from '@/components/travel/RouteCard';
 import { TestimonialCard } from '@/components/testimonial/TestimonialCard';
 import { buildAutoRentalJsonLd, buildAlternates, SITE_URL } from '@/lib/seo';
 import { formatRupiah } from '@/lib/format';
+import { tarifTerendah } from '@/lib/vehicle-rate';
 import { getMessages, pickLocale, localeHref, type Locale } from '@/i18n';
 
 export const revalidate = 300;
@@ -41,7 +42,9 @@ export default async function BerandaPage({ params }: { params: Promise<{ locale
     getSettings(),
   ]);
 
-  const tarif = kendaraan.map((v) => v.rate24h);
+  const tarif = kendaraan
+    .map((v) => tarifTerendah(v))
+    .filter((n): n is number => n !== null);
   const priceRange =
     tarif.length > 0
       ? `${formatRupiah(Math.min(...tarif))} - ${formatRupiah(Math.max(...tarif))}`

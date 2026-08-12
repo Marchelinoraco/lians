@@ -7,8 +7,9 @@ import { getSettings } from '@/queries/settings';
 import { formatRupiah } from '@/lib/format';
 import { VehicleGallery } from '@/components/vehicle/VehicleGallery';
 import { buildVehicleJsonLd, buildAlternates, SITE_URL } from '@/lib/seo';
+import { tarifTerendah } from '@/lib/vehicle-rate';
 import { waLink } from '@/lib/whatsapp';
-import { getMessages, fill, pickLocale, localeHref, LOCALES, type Locale } from '@/i18n';
+import { getMessages, pickLocale, localeHref, LOCALES, type Locale } from '@/i18n';
 
 export const revalidate = 300;
 
@@ -19,10 +20,10 @@ export async function generateStaticParams() {
 
 /** Nama kendaraan tidak diterjemahkan — itu nama diri. */
 const JUDUL: Record<Locale, (nama: string, harga: string) => string> = {
-  id: (nama, harga) => `Sewa ${nama} di Manado — ${harga}/24 jam`,
-  en: (nama, harga) => `Rent ${nama} in Manado — ${harga}/24 hours`,
-  zh: (nama, harga) => `万鸦老租 ${nama} — ${harga}/24 小时`,
-  ko: (nama, harga) => `마나도 ${nama} 렌트 — ${harga}/24시간`,
+  id: (nama, harga) => `Sewa ${nama} di Manado — mulai ${harga}/hari`,
+  en: (nama, harga) => `Rent ${nama} in Manado — from ${harga}/day`,
+  zh: (nama, harga) => `万鸦老租 ${nama} — ${harga} 起/天`,
+  ko: (nama, harga) => `마나도 ${nama} 렌트 — ${harga}/일부터`,
 };
 
 const DESKRIPSI: Record<Locale, (v: { name: string; year: number; seats: number }) => string> = {
@@ -44,7 +45,7 @@ export async function generateMetadata({
   const v = await getVehicleBySlug(slug);
   if (!v) return { title: 'LIANS' };
 
-  const judul = JUDUL[locale](v.name, formatRupiah(v.rate24h));
+  const judul = JUDUL[locale](v.name, formatRupiah(tarifTerendah(v) ?? 0));
   return {
     title: judul,
     description: DESKRIPSI[locale](v),
@@ -106,23 +107,28 @@ export default async function DetailMobilPage({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-lians-200 bg-lians-50 p-4">
-              <p className="text-xs font-semibold text-lians-700">{t.vehicle.rate24}</p>
-              <p className="text-2xl font-black text-lians-700">{formatRupiah(vehicle.rate24h)}</p>
-            </div>
-            {vehicle.rate12h !== null ? (
+            {vehicle.rateLepasKunci !== null ? (
+              <div className="rounded-xl border border-lians-200 bg-lians-50 p-4">
+                <p className="text-xs font-semibold text-lians-700">{t.common.lepasKunci}</p>
+                <p className="text-2xl font-black text-lians-700">
+                  {formatRupiah(vehicle.rateLepasKunci)}
+                </p>
+                <p className="text-xs text-muted">
+                  {t.common.perHari} · {t.common.lepasKunciNote}
+                </p>
+              </div>
+            ) : null}
+
+            {vehicle.ratePelayanan !== null ? (
               <div className="rounded-xl border border-slate-200 p-4">
-                <p className="text-xs font-semibold text-slate-600">{t.vehicle.rate12}</p>
-                <p className="text-2xl font-black">{formatRupiah(vehicle.rate12h)}</p>
+                <p className="text-xs font-semibold text-slate-600">{t.common.pelayanan}</p>
+                <p className="text-2xl font-black">{formatRupiah(vehicle.ratePelayanan)}</p>
+                <p className="text-xs text-muted">
+                  {t.common.perHari} · {t.common.pelayananNote}
+                </p>
               </div>
             ) : null}
           </div>
-
-          <p className="text-sm text-muted">
-            {fill(t.vehicle.driverFeeNote, {
-              harga: formatRupiah(vehicle.driverFeeOverride ?? settings.driverFeePerDay),
-            })}
-          </p>
 
           <dl className="grid grid-cols-2 gap-4 rounded-xl border border-slate-200 p-4 text-sm sm:grid-cols-3">
             {[

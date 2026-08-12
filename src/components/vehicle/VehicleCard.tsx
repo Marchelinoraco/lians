@@ -73,15 +73,24 @@ export function VehicleCard({ vehicle, locale }: { vehicle: Vehicle; locale: Loc
           </li>
         </ul>
 
-        <div className="flex items-end justify-between gap-3 border-t border-slate-100 pt-3">
-          <div>
-            <p className="text-lg font-black text-lians-600">{formatRupiah(vehicle.rate24h)}</p>
-            <p className="text-xs text-muted">{t.common.perDay24}</p>
-          </div>
-          {vehicle.rate12h !== null ? (
-            <div className="text-right">
-              <p className="text-sm font-bold text-slate-700">{formatRupiah(vehicle.rate12h)}</p>
-              <p className="text-xs text-muted">{t.common.perDay12}</p>
+        <div className="space-y-1 border-t border-slate-100 pt-3">
+          {vehicle.rateLepasKunci !== null ? (
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs text-muted">{t.common.lepasKunci}</span>
+              <span className="font-bold text-lians-600">
+                {formatRupiah(vehicle.rateLepasKunci)}
+                <span className="ml-1 text-xs font-medium text-muted">{t.common.perHari}</span>
+              </span>
+            </div>
+          ) : null}
+
+          {vehicle.ratePelayanan !== null ? (
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-xs text-muted">{t.common.pelayanan}</span>
+              <span className="font-bold text-slate-700">
+                {formatRupiah(vehicle.ratePelayanan)}
+                <span className="ml-1 text-xs font-medium text-muted">{t.common.perHari}</span>
+              </span>
             </div>
           ) : null}
         </div>

@@ -10,9 +10,8 @@ const dasar = {
   name: 'Innova Zenix G',
   category: 'mpv',
   images: [],
-  rate24h: 900000,
-  rate12h: 650000,
-  driverFeeOverride: null,
+  rateLepasKunci: 900000,
+  ratePelayanan: 1300000,
   serviceTypes: ['self-drive', 'with-driver'],
   seats: 7,
   transmission: 'automatic',
@@ -29,20 +28,29 @@ const dasar = {
 } as unknown as Vehicle;
 
 describe('VehicleCard', () => {
-  it('menampilkan nama dan tarif 24 jam dalam rupiah', () => {
+  it('menampilkan nama dan kedua tarif dalam rupiah', () => {
     render(<VehicleCard vehicle={dasar} locale="id" />);
     expect(screen.getByText('Innova Zenix G')).toBeInTheDocument();
     expect(screen.getByText(/Rp 900\.000/)).toBeInTheDocument();
+    expect(screen.getByText(/Rp 1\.300\.000/)).toBeInTheDocument();
   });
 
-  it('menampilkan tarif 12 jam bila tersedia', () => {
+  it('menampilkan label kedua kategori bila tarifnya diisi', () => {
     render(<VehicleCard vehicle={dasar} locale="id" />);
-    expect(screen.getByText(/Rp 650\.000/)).toBeInTheDocument();
+    expect(screen.getByText('Lepas kunci')).toBeInTheDocument();
+    expect(screen.getByText('Pelayanan')).toBeInTheDocument();
   });
 
-  it('menyembunyikan tarif 12 jam bila kendaraan tidak punya', () => {
-    render(<VehicleCard vehicle={{ ...dasar, rate12h: null }} locale="id" />);
-    expect(screen.queryByText(/12 jam/i)).not.toBeInTheDocument();
+  it('menyembunyikan kategori yang tarifnya tidak diisi admin', () => {
+    render(<VehicleCard vehicle={{ ...dasar, rateLepasKunci: null }} locale="id" />);
+    expect(screen.queryByText('Lepas kunci')).not.toBeInTheDocument();
+    expect(screen.getByText('Pelayanan')).toBeInTheDocument();
+  });
+
+  it('menyembunyikan kategori pelayanan bila tarifnya kosong', () => {
+    render(<VehicleCard vehicle={{ ...dasar, ratePelayanan: null }} locale="id" />);
+    expect(screen.getByText('Lepas kunci')).toBeInTheDocument();
+    expect(screen.queryByText('Pelayanan')).not.toBeInTheDocument();
   });
 
   it('menautkan ke halaman detail kendaraan', () => {
@@ -66,9 +74,10 @@ describe('VehicleCard', () => {
     expect(screen.getByText(/sedang tersewa/i)).toBeInTheDocument();
   });
 
-  it('menerjemahkan label satuan tarif', () => {
+  it('menerjemahkan label kategori dan satuan tarif', () => {
     render(<VehicleCard vehicle={dasar} locale="en" />);
-    expect(screen.getByText('per 24 hours')).toBeInTheDocument();
+    expect(screen.getByText('Self-drive')).toBeInTheDocument();
+    expect(screen.getAllByText('per day').length).toBeGreaterThan(0);
   });
 
   it('tidak menerjemahkan nama kendaraan', () => {
