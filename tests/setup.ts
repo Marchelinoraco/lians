@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import { beforeAll, expect } from 'vitest';
+import { Agent, setGlobalDispatcher } from 'undici';
 import '@testing-library/jest-dom/vitest';
 
 // Vitest tidak membaca .env.local sendiri. Tanpa ini, tes integrasi
@@ -7,14 +8,22 @@ import '@testing-library/jest-dom/vitest';
 config({ path: '.env.local', quiet: true });
 
 /**
+ * Batas koneksi bawaan Node adalah 10 detik. Menjangkau Neon di Singapura dari
+ * jaringan yang sedang lambat kadang menghabiskan 9–10 detik hanya untuk
+ * membuka koneksi, sehingga tes gagal di tempat yang berbeda-beda setiap kali
+ * dijalankan — terlihat seperti bug, padahal hanya jaringan.
+ *
+ * Batasnya diperlebar khusus untuk tes. Kode produksi tidak menyentuh ini.
+ */
+setGlobalDispatcher(new Agent({ connect: { timeout: 30_000 } }));
+
+/**
  * Neon paket gratis menidurkan compute-nya saat menganggur, dan panggilan
- * pertama harus membangunkannya. Pada jaringan lambat, pembangunan itu melewati
- * batas koneksi 10 detik milik undici — sehingga tes PERTAMA di setiap berkas
- * gagal sementara sisanya lulus, pola yang mudah disalahartikan sebagai bug.
+ * pertama harus membangunkannya.
  *
  * Hanya dijalankan untuk tes integrasi. Tes unit tidak menyentuh database sama
  * sekali; menghangatkan koneksi di sana membuat tes murni ikut gagal saat
- * jaringan bermasalah — kegagalan yang sepenuhnya tidak relevan dengan apa yang
+ * jaringan bermasalah — kegagalan yang tidak ada hubungannya dengan apa yang
  * sedang diuji.
  */
 beforeAll(async () => {

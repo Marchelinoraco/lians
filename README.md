@@ -45,6 +45,8 @@ satu sama lain, sehingga kesalahan `cloud_name mismatch` tidak mungkin terjadi.
 
 ## Struktur
 
+- Menu publik: Beranda, Kendaraan, Testimoni, Tentang, Kontak. Ticketing, Tours, dan Terms menyusul
+  di Tahap 2C dan 2D. Halaman Travel dihapus; rutenya disembunyikan, datanya tetap utuh.
 - `src/proxy.ts` mengarahkan `admin.*` ke `src/app/admin`, host lain ke `src/app/[locale]`.
   Sejak Next.js 16 berkas ini bernama `proxy.ts`, dulu `middleware.ts`.
 - `src/i18n/` memuat kamus keempat bahasa. Kamus Indonesia adalah sumber kebenaran bentuk, jadi
@@ -55,6 +57,17 @@ satu sama lain, sehingga kesalahan `cloud_name mismatch` tidak mungkin terjadi.
   sesi sendiri.
 
 ## Keputusan yang perlu diketahui sebelum mengubah kode
+
+**Harga: dua kategori per hari.** Lepas kunci (kendaraan saja) dan Pelayanan (kendaraan + pengemudi
++ BBM). Pelanggan memilih satu untuk seluruh sewa. Kategori yang tarifnya tidak diisi admin tidak
+ditampilkan sama sekali di situs.
+
+**Hitungan hari inklusif:** 15 sampai 17 Agustus = 3 hari. Sewa dengan tanggal mulai dan selesai yang
+sama dihitung 1 hari.
+
+**Pesanan Fase 1 memakai model lama** (24 jam / 12 jam dengan biaya sopir terpisah) dan sengaja
+dibiarkan apa adanya — itu catatan sejarah. `adalahRincianLama()` di `src/db/schema.ts` membedakan
+kedua bentuk rincian, dan halaman detail pesanan menampilkan keduanya dengan benar.
 
 **Harga selalu dihitung ulang di server.** Angka yang dikirim browser hanya untuk tampilan. Ada tes
 yang mengirim `totalPrice: 1` dan memastikan server mengabaikannya.
@@ -76,11 +89,18 @@ pesan itu staf LIANS di Manado.
 
 ```bash
 npm test                                   # semua
-npm test -- tests/properties               # properti harga
+npm test -- tests/unit tests/properties tests/components   # tanpa database, ~20 detik
 npm test -- tests/integration              # menyentuh database sungguhan
 ```
 
 Tes integrasi otomatis dilewati bila `DATABASE_URL` tidak diatur, dan membersihkan datanya sendiri.
+
+**Bila tes integrasi gagal di tempat yang berbeda-beda setiap kali dijalankan**, periksa latensi ke
+Neon lebih dulu sebelum mencurigai kode. Neon paket gratis menidurkan compute-nya, dan jaringan yang
+lambat membuat satu kueri menghabiskan puluhan detik. `tests/setup.ts` sudah menghangatkan koneksi
+dan melebarkan batas waktu, tetapi jaringan yang benar-benar buruk tetap tidak bisa diselamatkan.
+Tes unit, properti, dan komponen tidak menyentuh database sama sekali — kalau ketiganya lulus,
+logikanya sehat.
 
 ## Yang belum dikerjakan
 

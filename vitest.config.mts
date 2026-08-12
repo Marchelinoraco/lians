@@ -14,10 +14,12 @@ export default defineConfig({
     // kegagalannya muncul-hilang tanpa ada yang berubah di kode.
     fileParallelism: false,
 
-    // bcrypt biaya 12 memang lambat — itu memang gunanya. Batas 5 detik bawaan
-    // Vitest terlalu ketat untuk tes yang menghitung beberapa hash sekaligus.
-    testTimeout: 30_000,
-    hookTimeout: 30_000,
+    // Longgar karena dua sebab: bcrypt biaya 12 memang lambat, dan tes
+    // integrasi menempuh jaringan ke Neon Singapura yang latensinya bisa
+    // melonjak sampai puluhan detik. Batas ketat hanya menghasilkan kegagalan
+    // acak yang tidak ada hubungannya dengan kode.
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
   },
   resolve: {
     alias: { '@': path.resolve(import.meta.dirname, './src') },
