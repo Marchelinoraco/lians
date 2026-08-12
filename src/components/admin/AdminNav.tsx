@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   Users,
   Truck,
+  Wallet,
   Route,
   Star,
   Settings,
@@ -16,19 +17,31 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
-const ITEM = [
-  { href: '/', label: 'Dasbor', Icon: LayoutDashboard },
-  { href: '/armada', label: 'Armada', Icon: Car },
-  { href: '/booking', label: 'Booking', Icon: CalendarCheck },
-  { href: '/pelanggan', label: 'Pelanggan', Icon: Users },
-  { href: '/pemasok', label: 'Pemasok', Icon: Truck },
-  { href: '/rute', label: 'Rute Travel', Icon: Route },
-  { href: '/testimoni', label: 'Testimoni', Icon: Star },
-  { href: '/pengaturan', label: 'Pengaturan', Icon: Settings },
-];
-
-export function AdminNav({ email, pendingCount }: { email: string; pendingCount: number }) {
+export function AdminNav({
+  email,
+  pendingCount,
+  superAdmin,
+}: {
+  email: string;
+  pendingCount: number;
+  superAdmin: boolean;
+}) {
   const pathname = usePathname();
+
+  const ITEM = [
+    { href: '/', label: 'Dasbor', Icon: LayoutDashboard },
+    { href: '/armada', label: 'Armada', Icon: Car },
+    { href: '/booking', label: 'Booking', Icon: CalendarCheck },
+    { href: '/pelanggan', label: 'Pelanggan', Icon: Users },
+    { href: '/pemasok', label: 'Pemasok', Icon: Truck },
+    // Menu ini disembunyikan, bukan diamankan. Penjaganya ada di halaman /rekap
+    // dan di dalam hitungRekap sendiri — menu yang hilang hanya membuat panel
+    // lebih rapi bagi staf yang memang tidak memerlukannya.
+    ...(superAdmin ? [{ href: '/rekap', label: 'Rekap Keuangan', Icon: Wallet }] : []),
+    { href: '/rute', label: 'Rute Travel', Icon: Route },
+    { href: '/testimoni', label: 'Testimoni', Icon: Star },
+    { href: '/pengaturan', label: 'Pengaturan', Icon: Settings },
+  ];
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-slate-200 bg-white">

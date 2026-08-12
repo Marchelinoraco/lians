@@ -3,7 +3,7 @@ import { getBookings } from '@/queries/bookings';
 import { getAllVehicles } from '@/queries/vehicles';
 import { formatRupiah } from '@/lib/format';
 import { formatTanggal } from '@/lib/dates';
-import { requireAdminPage } from '@/actions/auth-guard';
+import { requireAdminPage, sesiSekarang } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +12,7 @@ export default async function DasborPage() {
   // ini dari render, sehingga tanpa baris ini angka ringkasan ikut terkirim
   // dalam badan respons untuk permintaan tanpa sesi.
   await requireAdminPage();
+  const superAdmin = (await sesiSekarang())?.role === 'super_admin';
 
   const [semuaBooking, armada] = await Promise.all([getBookings(), getAllVehicles()]);
   const pending = semuaBooking.filter((b) => b.status === 'pending');
@@ -28,7 +29,11 @@ export default async function DasborPage() {
   const kartu = [
     { label: 'Menunggu konfirmasi', nilai: String(pending.length) },
     { label: 'Pesanan bulan ini', nilai: String(bulanIni.length) },
-    { label: 'Nilai pesanan terkonfirmasi', nilai: formatRupiah(nilaiBulanIni) },
+    // Nilai rupiah hanya untuk super admin. Admin biasa tetap melihat pesanan
+    // satu per satu berikut harganya — yang ditutup hanya angka totalnya.
+    ...(superAdmin
+      ? [{ label: 'Nilai pesanan terkonfirmasi', nilai: formatRupiah(nilaiBulanIni) }]
+      : []),
     {
       label: 'Kendaraan tayang',
       nilai: `${armada.filter((v) => v.isPublished).length} / ${armada.length}`,

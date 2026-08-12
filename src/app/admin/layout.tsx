@@ -7,6 +7,7 @@ import '@/app/globals.css';
 import { auth } from '@/lib/auth';
 import { getPendingCount } from '@/queries/bookings';
 import { AdminNav } from '@/components/admin/AdminNav';
+import { sesiSekarang } from '@/actions/auth-guard';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -36,14 +37,18 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
 
-  const pendingCount = await getPendingCount();
+  const [pendingCount, sesi] = await Promise.all([getPendingCount(), sesiSekarang()]);
 
   return (
     <html lang="id-ID" className={jakarta.variable}>
       <body className="font-sans antialiased">
         <SessionProvider>
           <div className="flex min-h-screen bg-slate-50">
-            <AdminNav email={session.user.email ?? ''} pendingCount={pendingCount} />
+            <AdminNav
+              email={session.user.email ?? ''}
+              pendingCount={pendingCount}
+              superAdmin={sesi?.role === 'super_admin'}
+            />
             <main className="flex-1 overflow-x-auto p-8">{children}</main>
             <Toaster position="top-right" richColors />
           </div>
