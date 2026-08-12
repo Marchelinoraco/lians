@@ -9,6 +9,7 @@ import { waLink } from '@/lib/whatsapp';
 import { BookingStatusControl } from '@/components/admin/BookingStatusControl';
 import { DeleteButton } from '@/components/admin/DeleteButton';
 import { updateBookingStatus, updateAdminNotes, deleteBooking } from '@/actions/admin-bookings';
+import { updateSupplierPaid } from '@/actions/admin-manual-booking';
 import { requireAdminPage } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
@@ -54,6 +55,15 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     return deleteBooking(id);
   }
 
+  const sudahLunas = booking.supplierPaid;
+
+  // Tidak mengembalikan ActionResult: prop `action` pada <form> hanya menerima
+  // fungsi yang menghasilkan void. Tombolnya hanya membalik satu boolean.
+  async function tandaiLunas() {
+    'use server';
+    await updateSupplierPaid(id, !sudahLunas);
+  }
+
   const rincian = booking.priceBreakdown;
 
   // Harga dibaca dari salinan beku di pesanan, bukan dihitung ulang dari tabel
@@ -65,6 +75,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
     ['Mulai', formatTanggal(new Date(booking.startDate), 'id')],
     ['Selesai', booking.endDate ? formatTanggal(new Date(booking.endDate), 'id') : '—'],
     ['Kategori', LABEL_KATEGORI(booking)],
+    ['Asal pesanan', booking.source === 'manual' ? 'Dicatat manual oleh staf' : 'Dari situs'],
     ['Dibuat', formatTanggal(new Date(booking.createdAt), 'id')],
   ];
 
@@ -182,6 +193,51 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               Angka ini disimpan saat pesanan dibuat dan tidak berubah meski tarif diperbarui.
             </p>
           </section>
+
+          {booking.supplierVehicleId || booking.supplierNameSnapshot ? (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+              <h2 className="mb-4 font-bold">Kendaraan dari pemasok</h2>
+              <dl className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs text-muted">Pemasok</dt>
+                  <dd className="font-medium">{booking.supplierNameSnapshot ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">Biaya ke pemasok</dt>
+                  <dd className="font-medium">
+                    {booking.supplierCost === null ? '—' : formatRupiah(booking.supplierCost)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">Margin</dt>
+                  <dd className="font-medium">
+                    {booking.totalPrice !== null && booking.supplierCost !== null
+                      ? formatRupiah(booking.totalPrice - booking.supplierCost)
+                      : '—'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">Status pembayaran</dt>
+                  <dd
+                    className={`font-semibold ${
+                      sudahLunas ? 'text-emerald-700' : 'text-amber-700'
+                    }`}
+                  >
+                    {sudahLunas ? 'Sudah dibayar' : 'Belum dibayar'}
+                  </dd>
+                </div>
+              </dl>
+
+              <form action={tandaiLunas} className="mt-4">
+                <button
+                  type="submit"
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold hover:border-lians-400"
+                >
+                  {sudahLunas ? 'Tandai belum dibayar' : 'Tandai sudah dibayar'}
+                </button>
+              </form>
+            </section>
+          ) : null}
         </div>
 
         <div className="space-y-6">

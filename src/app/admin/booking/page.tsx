@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { getBookings } from '@/queries/bookings';
 import { formatRupiah } from '@/lib/format';
 import { formatTanggal } from '@/lib/dates';
@@ -34,7 +35,15 @@ export default async function BookingListPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-black">Booking</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-black">Booking</h1>
+        <Link
+          href="/booking/manual"
+          className="flex items-center gap-1.5 rounded-lg bg-lians-500 px-4 py-2 text-sm font-semibold text-white hover:bg-lians-600"
+        >
+          <Plus className="h-4 w-4" aria-hidden /> Catat booking manual
+        </Link>
+      </div>
 
       <nav className="flex flex-wrap gap-2">
         <Link
@@ -59,6 +68,7 @@ export default async function BookingListPage({
           <thead className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-muted">
             <tr>
               <th className="p-4">Kode</th>
+              <th className="p-4">Asal</th>
               <th className="p-4">Pelanggan</th>
               <th className="p-4">Pesanan</th>
               <th className="p-4">Mulai</th>
@@ -73,6 +83,17 @@ export default async function BookingListPage({
                   <Link href={`/booking/${b.id}`} className="font-semibold text-lians-700">
                     {b.bookingCode}
                   </Link>
+                </td>
+                <td className="p-4">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      b.source === 'manual'
+                        ? 'bg-slate-200 text-slate-700'
+                        : 'bg-lians-50 text-lians-700'
+                    }`}
+                  >
+                    {b.source === 'manual' ? 'Manual' : 'Website'}
+                  </span>
                 </td>
                 <td className="p-4">
                   {b.customerName}
