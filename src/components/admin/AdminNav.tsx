@@ -3,13 +3,23 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { LayoutDashboard, Car, CalendarCheck, Route, Star, Settings, LogOut } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Car,
+  CalendarCheck,
+  Users,
+  Route,
+  Star,
+  Settings,
+  LogOut,
+} from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 const ITEM = [
   { href: '/', label: 'Dasbor', Icon: LayoutDashboard },
   { href: '/armada', label: 'Armada', Icon: Car },
   { href: '/booking', label: 'Booking', Icon: CalendarCheck },
+  { href: '/pelanggan', label: 'Pelanggan', Icon: Users },
   { href: '/rute', label: 'Rute Travel', Icon: Route },
   { href: '/testimoni', label: 'Testimoni', Icon: Star },
   { href: '/pengaturan', label: 'Pengaturan', Icon: Settings },
