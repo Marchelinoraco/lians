@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { differenceInCalendarDays, startOfDay } from 'date-fns';
+import { startOfDay } from 'date-fns';
 
 const teleponID = z
   .string()
@@ -22,8 +22,7 @@ const sewaKendaraan = z.object({
   vehicleId: z.string().uuid('Kendaraan wajib dipilih'),
   routeId: z.undefined().optional(),
   endDate: tanggal,
-  rateType: z.enum(['24h', '12h']),
-  driverDays: z.number().int().min(0),
+  rateCategory: z.enum(['lepas-kunci', 'pelayanan']),
 });
 
 const travel = z.object({
@@ -32,8 +31,7 @@ const travel = z.object({
   routeId: z.string().uuid('Rute wajib dipilih'),
   vehicleId: z.undefined().optional(),
   endDate: z.undefined().optional(),
-  rateType: z.undefined().optional(),
-  driverDays: z.literal(0).optional().default(0),
+  rateCategory: z.undefined().optional(),
 });
 
 export const bookingInputSchema = z
@@ -51,22 +49,12 @@ export const bookingInputSchema = z
 
     if (data.serviceType === 'travel') return;
 
-    const selesai = startOfDay(new Date(data.endDate));
-    if (selesai < mulai) {
+    // Tanggal selesai boleh sama dengan tanggal mulai — itu sewa satu hari.
+    if (startOfDay(new Date(data.endDate)) < mulai) {
       ctx.addIssue({
         code: 'custom',
         path: ['endDate'],
-        message: 'Tanggal selesai harus setelah tanggal mulai',
-      });
-      return;
-    }
-
-    const jumlahHari = Math.max(1, differenceInCalendarDays(selesai, mulai));
-    if (data.driverDays > jumlahHari) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['driverDays'],
-        message: `Hari pakai sopir tidak boleh lebih dari ${jumlahHari} hari sewa`,
+        message: 'Tanggal selesai tidak boleh sebelum tanggal mulai',
       });
     }
   });

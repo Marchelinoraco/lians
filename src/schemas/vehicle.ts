@@ -9,8 +9,8 @@ export const vehicleInputSchema = z
     images: z
       .array(z.object({ url: z.string().url(), publicId: z.string(), alt: z.string() }))
       .default([]),
-    rate24h: z.coerce.number().int().min(0, 'Tarif 24 jam wajib diisi'),
-    rate12h: z.coerce.number().int().min(0).nullable().default(null),
+    rateLepasKunci: z.coerce.number().int().min(0).nullable().default(null),
+    ratePelayanan: z.coerce.number().int().min(0).nullable().default(null),
     serviceTypes: z
       .array(z.enum(['self-drive', 'with-driver', 'tourism']))
       .min(1, 'Pilih minimal satu jenis layanan'),
@@ -29,9 +29,9 @@ export const vehicleInputSchema = z
     isPublished: z.boolean().default(true),
     sortOrder: z.coerce.number().int().default(0),
   })
-  .refine((v) => v.rate12h === null || v.rate12h <= v.rate24h, {
-    path: ['rate12h'],
-    message: 'Tarif 12 jam seharusnya tidak lebih mahal dari tarif 24 jam',
+  .refine((v) => v.rateLepasKunci !== null || v.ratePelayanan !== null, {
+    path: ['rateLepasKunci'],
+    message: 'Isi minimal satu tarif: lepas kunci atau pelayanan',
   });
 
 export type VehicleInput = z.infer<typeof vehicleInputSchema>;

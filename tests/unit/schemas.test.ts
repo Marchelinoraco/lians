@@ -7,10 +7,9 @@ const sewaValid = {
   email: 'budi@example.com',
   serviceType: 'with-driver' as const,
   vehicleId: '11111111-1111-4111-8111-111111111111',
-  startDate: '2099-08-01',
-  endDate: '2099-08-06',
-  rateType: '24h' as const,
-  driverDays: 3,
+  startDate: '2099-08-15',
+  endDate: '2099-08-17',
+  rateCategory: 'pelayanan' as const,
   notes: '',
 };
 
@@ -20,7 +19,6 @@ const travelValid = {
   serviceType: 'travel' as const,
   routeId: '22222222-2222-4222-8222-222222222222',
   startDate: '2099-08-01',
-  driverDays: 0,
 };
 
 describe('bookingInputSchema — sewa kendaraan', () => {
@@ -28,13 +26,27 @@ describe('bookingInputSchema — sewa kendaraan', () => {
     expect(bookingInputSchema.safeParse(sewaValid).success).toBe(true);
   });
 
-  it('menolak hari sopir melebihi durasi', () => {
-    const r = bookingInputSchema.safeParse({ ...sewaValid, driverDays: 9 });
+  it('menolak pesanan sewa tanpa kategori tarif', () => {
+    const { rateCategory: _abaikan, ...tanpaKategori } = sewaValid;
+    expect(bookingInputSchema.safeParse(tanpaKategori).success).toBe(false);
+  });
+
+  it('menolak kategori tarif yang tidak dikenal', () => {
+    const r = bookingInputSchema.safeParse({ ...sewaValid, rateCategory: 'gratis' });
     expect(r.success).toBe(false);
   });
 
+  it('menerima tanggal mulai sama dengan tanggal selesai', () => {
+    const r = bookingInputSchema.safeParse({
+      ...sewaValid,
+      startDate: '2099-08-15',
+      endDate: '2099-08-15',
+    });
+    expect(r.success).toBe(true);
+  });
+
   it('menolak tanggal selesai sebelum tanggal mulai', () => {
-    const r = bookingInputSchema.safeParse({ ...sewaValid, endDate: '2099-07-30' });
+    const r = bookingInputSchema.safeParse({ ...sewaValid, endDate: '2099-08-14' });
     expect(r.success).toBe(false);
   });
 
@@ -68,13 +80,8 @@ describe('bookingInputSchema — travel', () => {
     expect(bookingInputSchema.safeParse(travelValid).success).toBe(true);
   });
 
-  it('menolak pesanan travel yang membawa rateType', () => {
-    const r = bookingInputSchema.safeParse({ ...travelValid, rateType: '24h' });
-    expect(r.success).toBe(false);
-  });
-
-  it('menolak pesanan travel dengan hari sopir lebih dari nol', () => {
-    const r = bookingInputSchema.safeParse({ ...travelValid, driverDays: 2 });
+  it('menolak pesanan travel yang membawa kategori tarif', () => {
+    const r = bookingInputSchema.safeParse({ ...travelValid, rateCategory: 'pelayanan' });
     expect(r.success).toBe(false);
   });
 

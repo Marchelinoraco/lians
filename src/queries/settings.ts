@@ -10,7 +10,6 @@ export const DEFAULT_SETTINGS: SettingsInput = {
     'Jalan Pomorow (Depan Luwansa Hotel), Kelurahan Banjer, Kecamatan Tikala, Manado 95125',
   mapsUrl: '',
   socialLinks: [],
-  driverFeePerDay: 150000,
 
   // Lima kunci berikut dapat diterjemahkan; Indonesia wajib, sisanya opsional.
   operatingHours: {

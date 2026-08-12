@@ -6,8 +6,8 @@ import { settingsInputSchema } from '@/schemas/settings';
 const mobilValid = {
   name: 'Innova Zenix G',
   category: 'mpv' as const,
-  rate24h: 900000,
-  rate12h: 650000,
+  rateLepasKunci: 900000,
+  ratePelayanan: 1300000,
   serviceTypes: ['self-drive' as const],
   seats: 7,
   transmission: 'automatic' as const,
@@ -32,14 +32,23 @@ describe('vehicleInputSchema', () => {
     expect(r.success).toBe(false);
   });
 
-  it('menolak tarif 12 jam yang lebih mahal dari tarif 24 jam', () => {
-    const r = vehicleInputSchema.safeParse({ ...mobilValid, rate12h: 1_500_000 });
-    expect(r.success).toBe(false);
+  it('menerima kendaraan yang hanya punya tarif pelayanan', () => {
+    const r = vehicleInputSchema.safeParse({ ...mobilValid, rateLepasKunci: null });
+    expect(r.success).toBe(true);
   });
 
-  it('menerima tarif 12 jam kosong', () => {
-    const r = vehicleInputSchema.safeParse({ ...mobilValid, rate12h: null });
+  it('menerima kendaraan yang hanya punya tarif lepas kunci', () => {
+    const r = vehicleInputSchema.safeParse({ ...mobilValid, ratePelayanan: null });
     expect(r.success).toBe(true);
+  });
+
+  it('menolak kendaraan tanpa tarif sama sekali', () => {
+    const r = vehicleInputSchema.safeParse({
+      ...mobilValid,
+      rateLepasKunci: null,
+      ratePelayanan: null,
+    });
+    expect(r.success).toBe(false);
   });
 
   it('menolak kendaraan tanpa jenis layanan', () => {
@@ -81,7 +90,6 @@ describe('settingsInputSchema', () => {
     email: '',
     address: 'Jalan Pomorow, Manado',
     mapsUrl: '',
-    driverFeePerDay: 150000,
     operatingHours: { id: 'Setiap hari' },
     heroTitle: { id: 'Rental Mobil Manado' },
     heroSubtitle: { id: 'Armada terawat' },
@@ -98,8 +106,10 @@ describe('settingsInputSchema', () => {
     expect(r.success).toBe(false);
   });
 
-  it('menerima tarif sopir nol', () => {
-    const r = settingsInputSchema.safeParse({ ...settingsDasar, driverFeePerDay: 0 });
+  it('menerima pengaturan tanpa tarif sopir, karena tarif itu sudah dihapus', () => {
+    const r = settingsInputSchema.safeParse(settingsDasar);
     expect(r.success).toBe(true);
+    if (!r.success) return;
+    expect(r.data).not.toHaveProperty('driverFeePerDay');
   });
 });

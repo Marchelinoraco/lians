@@ -12,7 +12,6 @@ export const settingsInputSchema = z.object({
   socialLinks: z
     .array(z.object({ label: z.string().trim().min(1), url: z.string().url() }))
     .default([]),
-  driverFeePerDay: z.coerce.number().int().min(0),
 
   // Lima kunci berikut dapat diterjemahkan.
   operatingHours: localizedString(z.string().trim().max(200)),
