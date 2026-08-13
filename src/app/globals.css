@@ -26,3 +26,38 @@ body {
   background-color: #ffffff;
   color: var(--color-ink);
 }
+
+/* Jalur logo klien yang berjalan terus-menerus.
+   Daftarnya digandakan dua kali di markup, lalu digeser tepat setengah lebar —
+   begitu selesai, salinan kedua sudah persis menempati posisi awal salinan
+   pertama, sehingga perulangannya tidak terlihat berkedip. */
+@keyframes geser-logo {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.jalur-logo {
+  animation: geser-logo 45s linear infinite;
+}
+
+.jalur-logo:hover {
+  animation-play-state: paused;
+}
+
+/* Sebagian orang merasa pusing oleh gerakan yang tidak berhenti, dan sebagian
+   mengaturnya di tingkat sistem operasi. Untuk mereka jalurnya diam. */
+@media (prefers-reduced-motion: reduce) {
+  .jalur-logo {
+    animation: none;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .jalur-logo-salinan {
+    display: none;
+  }
+}
