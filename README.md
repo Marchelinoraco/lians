@@ -45,7 +45,7 @@ satu sama lain, sehingga kesalahan `cloud_name mismatch` tidak mungkin terjadi.
 
 ## Struktur
 
-- Menu publik: Beranda, Kendaraan, Tours, Testimoni, Tentang, Kontak. Ticketing dan Terms menyusul.
+- Menu publik: Beranda, Kendaraan, Tours, Ticketing, Testimoni, Tentang, Kontak. Terms menyusul.
   Halaman Travel dihapus; rutenya disembunyikan, datanya tetap utuh.
 - `src/data/tours/` memuat dua belas paket wisata sebagai berkas TypeScript, satu berkas per paket,
   masing-masing lengkap empat bahasa.
@@ -128,6 +128,16 @@ bolong.
 **Foto tours ditaruh di `public/tours/<slug>/`** lalu nama berkasnya didaftarkan pada `images` di
 berkas paketnya. Halaman tetap rapi selama daftar itu kosong.
 
+**Harga tiket pesawat tidak ditampilkan dan tidak disimpan.** Tabel `ticketRequests` memang tidak
+punya kolom harga: tarif penerbangan berubah setiap jam dan bergantung kelas kursi yang tersisa,
+jadi angka yang tersimpan akan langsung basi. Halaman `/tiket` menjelaskan alasannya kepada
+pengunjung — menyembunyikan tanpa penjelasan justru terbaca sebagai menutupi sesuatu.
+
+**Daftar maskapai statis di `src/data/maskapai.ts`, tanpa logo.** Logo maskapai adalah merek dagang
+pihak lain. Maskapai juga sengaja **tidak disebut "mitra" atau "partner"** — menyebut kemitraan yang
+belum tentu ada adalah klaim yang bisa dipersoalkan. Yang dipakai: "maskapai yang tiketnya dapat
+kami pesankan".
+
 ## Pengujian
 
 ```bash
@@ -151,5 +161,4 @@ Tercatat di `docs/superpowers/specs/` sebagai di luar cakupan rilis ini: pembaya
 pengecekan ketersediaan otomatis, akun customer, email otomatis, panel admin multibahasa, dan
 formulir ulasan publik.
 
-Menyusul: halaman Ticketing berikut formulirnya, Syarat dan Ketentuan, Blog, Galeri, serta logo Our
-Clients di Beranda.
+Menyusul: Syarat dan Ketentuan, Blog, Galeri, serta logo Our Clients di Beranda.
