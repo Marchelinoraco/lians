@@ -13,6 +13,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [{ protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' }],
   },
 
+  experimental: {
+    // Situs ini punya beberapa root layout (publik dan admin) DAN root layout
+    // publiknya berada di segmen dinamis [locale]. Dua-duanya membuat Next
+    // tidak punya satu layout pun untuk menyusun halaman 404 global, sehingga
+    // URL tak dikenal yang tidak melewati proxy — yaitu yang berekstensi
+    // berkas, misalnya /gambar-lama.png — berakhir 500, bukan 404.
+    // app/global-not-found.tsx menutup celah itu.
+    globalNotFound: true,
+  },
 };
 
 export default nextConfig;
