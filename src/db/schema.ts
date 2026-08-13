@@ -183,6 +183,32 @@ export const bookings = pgTable('bookings', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Permintaan penawaran tur. Paketnya statis di dalam repo, tetapi permintaan
+ * yang masuk adalah pesanan — bukan konten — sehingga tetap tersimpan.
+ */
+export const tourRequests = pgTable('tour_requests', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  requestCode: text('request_code').notNull().unique(),
+  // Slug, bukan foreign key: tidak ada tabel paket yang bisa dirujuk. Namanya
+  // disalin di kolom berikutnya supaya mengganti judul paket kelak tidak
+  // mengubah isi permintaan lama.
+  tourSlug: text('tour_slug').notNull(),
+  tourNameSnapshot: text('tour_name_snapshot').notNull(),
+  customerName: text('customer_name').notNull(),
+  phone: text('phone').notNull(),
+  email: text('email'),
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+  pax: integer('pax').notNull(),
+  startDate: date('start_date').notNull(),
+  endDate: date('end_date'),
+  notes: text('notes'),
+  status: bookingStatusEnum('status').notNull().default('pending'),
+  adminNotes: text('admin_notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const testimonials = pgTable('testimonials', {
   id: uuid('id').primaryKey().defaultRandom(),
   customerName: text('customer_name').notNull(),
@@ -226,6 +252,8 @@ export type Booking = typeof bookings.$inferSelect;
 export type NewBooking = typeof bookings.$inferInsert;
 export type Customer = typeof customers.$inferSelect;
 export type NewCustomer = typeof customers.$inferInsert;
+export type TourRequest = typeof tourRequests.$inferSelect;
+export type NewTourRequest = typeof tourRequests.$inferInsert;
 export type Supplier = typeof suppliers.$inferSelect;
 export type NewSupplier = typeof suppliers.$inferInsert;
 export type SupplierVehicle = typeof supplierVehicles.$inferSelect;

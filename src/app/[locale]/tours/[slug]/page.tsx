@@ -6,6 +6,7 @@ import { TOUR_PACKAGES, getTourBySlug } from '@/data/tours';
 import { TourGallery } from '@/components/tour/TourGallery';
 import { TourItinerary } from '@/components/tour/TourItinerary';
 import { TourCard } from '@/components/tour/TourCard';
+import { TourRequestForm } from '@/components/tour/TourRequestForm';
 import { getSettings } from '@/queries/settings';
 import { buildAlternates } from '@/lib/seo';
 import { waLink } from '@/lib/whatsapp';
@@ -192,11 +193,17 @@ export default async function DetailTourPage({
               </div>
             ) : null}
 
+            <div className="mt-5">
+              <TourRequestForm tourSlug={tour.slug} locale={locale} />
+            </div>
+
+            {/* Jalur kedua untuk yang enggan mengisi formulir. Sebagian orang
+                memang lebih suka langsung mengetik sendiri di WhatsApp. */}
             <a
               href={waLink(settings.whatsappNumber, pesanWa)}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 block rounded-lg bg-emerald-500 px-4 py-3 text-center font-semibold text-white hover:bg-emerald-600"
+              className="mt-3 block rounded-lg border border-emerald-500 px-4 py-2.5 text-center text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
             >
               {t.tours.askPrice}
             </a>

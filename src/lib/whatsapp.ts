@@ -54,3 +54,40 @@ export function buildBookingMessage(a: BookingMessageArgs): string {
 
   return baris.join('\n');
 }
+
+export type TourMessageArgs = {
+  requestCode: string;
+  tourName: string;
+  customerName: string;
+  pax: number;
+  startDate: string;
+  endDate?: string | null;
+  notes?: string | null;
+};
+
+/**
+ * Sama seperti pesan booking, selalu berbahasa Indonesia — yang membacanya staf
+ * LIANS di Manado, bukan customer.
+ *
+ * Tanpa baris harga sama sekali: paket tur memang tidak menampilkan harga, dan
+ * penawarannya justru yang sedang diminta lewat pesan ini.
+ */
+export function buildTourRequestMessage(a: TourMessageArgs): string {
+  const baris: string[] = [
+    `Halo LIANS, saya ingin meminta penawaran paket wisata.`,
+    ``,
+    `Kode: ${a.requestCode}`,
+    `Nama: ${a.customerName}`,
+    `Paket: ${a.tourName}`,
+    `Jumlah peserta: ${a.pax} orang`,
+    `Tanggal mulai: ${formatTanggal(new Date(a.startDate), 'id')}`,
+  ];
+
+  if (a.endDate) baris.push(`Tanggal selesai: ${formatTanggal(new Date(a.endDate), 'id')}`);
+  if (a.notes) baris.push(`Catatan: ${a.notes}`);
+
+  baris.push(``);
+  baris.push(`Mohon informasi harga dan ketersediaannya. Terima kasih.`);
+
+  return baris.join('\n');
+}
