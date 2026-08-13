@@ -209,6 +209,35 @@ export const tourRequests = pgTable('tour_requests', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Permintaan pemesanan tiket pesawat.
+ *
+ * Tidak ada kolom harga sama sekali, dan itu disengaja: tarif penerbangan
+ * berubah setiap jam dan bergantung ketersediaan kelas. Harga disepakati lewat
+ * WhatsApp saat penawaran dibuat, bukan disimpan lalu jadi basi.
+ */
+export const ticketRequests = pgTable('ticket_requests', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  requestCode: text('request_code').notNull().unique(),
+  origin: text('origin').notNull(),
+  destination: text('destination').notNull(),
+  // Boleh kosong: pelanggan yang belum menentukan maskapai justru yang paling
+  // butuh dibantu memilih.
+  airline: text('airline'),
+  departureDate: date('departure_date').notNull(),
+  returnDate: date('return_date'),
+  pax: integer('pax').notNull(),
+  customerName: text('customer_name').notNull(),
+  phone: text('phone').notNull(),
+  email: text('email'),
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+  notes: text('notes'),
+  status: bookingStatusEnum('status').notNull().default('pending'),
+  adminNotes: text('admin_notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const testimonials = pgTable('testimonials', {
   id: uuid('id').primaryKey().defaultRandom(),
   customerName: text('customer_name').notNull(),
@@ -254,6 +283,8 @@ export type Customer = typeof customers.$inferSelect;
 export type NewCustomer = typeof customers.$inferInsert;
 export type TourRequest = typeof tourRequests.$inferSelect;
 export type NewTourRequest = typeof tourRequests.$inferInsert;
+export type TicketRequest = typeof ticketRequests.$inferSelect;
+export type NewTicketRequest = typeof ticketRequests.$inferInsert;
 export type Supplier = typeof suppliers.$inferSelect;
 export type NewSupplier = typeof suppliers.$inferInsert;
 export type SupplierVehicle = typeof supplierVehicles.$inferSelect;

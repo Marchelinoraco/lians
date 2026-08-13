@@ -91,3 +91,42 @@ export function buildTourRequestMessage(a: TourMessageArgs): string {
 
   return baris.join('\n');
 }
+
+export type TicketMessageArgs = {
+  requestCode: string;
+  origin: string;
+  destination: string;
+  airlineName?: string | null;
+  departureDate: string;
+  returnDate?: string | null;
+  pax: number;
+  customerName: string;
+  notes?: string | null;
+};
+
+/**
+ * Berbahasa Indonesia seperti pesan lainnya — yang membacanya staf di Manado.
+ *
+ * Tanpa baris harga: tarif penerbangan berubah setiap jam, dan penawarannya
+ * justru yang sedang diminta lewat pesan ini.
+ */
+export function buildTicketRequestMessage(a: TicketMessageArgs): string {
+  const baris: string[] = [
+    `Halo LIANS, saya ingin memesan tiket pesawat.`,
+    ``,
+    `Kode: ${a.requestCode}`,
+    `Nama: ${a.customerName}`,
+    `Rute: ${a.origin} → ${a.destination}`,
+    `Maskapai: ${a.airlineName ?? 'Belum menentukan, mohon dibantu'}`,
+    `Keberangkatan: ${formatTanggal(new Date(a.departureDate), 'id')}`,
+  ];
+
+  if (a.returnDate) baris.push(`Kembali: ${formatTanggal(new Date(a.returnDate), 'id')}`);
+  baris.push(`Jumlah penumpang: ${a.pax} orang`);
+  if (a.notes) baris.push(`Catatan: ${a.notes}`);
+
+  baris.push(``);
+  baris.push(`Mohon dicek harga dan ketersediaan kursinya. Terima kasih.`);
+
+  return baris.join('\n');
+}
