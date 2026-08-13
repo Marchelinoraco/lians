@@ -6,6 +6,7 @@ const ko: Messages = {
     vehicles: '차량',
     tours: '투어 패키지',
     ticketing: '항공권 예약',
+    terms: '약관',
     testimonials: '후기',
     about: '소개',
     contact: '문의',
@@ -75,6 +76,16 @@ const ko: Messages = {
     otherPackages: '다른 패키지',
     empty: '이 분류에는 아직 패키지가 없습니다.',
     photoComingSoon: '사진 준비 중',
+  },
+  terms: {
+    title: '이용약관',
+    subtitle: 'LIANS의 차량 대여, 투어 패키지, 티켓 예약에 적용되는 약관입니다.',
+    effectiveSince: '{date}부터 시행',
+    tocTitle: '이 페이지의 내용',
+    questionTitle: '궁금한 점이 있으신가요?',
+    questionBody:
+      '이해되지 않는 부분이 있다면 예약 전에 물어봐 주세요. 나중에 오해가 되는 것보다 지금 확실히 하는 편이 낫습니다.',
+    askWhatsApp: 'WhatsApp으로 문의',
   },
   ticket: {
     title: '항공권 예약',

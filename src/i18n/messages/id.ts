@@ -7,6 +7,7 @@ const id = {
     vehicles: 'Kendaraan',
     tours: 'Tours',
     ticketing: 'Ticketing',
+    terms: 'Syarat',
     testimonials: 'Testimoni',
     about: 'Tentang',
     contact: 'Kontak',
@@ -78,6 +79,17 @@ const id = {
     otherPackages: 'Paket lainnya',
     empty: 'Belum ada paket pada kategori ini.',
     photoComingSoon: 'Foto menyusul',
+  },
+  terms: {
+    title: 'Syarat dan Ketentuan',
+    subtitle:
+      'Ketentuan yang berlaku untuk penyewaan kendaraan, paket wisata, dan pemesanan tiket di LIANS.',
+    effectiveSince: 'Berlaku sejak {date}',
+    tocTitle: 'Isi halaman ini',
+    questionTitle: 'Ada yang ingin ditanyakan?',
+    questionBody:
+      'Kalau ada bagian yang kurang jelas, tanyakan sebelum memesan. Lebih baik dibahas sekarang daripada menjadi selisih paham di kemudian hari.',
+    askWhatsApp: 'Tanya lewat WhatsApp',
   },
   ticket: {
     title: 'Pemesanan Tiket Pesawat',

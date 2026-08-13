@@ -6,6 +6,7 @@ const en: Messages = {
     vehicles: 'Vehicles',
     tours: 'Tours',
     ticketing: 'Flights',
+    terms: 'Terms',
     testimonials: 'Reviews',
     about: 'About',
     contact: 'Contact',
@@ -77,6 +78,17 @@ const en: Messages = {
     otherPackages: 'Other packages',
     empty: 'No packages in this category yet.',
     photoComingSoon: 'Photos coming soon',
+  },
+  terms: {
+    title: 'Terms and Conditions',
+    subtitle:
+      'The terms that apply to vehicle rentals, tour packages, and ticket bookings with LIANS.',
+    effectiveSince: 'In effect since {date}',
+    tocTitle: 'On this page',
+    questionTitle: 'Anything you would like to ask?',
+    questionBody:
+      'If any part of this is unclear, ask before you book. Better to settle it now than to have it become a misunderstanding later.',
+    askWhatsApp: 'Ask on WhatsApp',
   },
   ticket: {
     title: 'Flight Booking',

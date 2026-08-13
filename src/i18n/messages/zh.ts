@@ -6,6 +6,7 @@ const zh: Messages = {
     vehicles: '车辆',
     tours: '旅游套餐',
     ticketing: '机票预订',
+    terms: '条款',
     testimonials: '评价',
     about: '关于我们',
     contact: '联系我们',
@@ -75,6 +76,15 @@ const zh: Messages = {
     otherPackages: '其他套餐',
     empty: '此分类暂无套餐。',
     photoComingSoon: '照片即将上线',
+  },
+  terms: {
+    title: '条款与条件',
+    subtitle: '适用于 LIANS 租车、旅游套餐与票务预订的条款。',
+    effectiveSince: '自 {date} 起生效',
+    tocTitle: '本页内容',
+    questionTitle: '有任何疑问吗？',
+    questionBody: '若有任何不清楚之处，请在预订前提出。现在说清楚，好过日后产生误会。',
+    askWhatsApp: '通过 WhatsApp 咨询',
   },
   ticket: {
     title: '机票预订',

@@ -45,7 +45,7 @@ satu sama lain, sehingga kesalahan `cloud_name mismatch` tidak mungkin terjadi.
 
 ## Struktur
 
-- Menu publik: Beranda, Kendaraan, Tours, Ticketing, Testimoni, Tentang, Kontak. Terms menyusul.
+- Menu publik: Beranda, Kendaraan, Tours, Ticketing, Syarat, Testimoni, Tentang, Kontak.
   Halaman Travel dihapus; rutenya disembunyikan, datanya tetap utuh.
 - `src/data/tours/` memuat dua belas paket wisata sebagai berkas TypeScript, satu berkas per paket,
   masing-masing lengkap empat bahasa.
@@ -133,6 +133,13 @@ punya kolom harga: tarif penerbangan berubah setiap jam dan bergantung kelas kur
 jadi angka yang tersimpan akan langsung basi. Halaman `/tiket` menjelaskan alasannya kepada
 pengunjung — menyembunyikan tanpa penjelasan justru terbaca sebagai menutupi sesuatu.
 
+**Syarat dan ketentuan ada di `src/data/syarat-ketentuan.ts`, ditulis asli, dan MENGIKAT.** Apa pun
+yang tayang di halaman itu menjadi janji LIANS saat ada sengketa. Karena itu **jangan pernah
+menyalin klausul dari situs penyewaan lain**: selain melanggar hak cipta, aturan milik perusahaan
+lain akan mengikat LIANS pada operasi yang tidak dijalankannya — nomor rekening mereka, batas
+wilayah mereka, bahkan model tarif mereka. Setiap angka di berkas itu berasal dari pemilik LIANS.
+Perbarui `SYARAT_BERLAKU_SEJAK` setiap kali isinya berubah.
+
 **Daftar maskapai statis di `src/data/maskapai.ts`, tanpa logo.** Logo maskapai adalah merek dagang
 pihak lain. Maskapai juga sengaja **tidak disebut "mitra" atau "partner"** — menyebut kemitraan yang
 belum tentu ada adalah klaim yang bisa dipersoalkan. Yang dipakai: "maskapai yang tiketnya dapat
@@ -161,4 +168,4 @@ Tercatat di `docs/superpowers/specs/` sebagai di luar cakupan rilis ini: pembaya
 pengecekan ketersediaan otomatis, akun customer, email otomatis, panel admin multibahasa, dan
 formulir ulasan publik.
 
-Menyusul: Syarat dan Ketentuan, Blog, Galeri, serta logo Our Clients di Beranda.
+Menyusul: Blog, Galeri, serta logo Our Clients di Beranda.
