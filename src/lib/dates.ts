@@ -1,6 +1,6 @@
 import { differenceInCalendarDays, format } from 'date-fns';
 import { id as idLocale, enUS, zhCN, ko as koLocale } from 'date-fns/locale';
-import type { Locale } from '@/i18n/config';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n/config';
 
 /**
  * Jumlah hari sewa dihitung inklusif: tanggal mulai dan tanggal selesai
@@ -19,6 +19,17 @@ const DATE_PATTERN: Record<Locale, string> = {
   ko: 'yyyy년 M월 d일',
 };
 
+/**
+ * Jatuh ke bahasa Indonesia untuk nilai yang bukan bahasa yang dikenal, dengan
+ * alasan yang sama seperti `getMessages`: nilainya datang dari segmen URL
+ * `[locale]` yang cocok dengan teks apa pun. Tanpa jaring ini, date-fns
+ * menerima pola `undefined` lalu melempar saat memanggil `.match` padanya, dan
+ * permintaan yang seharusnya 404 berakhir 500.
+ */
 export function formatTanggal(d: Date, locale: Locale): string {
-  return format(d, DATE_PATTERN[locale], { locale: DATE_FNS_LOCALE[locale] });
+  const pola = (DATE_PATTERN as Record<string, string | undefined>)[locale] ?? DATE_PATTERN[DEFAULT_LOCALE];
+  const bahasa =
+    (DATE_FNS_LOCALE as Record<string, (typeof DATE_FNS_LOCALE)[Locale] | undefined>)[locale] ??
+    DATE_FNS_LOCALE[DEFAULT_LOCALE];
+  return format(d, pola, { locale: bahasa });
 }
