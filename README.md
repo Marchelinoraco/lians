@@ -45,8 +45,10 @@ satu sama lain, sehingga kesalahan `cloud_name mismatch` tidak mungkin terjadi.
 
 ## Struktur
 
-- Menu publik: Beranda, Kendaraan, Testimoni, Tentang, Kontak. Ticketing, Tours, dan Terms menyusul
-  di Tahap 2C dan 2D. Halaman Travel dihapus; rutenya disembunyikan, datanya tetap utuh.
+- Menu publik: Beranda, Kendaraan, Tours, Testimoni, Tentang, Kontak. Ticketing dan Terms menyusul.
+  Halaman Travel dihapus; rutenya disembunyikan, datanya tetap utuh.
+- `src/data/tours/` memuat dua belas paket wisata sebagai berkas TypeScript, satu berkas per paket,
+  masing-masing lengkap empat bahasa.
 - `src/proxy.ts` mengarahkan `admin.*` ke `src/app/admin`, host lain ke `src/app/[locale]`.
   Sejak Next.js 16 berkas ini bernama `proxy.ts`, dulu `middleware.ts`.
 - `src/i18n/` memuat kamus keempat bahasa. Kamus Indonesia adalah sumber kebenaran bentuk, jadi
@@ -104,6 +106,28 @@ bukan per hari, dan terpisah dari `totalPrice` yang dibayar pelanggan — selisi
 menghasilkan dua catatan untuk orang yang sama. Daftar pelanggan terisi sendiri dari setiap pesanan
 yang masuk, dari situs maupun dicatat manual.
 
+**Paket tours adalah data statis di `src/data/tours/`, bukan isi database.** Tidak ada tabel paket
+dan tidak ada CRUD: mengubah paket berarti menyunting berkas dan menerbitkan ulang. Karena itu
+kedua halamannya dibuat penuh saat build — 4 halaman daftar dan 48 halaman detail. Yang tersimpan di
+database hanya permintaan tur yang masuk, karena itu pesanan, bukan konten.
+
+**Paket tours tidak menampilkan harga sama sekali**, dan `TourPackage` memang tidak punya kolom
+harga. Seluruh paket mengarah ke WhatsApp untuk penawaran. Dua tes menjaganya: satu menolak kolom
+bernama harga, satu lagi menolak nominal rupiah di dalam teks paket.
+
+**Isi paket wajib bersumber dari `docs/superpowers/specs/2026-08-13-data-paket-tours.md`.** LIANS
+adalah reseller, jadi faktanya berasal dari operatornya — tetapi kalimat dan fotonya ditulis dan
+disediakan sendiri. Jangan menambah fakta yang tidak ada di dokumen itu: halaman ini menjanjikan jam
+keberangkatan dan isi paket yang harus benar-benar ditepati di lapangan.
+
+**Terjemahan paket tours wajib lengkap empat bahasa.** Berbeda dari kendaraan yang boleh jatuh ke
+bahasa Indonesia, `tests/unit/tours-data.test.ts` menggagalkan tes bila ada satu terjemahan terlewat,
+dan menyebut slug serta bahasanya. Halaman setengah Indonesia setengah asing lebih buruk daripada
+bolong.
+
+**Foto tours ditaruh di `public/tours/<slug>/`** lalu nama berkasnya didaftarkan pada `images` di
+berkas paketnya. Halaman tetap rapi selama daftar itu kosong.
+
 ## Pengujian
 
 ```bash
@@ -127,5 +151,5 @@ Tercatat di `docs/superpowers/specs/` sebagai di luar cakupan rilis ini: pembaya
 pengecekan ketersediaan otomatis, akun customer, email otomatis, panel admin multibahasa, dan
 formulir ulasan publik.
 
-Menyusul di Tahap 2C dan 2D: halaman Ticketing dan Tours berikut formulirnya, Syarat dan Ketentuan,
-Blog, Galeri, serta logo Our Clients di Beranda.
+Menyusul: halaman Ticketing berikut formulirnya, Syarat dan Ketentuan, Blog, Galeri, serta logo Our
+Clients di Beranda.
