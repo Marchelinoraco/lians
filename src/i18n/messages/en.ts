@@ -79,6 +79,11 @@ const en: Messages = {
     empty: 'No packages in this category yet.',
     photoComingSoon: 'Photos coming soon',
   },
+  clients: {
+    title: 'Who Has Travelled With Us',
+    subtitle:
+      'Institutions and companies that have used LIANS, from day-to-day needs to large groups.',
+  },
   terms: {
     title: 'Terms and Conditions',
     subtitle:

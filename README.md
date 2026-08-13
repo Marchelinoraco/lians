@@ -128,6 +128,14 @@ bolong.
 **Foto tours ditaruh di `public/tours/<slug>/`** lalu nama berkasnya didaftarkan pada `images` di
 berkas paketnya. Halaman tetap rapi selama daftar itu kosong.
 
+**Logo klien di `public/clients/` sudah diproses, bukan berkas mentah.** Ruang kosong di tepi
+dipangkas dan tingginya diseragamkan supaya logo lebar dan logo persegi tampil dengan bobot
+sebanding. Versi aslinya disimpan di `assets/logo-klien-asli/` — **di luar `public/` supaya tidak
+ikut terbit**, karena salah satunya memuat watermark situs stok gambar yang sudah dipotong.
+Menambah klien baru: proses berkasnya dulu, taruh di `public/clients/`, daftarkan di
+`src/data/klien.ts`. Daftar itu hanya boleh berisi pelanggan yang benar-benar pernah dilayani —
+logo pihak lain adalah merek dagang mereka, dan menampilkannya adalah pernyataan faktual.
+
 **Harga tiket pesawat tidak ditampilkan dan tidak disimpan.** Tabel `ticketRequests` memang tidak
 punya kolom harga: tarif penerbangan berubah setiap jam dan bergantung kelas kursi yang tersisa,
 jadi angka yang tersimpan akan langsung basi. Halaman `/tiket` menjelaskan alasannya kepada

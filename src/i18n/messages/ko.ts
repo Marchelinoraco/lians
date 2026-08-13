@@ -77,6 +77,10 @@ const ko: Messages = {
     empty: '이 분류에는 아직 패키지가 없습니다.',
     photoComingSoon: '사진 준비 중',
   },
+  clients: {
+    title: '이분들이 함께하셨습니다',
+    subtitle: 'LIANS를 이용해 주신 기관과 기업들입니다. 일상적인 이동부터 대규모 단체까지.',
+  },
   terms: {
     title: '이용약관',
     subtitle: 'LIANS의 차량 대여, 투어 패키지, 티켓 예약에 적용되는 약관입니다.',

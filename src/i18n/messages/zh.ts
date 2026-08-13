@@ -77,6 +77,10 @@ const zh: Messages = {
     empty: '此分类暂无套餐。',
     photoComingSoon: '照片即将上线',
   },
+  clients: {
+    title: '他们的行程，交由我们',
+    subtitle: '曾使用 LIANS 服务的机构与企业，从日常用车到大型团队接送。',
+  },
   terms: {
     title: '条款与条件',
     subtitle: '适用于 LIANS 租车、旅游套餐与票务预订的条款。',

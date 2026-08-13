@@ -5,6 +5,7 @@ import { getFeaturedTestimonials } from '@/queries/testimonials';
 import { getSettings } from '@/queries/settings';
 import { Hero } from '@/components/home/Hero';
 import { ServiceCards } from '@/components/home/ServiceCards';
+import { OurClients } from '@/components/home/OurClients';
 import { VehicleGrid } from '@/components/vehicle/VehicleGrid';
 import { TestimonialCard } from '@/components/testimonial/TestimonialCard';
 import { buildAutoRentalJsonLd, buildAlternates, SITE_URL } from '@/lib/seo';
@@ -89,6 +90,11 @@ export default async function BerandaPage({ params }: { params: Promise<{ locale
         </div>
         <VehicleGrid vehicles={kendaraan} locale={locale} />
       </section>
+
+      {/* Ditaruh setelah armada dan sebelum testimoni: pengunjung sudah melihat
+          kendaraannya, dan daftar klien menjawab pertanyaan berikutnya —
+          "siapa lagi yang sudah memakai ini?" — tepat sebelum ulasannya. */}
+      <OurClients locale={locale} />
 
       {testimoni.length > 0 ? (
         <section className="bg-slate-50 py-16">

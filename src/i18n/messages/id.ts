@@ -80,6 +80,11 @@ const id = {
     empty: 'Belum ada paket pada kategori ini.',
     photoComingSoon: 'Foto menyusul',
   },
+  clients: {
+    title: 'Mereka Sudah Mempercayakan Perjalanannya',
+    subtitle:
+      'Instansi dan perusahaan yang pernah memakai layanan LIANS, dari kebutuhan harian sampai rombongan besar.',
+  },
   terms: {
     title: 'Syarat dan Ketentuan',
     subtitle:
