@@ -8,6 +8,7 @@ import {
   Car,
   CalendarCheck,
   Map,
+  Plane,
   Users,
   Truck,
   Wallet,
@@ -34,6 +35,7 @@ export function AdminNav({
     { href: '/armada', label: 'Armada', Icon: Car },
     { href: '/booking', label: 'Booking', Icon: CalendarCheck },
     { href: '/permintaan-tur', label: 'Permintaan Tur', Icon: Map },
+    { href: '/permintaan-tiket', label: 'Permintaan Tiket', Icon: Plane },
     { href: '/pelanggan', label: 'Pelanggan', Icon: Users },
     { href: '/pemasok', label: 'Pemasok', Icon: Truck },
     // Menu ini disembunyikan, bukan diamankan. Penjaganya ada di halaman /rekap
