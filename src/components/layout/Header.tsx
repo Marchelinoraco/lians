@@ -23,13 +23,18 @@ export function Header({ whatsappUrl, locale }: { whatsappUrl: string; locale: L
           <Image src="/logo-lians.png" alt="LIANS" width={132} height={20} priority />
         </Link>
 
-        <nav aria-label={t.nav.home} className="hidden items-center gap-0.5 lg:flex">
+        {/* min-w-0 memberi izin nav menyusut alih-alih mendesak logo dan tombol
+            di sebelahnya; keduanya sudah shrink-0. */}
+        <nav aria-label={t.nav.home} className="hidden min-w-0 items-center gap-0.5 lg:flex">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
               href={localeHref(item.href, locale)}
               className={cn(
-                'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                // whitespace-nowrap wajib: tanpa itu, menu yang terdesak akan
+                // memecah labelnya per kata — dan pada bahasa Mandarin dan
+                // Korea, per aksara.
+                'whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
                 rest === item.href
                   ? 'bg-lians-50 text-lians-700'
                   : 'text-slate-600 hover:text-lians-600',
@@ -40,13 +45,13 @@ export function Header({ whatsappUrl, locale }: { whatsappUrl: string; locale: L
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1">
           <div className="hidden sm:block">
             <LanguageSwitcher current={locale} path={rest} />
           </div>
           <a
             href={whatsappUrl}
-            className="hidden rounded-lg bg-lians-500 px-4 py-2 text-sm font-semibold text-white hover:bg-lians-600 md:inline-block"
+            className="hidden whitespace-nowrap rounded-lg bg-lians-500 px-4 py-2 text-sm font-semibold text-white hover:bg-lians-600 md:inline-block"
           >
             {t.nav.contactUs}
           </a>

@@ -11,6 +11,20 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   ko: '한국어',
 };
 
+/**
+ * Bentuk pendek untuk tombol pemilih bahasa di bilah atas.
+ *
+ * Nama panjang keempat bahasa berjejer memakan ruang yang tidak ada, dan saat
+ * terdesak label CJK terpecah per aksara — 中文 menjadi dua baris. Nama
+ * lengkapnya tetap muncul begitu daftarnya dibuka.
+ */
+export const LOCALE_SHORT: Record<Locale, string> = {
+  id: 'ID',
+  en: 'EN',
+  zh: '中文',
+  ko: '한국어',
+};
+
 /** Kode untuk atribut html lang dan hreflang. */
 export const LOCALE_HTML_LANG: Record<Locale, string> = {
   id: 'id-ID',

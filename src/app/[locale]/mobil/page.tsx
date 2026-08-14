@@ -3,6 +3,7 @@ import { getPublishedVehicles } from '@/queries/vehicles';
 import { filterAndSortVehicles, parseCatalogFilters } from '@/lib/vehicle-filter';
 import { VehicleGrid } from '@/components/vehicle/VehicleGrid';
 import { CatalogControls } from '@/components/vehicle/CatalogControls';
+import { buildAlternates } from '@/lib/seo';
 import { getMessages, fill, type Locale } from '@/i18n';
 
 export const revalidate = 300;
@@ -41,7 +42,11 @@ export async function generateMetadata({
   params: Promise<{ locale: Locale }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  return META[locale];
+  // alternates sempat terlewat di halaman ini saja. Tanpa itu, Google tidak
+  // punya sinyal bahwa katalog ini punya versi bahasa lain — dan sejak pemilih
+  // bahasa berbentuk daftar yang dibuka, tag inilah satu-satunya sinyal yang
+  // tersisa, karena tautannya tidak lagi ada di HTML awal.
+  return { ...META[locale], alternates: buildAlternates('/mobil', locale) };
 }
 
 export default async function MobilPage({
