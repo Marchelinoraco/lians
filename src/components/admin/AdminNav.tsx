@@ -14,6 +14,8 @@ import {
   Wallet,
   Route,
   Star,
+  Newspaper,
+  Images,
   Settings,
   LogOut,
 } from 'lucide-react';
@@ -44,6 +46,8 @@ export function AdminNav({
     ...(superAdmin ? [{ href: '/rekap', label: 'Rekap Keuangan', Icon: Wallet }] : []),
     { href: '/rute', label: 'Rute Travel', Icon: Route },
     { href: '/testimoni', label: 'Testimoni', Icon: Star },
+    { href: '/blog', label: 'Blog', Icon: Newspaper },
+    { href: '/galeri', label: 'Galeri', Icon: Images },
     { href: '/pengaturan', label: 'Pengaturan', Icon: Settings },
   ];
 
