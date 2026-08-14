@@ -14,6 +14,9 @@ import {
 import { getBookings } from '@/queries/bookings';
 import { getAllVehicles } from '@/queries/vehicles';
 import { hitungKekurangan, hitungIsiSitus } from '@/queries/kelengkapan';
+import { hitungTrenBulanan } from '@/queries/tren';
+import { GrafikPesanan } from '@/components/admin/GrafikPesanan';
+import { GrafikPendapatan } from '@/components/admin/GrafikPendapatan';
 import { formatRupiah } from '@/lib/format';
 import { formatTanggal } from '@/lib/dates';
 import { requireAdminPage, sesiSekarang } from '@/actions/auth-guard';
@@ -27,11 +30,12 @@ export default async function DasborPage() {
   await requireAdminPage();
   const superAdmin = (await sesiSekarang())?.role === 'super_admin';
 
-  const [semuaBooking, armada, kekurangan, isiSitus] = await Promise.all([
+  const [semuaBooking, armada, kekurangan, isiSitus, tren] = await Promise.all([
     getBookings(),
     getAllVehicles(),
     hitungKekurangan(),
     hitungIsiSitus(),
+    hitungTrenBulanan(),
   ]);
 
   const pending = semuaBooking.filter((b) => b.status === 'pending');
@@ -124,6 +128,14 @@ export default async function DasborPage() {
           ))}
         </div>
       </section>
+
+      {/* Grafik pendapatan hanya untuk super admin — aturan yang sama dengan
+          kartu nilai pesanan di atas. Grafik jumlah pesanan tidak memuat rupiah
+          sama sekali, jadi boleh dilihat staf. */}
+      <div className={superAdmin ? 'grid gap-5 xl:grid-cols-2' : ''}>
+        <GrafikPesanan data={tren} />
+        {superAdmin ? <GrafikPendapatan data={tren} /> : null}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem] lg:items-start">
         <section>
