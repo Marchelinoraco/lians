@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { ActionResult } from '@/actions/result';
-import { KELAS_ISIAN } from './kelas-form';
+import { KELAS_ISIAN, KELAS_LABEL, KELAS_TOMBOL_UTAMA } from './kelas-form';
 
 type Values = { passwordLama: string; passwordBaru: string; ulangi: string };
 
@@ -54,7 +54,7 @@ export function PasswordForm({
 
       <form onSubmit={kirim} className="grid gap-3 sm:grid-cols-3">
         <label>
-          <span className="mb-1 block text-xs font-semibold">Kata sandi saat ini</span>
+          <span className={KELAS_LABEL}>Kata sandi saat ini</span>
           <input
             type="password"
             autoComplete="current-password"
@@ -64,7 +64,7 @@ export function PasswordForm({
         </label>
 
         <label>
-          <span className="mb-1 block text-xs font-semibold">Kata sandi baru</span>
+          <span className={KELAS_LABEL}>Kata sandi baru</span>
           <input
             type="password"
             autoComplete="new-password"
@@ -74,7 +74,7 @@ export function PasswordForm({
         </label>
 
         <label>
-          <span className="mb-1 block text-xs font-semibold">Ulangi kata sandi baru</span>
+          <span className={KELAS_LABEL}>Ulangi kata sandi baru</span>
           <input
             type="password"
             autoComplete="new-password"
@@ -92,7 +92,7 @@ export function PasswordForm({
           <button
             type="submit"
             disabled={mengirim || tidakCocok}
-            className="rounded-lg bg-lians-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-lians-600 disabled:opacity-50"
+            className={KELAS_TOMBOL_UTAMA}
           >
             {mengirim ? 'Menyimpan…' : 'Ganti kata sandi'}
           </button>

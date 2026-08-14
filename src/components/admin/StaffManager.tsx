@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Trash2, KeyRound } from 'lucide-react';
 import type { ActionResult } from '@/actions/result';
-import { KELAS_ISIAN } from './kelas-form';
+import { KELAS_ISIAN, KELAS_LABEL, KELAS_TOMBOL_KEDUA_KECIL } from './kelas-form';
 
 type Staf = { id: string; name: string; email: string };
 type Values = { name: string; email: string; password: string };
@@ -114,15 +114,15 @@ export function StaffManager({
 
       <form onSubmit={tambah} className="grid gap-3 border-t border-slate-200 pt-5 sm:grid-cols-3">
         <label>
-          <span className="mb-1 block text-xs font-semibold">Nama</span>
+          <span className={KELAS_LABEL}>Nama</span>
           <input {...register('name', { required: true })} className={KELAS_ISIAN} />
         </label>
         <label>
-          <span className="mb-1 block text-xs font-semibold">Email</span>
+          <span className={KELAS_LABEL}>Email</span>
           <input type="email" {...register('email', { required: true })} className={KELAS_ISIAN} />
         </label>
         <label>
-          <span className="mb-1 block text-xs font-semibold">Kata sandi</span>
+          <span className={KELAS_LABEL}>Kata sandi</span>
           <input
             type="password"
             autoComplete="new-password"
@@ -139,7 +139,7 @@ export function StaffManager({
           <button
             type="submit"
             disabled={mengirim}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold hover:border-lians-400 disabled:opacity-50"
+            className={`${KELAS_TOMBOL_KEDUA_KECIL} disabled:opacity-50`}
           >
             {mengirim ? 'Membuat…' : 'Tambah akun staf'}
           </button>

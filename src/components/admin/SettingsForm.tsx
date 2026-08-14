@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import type { SettingsInput } from '@/schemas/settings';
 import type { ActionResult } from '@/actions/result';
 import { LocalizedTextInput } from './LocalizedTextInput';
-import { KELAS_ISIAN } from './kelas-form';
+import { KELAS_ISIAN, KELAS_LABEL, KELAS_BANTUAN, KELAS_TOMBOL_UTAMA } from './kelas-form';
+import { BagianForm, KolomForm, AksiForm } from './BagianForm';
 
 export function SettingsForm({
   settings,
@@ -48,41 +49,47 @@ export function SettingsForm({
   });
 
   return (
-    <form onSubmit={kirim} className="max-w-3xl space-y-6">
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="font-bold">Kontak</h2>
-
-        <div className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={kirim} className="max-w-3xl space-y-5 pb-2">
+      <BagianForm
+        judul="Kontak"
+        keterangan="Dipakai di seluruh situs — tombol WhatsApp, footer, dan halaman kontak."
+      >
+        <div className="space-y-4">
+        <KolomForm>
           <label>
-            <span className="mb-1 block text-sm font-semibold">Nomor WhatsApp</span>
+            <span className={KELAS_LABEL}>Nomor WhatsApp</span>
             <input {...register('whatsappNumber')} placeholder="081234567890" className={KELAS_ISIAN} />
           </label>
           <label>
-            <span className="mb-1 block text-sm font-semibold">Telepon</span>
+            <span className={KELAS_LABEL}>Telepon</span>
             <input {...register('phone')} className={KELAS_ISIAN} />
           </label>
           <label>
-            <span className="mb-1 block text-sm font-semibold">Email</span>
+            <span className={KELAS_LABEL}>Email</span>
             <input type="email" {...register('email')} className={KELAS_ISIAN} />
           </label>
-        </div>
+        </KolomForm>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold">Alamat</span>
+          <span className={KELAS_LABEL}>Alamat</span>
           <textarea rows={2} {...register('address')} className={KELAS_ISIAN} />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold">URL peta Google (opsional)</span>
+          <span className={KELAS_LABEL}>URL peta Google (opsional)</span>
           <input {...register('mapsUrl')} className={KELAS_ISIAN} />
-          <span className="mt-1 block text-xs text-muted">
+          <span className={KELAS_BANTUAN}>
             Kosongkan agar peta disusun otomatis dari alamat di atas.
           </span>
         </label>
-      </section>
+        </div>
+      </BagianForm>
 
-      <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="font-bold">Teks halaman</h2>
+      <BagianForm
+        judul="Teks halaman"
+        keterangan="Bahasa Indonesia wajib; bahasa lain yang kosong akan memakai versi Indonesia."
+      >
+        <div className="space-y-5">
 
         <LocalizedTextInput label="Jam operasional" values={operatingHours} onChange={setOperatingHours} />
         <LocalizedTextInput label="Judul hero" values={heroTitle} onChange={setHeroTitle} />
@@ -107,15 +114,14 @@ export function SettingsForm({
           rows={8}
           hint="Pisahkan paragraf dengan satu baris kosong."
         />
-      </section>
+        </div>
+      </BagianForm>
 
-      <button
-        type="submit"
-        disabled={menyimpan}
-        className="rounded-lg bg-lians-500 px-6 py-2.5 font-semibold text-white hover:bg-lians-600 disabled:opacity-50"
-      >
-        {menyimpan ? 'Menyimpan…' : 'Simpan pengaturan'}
-      </button>
+      <AksiForm>
+        <button type="submit" disabled={menyimpan} className={KELAS_TOMBOL_UTAMA}>
+          {menyimpan ? 'Menyimpan…' : 'Simpan pengaturan'}
+        </button>
+      </AksiForm>
     </form>
   );
 }
