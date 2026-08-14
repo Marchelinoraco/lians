@@ -45,7 +45,9 @@ satu sama lain, sehingga kesalahan `cloud_name mismatch` tidak mungkin terjadi.
 
 ## Struktur
 
-- Menu publik: Beranda, Kendaraan, Tours, Ticketing, Syarat, Testimoni, Tentang, Kontak.
+- Menu publik: Beranda, Kendaraan, Tours, Ticketing, Blog, Syarat, Testimoni, Tentang, Kontak.
+  Dengan sembilan menu, bilah atas beralih ke tombol menu di bawah 1280px — pada 1024px menu
+  terakhir bertabrakan dengan pemilih bahasa.
   Halaman Travel dihapus; rutenya disembunyikan, datanya tetap utuh.
 - `src/data/tours/` memuat dua belas paket wisata sebagai berkas TypeScript, satu berkas per paket,
   masing-masing lengkap empat bahasa.
@@ -128,6 +130,17 @@ bolong.
 **Foto tours ditaruh di `public/tours/<slug>/`** lalu nama berkasnya didaftarkan pada `images` di
 berkas paketnya. Halaman tetap rapi selama daftar itu kosong.
 
+**Blog dan Galeri dikelola di admin, berbeda dari paket Tours yang statis.** Artikel ditulis
+berkala dan foto ditambah terus; meminta deploy tiap kali menulis bukan alur kerja yang masuk akal.
+
+**Isi artikel TIDAK PERNAH dirender sebagai HTML.** Disimpan sebagai larik baris, diterjemahkan
+`src/lib/blok-artikel.ts` menjadi elemen React. Hanya `## ` dan `- ` yang dikenali — bukan Markdown.
+Ada tes yang memastikan `**tebal**` dan `<b>tag</b>` tampil apa adanya. Jangan menggantinya dengan
+Markdown tanpa memasang penyaring HTML lebih dulu.
+
+**Artikel baru berbawaan BELUM terbit**, kebalikan dari kendaraan, dan penyaring `isPublished` ada
+di dalam kueri — bukan hanya di halaman. Tanpa itu, siapa pun yang menebak slug dapat membaca draf.
+
 **Logo klien di `public/clients/` sudah diproses, bukan berkas mentah.** Ruang kosong di tepi
 dipangkas dan tingginya diseragamkan supaya logo lebar dan logo persegi tampil dengan bobot
 sebanding. Versi aslinya disimpan di `assets/logo-klien-asli/` — **di luar `public/` supaya tidak
@@ -176,4 +189,5 @@ Tercatat di `docs/superpowers/specs/` sebagai di luar cakupan rilis ini: pembaya
 pengecekan ketersediaan otomatis, akun customer, email otomatis, panel admin multibahasa, dan
 formulir ulasan publik.
 
-Menyusul: Blog, Galeri, serta logo Our Clients di Beranda.
+Belum ada: pembayaran online, pengecekan ketersediaan otomatis, akun customer, email otomatis,
+panel admin multibahasa, dan formulir ulasan publik.
