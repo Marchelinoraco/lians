@@ -252,6 +252,35 @@ export const testimonials = pgTable('testimonials', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const posts = pgTable('posts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  slug: text('slug').notNull().unique(),
+  title: jsonb('title').$type<Localized<string>>().notNull(),
+  excerpt: jsonb('excerpt').$type<Localized<string>>().notNull().default({ id: '' }),
+  // Larik baris, bukan satu teks panjang: bentuk ini dapat memakai
+  // LocalizedListInput yang sudah ada, tanpa widget baru dan tanpa Markdown.
+  body: jsonb('body').$type<Localized<string[]>>().notNull().default({ id: [] }),
+  coverImage: jsonb('cover_image').$type<VehicleImage[]>().notNull().default([]),
+  // Berbawaan false, kebalikan dari kendaraan. Artikel setengah jadi yang tidak
+  // sengaja tayang lebih merugikan daripada artikel selesai yang lupa
+  // diterbitkan.
+  isPublished: boolean('is_published').notNull().default(false),
+  // Dipisah dari createdAt: artikel boleh disiapkan lebih dulu lalu diterbitkan
+  // kemudian, dan yang tampil di situs adalah tanggal ini.
+  publishedAt: date('published_at').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const galleryItems = pgTable('gallery_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  image: jsonb('image').$type<VehicleImage[]>().notNull().default([]),
+  caption: jsonb('caption').$type<Localized<string>>().notNull().default({ id: '' }),
+  isPublished: boolean('is_published').notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const siteSettings = pgTable('site_settings', {
   key: text('key').primaryKey(),
   value: jsonb('value').notNull(),
@@ -288,6 +317,9 @@ export type NewTicketRequest = typeof ticketRequests.$inferInsert;
 export type Supplier = typeof suppliers.$inferSelect;
 export type NewSupplier = typeof suppliers.$inferInsert;
 export type SupplierVehicle = typeof supplierVehicles.$inferSelect;
+export type Post = typeof posts.$inferSelect;
+export type NewPost = typeof posts.$inferInsert;
+export type GalleryItem = typeof galleryItems.$inferSelect;
 export type Testimonial = typeof testimonials.$inferSelect;
 export type NewTestimonial = typeof testimonials.$inferInsert;
 export type SiteSetting = typeof siteSettings.$inferSelect;
