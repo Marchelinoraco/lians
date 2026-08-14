@@ -7,6 +7,7 @@ const id = {
     vehicles: 'Kendaraan',
     tours: 'Tours',
     ticketing: 'Ticketing',
+    blog: 'Blog',
     terms: 'Syarat',
     testimonials: 'Testimoni',
     about: 'Tentang',
@@ -84,6 +85,19 @@ const id = {
     title: 'Mereka Sudah Mempercayakan Perjalanannya',
     subtitle:
       'Instansi dan perusahaan yang pernah memakai layanan LIANS, dari kebutuhan harian sampai rombongan besar.',
+  },
+  blog: {
+    title: 'Blog & Berita',
+    subtitle: 'Tips perjalanan, tempat menarik di Sulawesi Utara, dan kabar dari LIANS.',
+    readMore: 'Baca selengkapnya',
+    backToList: 'Kembali ke daftar artikel',
+    publishedOn: 'Diterbitkan {date}',
+    otherPosts: 'Artikel lainnya',
+    empty: 'Belum ada artikel. Nantikan tulisan pertama kami.',
+  },
+  gallery: {
+    title: 'Galeri',
+    subtitle: 'Potret perjalanan pelanggan bersama armada LIANS.',
   },
   terms: {
     title: 'Syarat dan Ketentuan',

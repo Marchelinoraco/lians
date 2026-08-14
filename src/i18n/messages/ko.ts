@@ -6,6 +6,7 @@ const ko: Messages = {
     vehicles: '차량',
     tours: '투어 패키지',
     ticketing: '항공권 예약',
+    blog: '소식',
     terms: '약관',
     testimonials: '후기',
     about: '소개',
@@ -80,6 +81,19 @@ const ko: Messages = {
   clients: {
     title: '이분들이 함께하셨습니다',
     subtitle: 'LIANS를 이용해 주신 기관과 기업들입니다. 일상적인 이동부터 대규모 단체까지.',
+  },
+  blog: {
+    title: '소식과 이야기',
+    subtitle: '여행 팁, 북술라웨시의 가볼 만한 곳, 그리고 LIANS의 소식입니다.',
+    readMore: '자세히 읽기',
+    backToList: '글 목록으로 돌아가기',
+    publishedOn: '{date} 발행',
+    otherPosts: '다른 글',
+    empty: '아직 게시된 글이 없습니다. 첫 글을 준비하고 있습니다.',
+  },
+  gallery: {
+    title: '갤러리',
+    subtitle: 'LIANS 차량과 함께한 고객들의 여정 순간입니다.',
   },
   terms: {
     title: '이용약관',

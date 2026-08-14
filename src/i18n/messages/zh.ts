@@ -6,6 +6,7 @@ const zh: Messages = {
     vehicles: '车辆',
     tours: '旅游套餐',
     ticketing: '机票预订',
+    blog: '资讯',
     terms: '条款',
     testimonials: '评价',
     about: '关于我们',
@@ -80,6 +81,19 @@ const zh: Messages = {
   clients: {
     title: '他们的行程，交由我们',
     subtitle: '曾使用 LIANS 服务的机构与企业，从日常用车到大型团队接送。',
+  },
+  blog: {
+    title: '资讯与文章',
+    subtitle: '出行贴士、北苏拉威西值得一看的去处，以及 LIANS 的最新消息。',
+    readMore: '阅读全文',
+    backToList: '返回文章列表',
+    publishedOn: '发布于 {date}',
+    otherPosts: '更多文章',
+    empty: '暂无文章，敬请期待我们的第一篇。',
+  },
+  gallery: {
+    title: '相册',
+    subtitle: '客人与 LIANS 车队同行的旅途瞬间。',
   },
   terms: {
     title: '条款与条件',

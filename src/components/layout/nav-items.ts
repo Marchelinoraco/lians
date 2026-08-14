@@ -14,6 +14,7 @@ export const NAV_ITEMS = [
   { href: '/mobil', key: 'vehicles' },
   { href: '/tours', key: 'tours' },
   { href: '/tiket', key: 'ticketing' },
+  { href: '/blog', key: 'blog' },
   { href: '/syarat-ketentuan', key: 'terms' },
   { href: '/testimoni', key: 'testimonials' },
   { href: '/tentang', key: 'about' },

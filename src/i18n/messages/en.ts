@@ -6,6 +6,7 @@ const en: Messages = {
     vehicles: 'Vehicles',
     tours: 'Tours',
     ticketing: 'Flights',
+    blog: 'Blog',
     terms: 'Terms',
     testimonials: 'Reviews',
     about: 'About',
@@ -83,6 +84,19 @@ const en: Messages = {
     title: 'Who Has Travelled With Us',
     subtitle:
       'Institutions and companies that have used LIANS, from day-to-day needs to large groups.',
+  },
+  blog: {
+    title: 'Blog & News',
+    subtitle: 'Travel tips, places worth seeing in North Sulawesi, and news from LIANS.',
+    readMore: 'Read more',
+    backToList: 'Back to all articles',
+    publishedOn: 'Published {date}',
+    otherPosts: 'More articles',
+    empty: 'No articles yet. Our first one is on its way.',
+  },
+  gallery: {
+    title: 'Gallery',
+    subtitle: 'Moments from journeys our customers have taken with the LIANS fleet.',
   },
   terms: {
     title: 'Terms and Conditions',

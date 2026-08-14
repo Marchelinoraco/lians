@@ -35,7 +35,7 @@ export function Header({ whatsappUrl, locale }: { whatsappUrl: string; locale: L
     <header className="fixed inset-x-3 top-3 z-50 sm:inset-x-6 sm:top-5">
       <div
         className={cn(
-          'mx-auto max-w-6xl rounded-3xl border border-black/[.06] bg-white/85 backdrop-blur-xl transition-[box-shadow,background-color] duration-300 lg:rounded-full',
+          'mx-auto max-w-6xl rounded-3xl border border-black/[.06] bg-white/85 backdrop-blur-xl transition-[box-shadow,background-color] duration-300 xl:rounded-full',
           tergulir ? 'bg-white/95 shadow-[0_6px_24px_rgba(15,23,42,.08)]' : 'shadow-sm',
         )}
       >
@@ -53,8 +53,12 @@ export function Header({ whatsappUrl, locale }: { whatsappUrl: string; locale: L
 
           {/* Menu dipusatkan secara absolut, bukan lewat flex: dengan begitu
               posisinya tetap di tengah pil meski lebar logo dan tombol kanan
-              berbeda-beda antarbahasa. */}
-          <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 lg:flex">
+              berbeda-beda antarbahasa.
+
+              Ambangnya xl, bukan lg: dengan sembilan menu, pada 1024px menu
+              terakhir bertabrakan dengan pemilih bahasa. Di bawah 1280px
+              dipakai tombol menu. */}
+          <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 xl:flex">
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
@@ -88,7 +92,7 @@ export function Header({ whatsappUrl, locale }: { whatsappUrl: string; locale: L
               onClick={() => setTerbuka((v) => !v)}
               aria-expanded={terbuka}
               aria-label={terbuka ? t.nav.closeMenu : t.nav.openMenu}
-              className="grid h-9 w-9 place-items-center rounded-full border border-black/[.08] bg-white transition hover:border-lians-300 lg:hidden"
+              className="grid h-9 w-9 place-items-center rounded-full border border-black/[.08] bg-white transition hover:border-lians-300 xl:hidden"
             >
               {terbuka ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
@@ -96,7 +100,7 @@ export function Header({ whatsappUrl, locale }: { whatsappUrl: string; locale: L
         </nav>
 
         {terbuka ? (
-          <div className="border-t border-black/[.06] px-2 pb-2 lg:hidden">
+          <div className="border-t border-black/[.06] px-2 pb-2 xl:hidden">
             <ul className="pt-1">
               {NAV_ITEMS.map((item) => (
                 <li key={item.href}>

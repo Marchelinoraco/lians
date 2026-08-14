@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { getPublishedTestimonials } from '@/queries/testimonials';
+import { getPublishedGallery } from '@/queries/gallery';
+import { GaleriGrid } from '@/components/gallery/GaleriGrid';
 import { TestimonialCard } from '@/components/testimonial/TestimonialCard';
 import { getMessages, type Locale } from '@/i18n';
 import { buildAlternates } from '@/lib/seo';
@@ -31,7 +33,10 @@ export async function generateMetadata({
 export default async function TestimoniPage({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params;
   const t = getMessages(locale);
-  const semua = await getPublishedTestimonials();
+  const [semua, galeri] = await Promise.all([
+    getPublishedTestimonials(),
+    getPublishedGallery(),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-12">
@@ -51,6 +56,18 @@ export default async function TestimoniPage({ params }: { params: Promise<{ loca
           ))}
         </div>
       )}
+
+      {/* Galeri disembunyikan seluruhnya selama belum ada foto — judul bagian
+          yang berdiri di atas ruang kosong terlihat seperti halaman rusak. */}
+      {galeri.length > 0 ? (
+        <section className="space-y-4 border-t border-slate-200 pt-10">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-black sm:text-3xl">{t.gallery.title}</h2>
+            <p className="max-w-2xl text-muted">{t.gallery.subtitle}</p>
+          </div>
+          <GaleriGrid items={galeri} locale={locale} />
+        </section>
+      ) : null}
     </div>
   );
 }
