@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
+import { EksporPesanan } from '@/components/admin/EksporPesanan';
 import { getBookings } from '@/queries/bookings';
 import { formatRupiah } from '@/lib/format';
 import { formatTanggal } from '@/lib/dates';
-import { requireAdminPage } from '@/actions/auth-guard';
+import { requireAdminPage, sesiSekarang } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,7 @@ export default async function BookingListPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   await requireAdminPage();
+  const superAdmin = (await sesiSekarang())?.role === 'super_admin';
 
   const { status } = await searchParams;
   const valid = ['pending', 'confirmed', 'completed', 'cancelled'];
@@ -37,12 +39,15 @@ export default async function BookingListPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-black">Booking</h1>
-        <Link
-          href="/booking/manual"
-          className="flex items-center gap-1.5 rounded-lg bg-lians-500 px-4 py-2 text-sm font-semibold text-white hover:bg-lians-600"
-        >
-          <Plus className="h-4 w-4" aria-hidden /> Catat booking manual
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <EksporPesanan statusAktif={filter} superAdmin={superAdmin} />
+          <Link
+            href="/booking/manual"
+            className="flex items-center gap-1.5 rounded-lg bg-lians-500 px-4 py-2 text-sm font-semibold text-white hover:bg-lians-600"
+          >
+            <Plus className="h-4 w-4" aria-hidden /> Catat booking manual
+          </Link>
+        </div>
       </div>
 
       <nav className="flex flex-wrap gap-2">

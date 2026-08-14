@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   // isi folder di luar repositori.
   turbopack: { root: path.resolve(import.meta.dirname) },
 
+  // exceljs dan pdfkit membaca berkas pendukung dari disk saat dijalankan
+  // (antara lain metrik font bawaan pdfkit). Bila ikut dipaketkan bundler,
+  // berkas itu tidak terbawa dan ekspor gagal saat dijalankan, bukan saat
+  // build — jadi keduanya dibiarkan sebagai paket luar.
+  serverExternalPackages: ['exceljs', 'pdfkit'],
+
   // next/image menolak host luar yang tidak didaftarkan. Foto armada
   // diunggah ke Cloudinary, jadi domainnya harus diizinkan di sini.
   images: {

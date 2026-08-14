@@ -131,6 +131,18 @@ bolong.
 **Foto tours ditaruh di `public/tours/<slug>/`** lalu nama berkasnya didaftarkan pada `images` di
 berkas paketnya. Halaman tetap rapi selama daftar itu kosong.
 
+**Ekspor pesanan ada di Route Handler, dan Route Handler TIDAK dilindungi layout admin.** Layout
+hanya membungkus halaman, bukan `route.ts`. Karena itu `src/app/admin/booking/ekspor/route.ts`
+memeriksa sesinya sendiri — tanpa itu siapa pun yang menebak alamatnya dapat mengunduh seluruh
+daftar pelanggan berikut nomor teleponnya. Aturan yang sama berlaku untuk Route Handler baru mana
+pun di bawah `src/app/admin/`.
+
+**Kolom uang pada ekspor hanya untuk super admin**, mengikuti aturan yang sama dengan dasbor. Staf
+tetap memperoleh daftar operasionalnya — kode, pelanggan, kendaraan, tanggal, status.
+
+**exceljs dan pdfkit terdaftar di `serverExternalPackages`.** Keduanya membaca berkas pendukung dari
+disk saat dijalankan; bila ikut dipaketkan bundler, ekspor gagal saat dijalankan, bukan saat build.
+
 **Ulasan Google diambil lewat Places API resmi, bukan dengan mengikis halaman pencarian.** Google
 memblokir pengambilan otomatis, dan menyalin ulasan ke database sendiri berarti menayangkan tulisan
 orang tanpa izin sekaligus membekukannya — ulasan yang kemudian dihapus penulisnya akan tetap
