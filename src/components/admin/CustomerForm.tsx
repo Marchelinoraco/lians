@@ -1,14 +1,21 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { Customer } from '@/db/schema';
 import type { ActionResult } from '@/actions/result';
+import {
+  KELAS_ISIAN,
+  KELAS_LABEL,
+  KELAS_BANTUAN,
+  KELAS_TOMBOL_UTAMA,
+} from './kelas-form';
+import { BagianForm, KolomForm, AksiForm } from './BagianForm';
 
 type Values = { name: string; phone: string; email: string; notes: string };
-
-const kelas = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
 export function CustomerForm({
   customer,
@@ -17,6 +24,7 @@ export function CustomerForm({
   customer: Customer | null;
   onSubmit: (input: unknown) => Promise<ActionResult<{ id: string }>>;
 }) {
+  const router = useRouter();
   const [mengirim, setMengirim] = useState(false);
   const { register, handleSubmit } = useForm<Values>({
     defaultValues: {
@@ -40,45 +48,51 @@ export function CustomerForm({
       return;
     }
     toast.success('Pelanggan tersimpan.');
-    window.location.href = '/pelanggan';
+    router.push('/pelanggan');
   });
 
   return (
-    <form onSubmit={kirim} className="max-w-2xl space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={kirim} className="max-w-2xl space-y-5 pb-2">
+      <BagianForm judul="Data pelanggan" keterangan="Nomor WhatsApp dipakai untuk mencocokkan pesanan berikutnya.">
+        <div className="space-y-5">
+      <KolomForm>
         <label>
-          <span className="mb-1 block text-sm font-semibold">Nama</span>
-          <input {...register('name', { required: true })} className={kelas} />
+          <span className={KELAS_LABEL}>Nama</span>
+          <input {...register('name', { required: true })} className={KELAS_ISIAN} />
         </label>
         <label>
-          <span className="mb-1 block text-sm font-semibold">Nomor WhatsApp</span>
+          <span className={KELAS_LABEL}>Nomor WhatsApp</span>
           <input
             {...register('phone', { required: true })}
             placeholder="081234567890"
-            className={kelas}
+            className={KELAS_ISIAN}
           />
-          <span className="mt-1 block text-xs text-muted">
+          <span className={KELAS_BANTUAN}>
             Disimpan dalam format 62… agar satu orang tidak tercatat dua kali.
           </span>
         </label>
         <label>
-          <span className="mb-1 block text-sm font-semibold">Email (opsional)</span>
-          <input type="email" {...register('email')} className={kelas} />
+          <span className={KELAS_LABEL}>Email (opsional)</span>
+          <input type="email" {...register('email')} className={KELAS_ISIAN} />
         </label>
-      </div>
+      </KolomForm>
 
       <label className="block">
-        <span className="mb-1 block text-sm font-semibold">Catatan internal</span>
-        <textarea rows={3} {...register('notes')} className={kelas} />
+        <span className={KELAS_LABEL}>Catatan internal</span>
+        <textarea rows={3} {...register('notes')} className={KELAS_ISIAN} />
       </label>
 
-      <button
-        type="submit"
-        disabled={mengirim}
-        className="rounded-lg bg-lians-500 px-6 py-2.5 font-semibold text-white hover:bg-lians-600 disabled:opacity-50"
-      >
-        {mengirim ? 'Menyimpan…' : 'Simpan pelanggan'}
-      </button>
+        </div>
+      </BagianForm>
+
+      <AksiForm>
+        <button type="submit" disabled={mengirim} className={KELAS_TOMBOL_UTAMA}>
+          {mengirim ? 'Menyimpan…' : 'Simpan pelanggan'}
+        </button>
+        <Link href="/pelanggan" className="text-sm font-semibold text-muted hover:text-lians-600">
+          Batal
+        </Link>
+      </AksiForm>
     </form>
   );
 }

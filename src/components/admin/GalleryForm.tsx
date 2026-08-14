@@ -8,6 +8,7 @@ import type { ActionResult } from '@/actions/result';
 import type { Localized } from '@/i18n/localized';
 import { LocalizedTextInput } from './LocalizedTextInput';
 import { ImageUploader } from './ImageUploader';
+import { KELAS_ISIAN_DASAR } from './kelas-form';
 
 type Values = { isPublished: boolean; sortOrder: number };
 
@@ -71,7 +72,7 @@ export function GalleryForm({
             type="number"
             min={0}
             {...register('sortOrder')}
-            className="w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={`w-24 ${KELAS_ISIAN_DASAR}`}
           />
           <span className="text-xs text-muted">angka kecil tampil lebih dulu</span>
         </label>

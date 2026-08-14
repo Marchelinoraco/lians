@@ -1,9 +1,19 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { ActionResult } from '@/actions/result';
+import {
+  KELAS_ISIAN,
+  KELAS_LABEL,
+  KELAS_BANTUAN,
+  KELAS_CENTANG,
+  KELAS_TOMBOL_UTAMA,
+} from './kelas-form';
+import { BagianForm, KolomForm, AksiForm } from './BagianForm';
 
 export type PilihanKendaraanPemasok = { id: string; name: string; supplierName: string };
 export type PilihanPelanggan = { id: string; name: string; phone: string; email: string | null };
@@ -27,8 +37,6 @@ type Values = {
   adminNotes: string;
 };
 
-const kelas = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
-
 export function ManualBookingForm({
   armada,
   kendaraanPemasok,
@@ -40,6 +48,7 @@ export function ManualBookingForm({
   pelanggan: PilihanPelanggan[];
   onSubmit: (input: unknown) => Promise<ActionResult<{ id: string; bookingCode: string }>>;
 }) {
+  const router = useRouter();
   const [mengirim, setMengirim] = useState(false);
   const { register, handleSubmit, watch, setValue, getValues } = useForm<Values>({
     defaultValues: {
@@ -86,43 +95,44 @@ export function ManualBookingForm({
     }
 
     toast.success(`Pesanan ${hasil.data.bookingCode} tercatat.`);
-    window.location.href = `/booking/${hasil.data.id}`;
+    router.push(`/booking/${hasil.data.id}`);
   });
 
   return (
-    <form onSubmit={kirim} className="max-w-3xl space-y-6">
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="font-bold">Pelanggan</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={kirim} className="max-w-3xl space-y-5 pb-2">
+      <BagianForm judul="Pelanggan" keterangan="Isi nomor lebih dulu — data pelanggan lama akan terpanggil sendiri.">
+        <div className="space-y-4">
+        <KolomForm>
           <label>
-            <span className="mb-1 block text-sm font-semibold">Nomor WhatsApp</span>
+            <span className={KELAS_LABEL}>Nomor WhatsApp</span>
             <input
               {...register('phone', { required: true })}
               onBlur={(e) => cocokkanPelanggan(e.target.value)}
               placeholder="081234567890"
-              className={kelas}
+              className={KELAS_ISIAN}
             />
-            <span className="mt-1 block text-xs text-muted">
+            <span className={KELAS_BANTUAN}>
               Bila nomor ini sudah pernah memesan, nama akan terisi sendiri.
             </span>
           </label>
           <label>
-            <span className="mb-1 block text-sm font-semibold">Nama</span>
-            <input {...register('customerName', { required: true })} className={kelas} />
+            <span className={KELAS_LABEL}>Nama</span>
+            <input {...register('customerName', { required: true })} className={KELAS_ISIAN} />
           </label>
           <label>
-            <span className="mb-1 block text-sm font-semibold">Email (opsional)</span>
-            <input type="email" {...register('email')} className={kelas} />
+            <span className={KELAS_LABEL}>Email (opsional)</span>
+            <input type="email" {...register('email')} className={KELAS_ISIAN} />
           </label>
+        </KolomForm>
         </div>
-      </section>
+      </BagianForm>
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="font-bold">Pesanan</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <BagianForm judul="Pesanan">
+        <div className="space-y-4">
+        <KolomForm>
           <label>
-            <span className="mb-1 block text-sm font-semibold">Jenis layanan</span>
-            <select {...register('serviceType')} className={kelas}>
+            <span className={KELAS_LABEL}>Jenis layanan</span>
+            <select {...register('serviceType')} className={KELAS_ISIAN}>
               <option value="self-drive">Lepas kunci</option>
               <option value="with-driver">Dengan sopir</option>
               <option value="tourism">Bus / Hiace pariwisata</option>
@@ -131,24 +141,24 @@ export function ManualBookingForm({
           </label>
 
           <label>
-            <span className="mb-1 block text-sm font-semibold">Keterangan pesanan</span>
+            <span className={KELAS_LABEL}>Keterangan pesanan</span>
             <input
               {...register('itemName', { required: true })}
               placeholder="Innova Zenix + sopir, 3 hari"
-              className={kelas}
+              className={KELAS_ISIAN}
             />
           </label>
 
           <label>
-            <span className="mb-1 block text-sm font-semibold">Tanggal mulai</span>
-            <input type="date" {...register('startDate', { required: true })} className={kelas} />
+            <span className={KELAS_LABEL}>Tanggal mulai</span>
+            <input type="date" {...register('startDate', { required: true })} className={KELAS_ISIAN} />
           </label>
 
           <label>
-            <span className="mb-1 block text-sm font-semibold">Tanggal selesai (opsional)</span>
-            <input type="date" {...register('endDate')} className={kelas} />
+            <span className={KELAS_LABEL}>Tanggal selesai (opsional)</span>
+            <input type="date" {...register('endDate')} className={KELAS_ISIAN} />
           </label>
-        </div>
+        </KolomForm>
 
         <p className="rounded-lg bg-slate-50 p-3 text-xs text-muted">
           Tanggal di sini hanya keterangan untuk rekap internal. Harga tidak dihitung darinya — Anda
@@ -156,19 +166,20 @@ export function ManualBookingForm({
         </p>
 
         <label className="block max-w-xs">
-          <span className="mb-1 block text-sm font-semibold">Total harga ke pelanggan (Rp)</span>
+          <span className={KELAS_LABEL}>Total harga ke pelanggan (Rp)</span>
           <input
             type="number"
             min={0}
             step={50000}
             {...register('totalPrice', { required: true })}
-            className={kelas}
+            className={KELAS_ISIAN}
           />
         </label>
-      </section>
+        </div>
+      </BagianForm>
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="font-bold">Kendaraan</h2>
+      <BagianForm judul="Kendaraan">
+        <div className="space-y-4">
 
         <fieldset>
           <legend className="mb-2 text-sm font-semibold">Asal kendaraan</legend>
@@ -184,7 +195,7 @@ export function ManualBookingForm({
 
         {dariPemasok ? null : (
           <label className="block max-w-sm">
-            <span className="mb-1 block text-sm font-semibold">Unit armada (opsional)</span>
+            <span className={KELAS_LABEL}>Unit armada (opsional)</span>
             <select
               {...register('vehicleId')}
               onChange={(e) => {
@@ -195,7 +206,7 @@ export function ManualBookingForm({
                 // kalimatnya hanya karena memilih unit.
                 if (unit && !getValues('itemName')) setValue('itemName', unit.name);
               }}
-              className={kelas}
+              className={KELAS_ISIAN}
             >
               <option value="">Tidak terkait unit tertentu</option>
               {armada.map((a) => (
@@ -204,7 +215,7 @@ export function ManualBookingForm({
                 </option>
               ))}
             </select>
-            <span className="mt-1 block text-xs text-muted">
+            <span className={KELAS_BANTUAN}>
               Menautkan pesanan ke armada LIANS untuk keperluan rekap. Keterangan pesanan di atas
               tetap yang tampil.
             </span>
@@ -212,10 +223,10 @@ export function ManualBookingForm({
         )}
 
         {dariPemasok ? (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <KolomForm>
             <label>
-              <span className="mb-1 block text-sm font-semibold">Kendaraan pemasok</span>
-              <select {...register('supplierVehicleId')} className={kelas}>
+              <span className={KELAS_LABEL}>Kendaraan pemasok</span>
+              <select {...register('supplierVehicleId')} className={KELAS_ISIAN}>
                 <option value="">Pilih kendaraan…</option>
                 {kendaraanPemasok.map((k) => (
                   <option key={k.id} value={k.id}>
@@ -231,47 +242,50 @@ export function ManualBookingForm({
             </label>
 
             <label>
-              <span className="mb-1 block text-sm font-semibold">Biaya ke pemasok (Rp)</span>
+              <span className={KELAS_LABEL}>Biaya ke pemasok (Rp)</span>
               <input
                 type="number"
                 min={0}
                 step={50000}
                 {...register('supplierCost')}
-                className={kelas}
+                className={KELAS_ISIAN}
               />
-              <span className="mt-1 block text-xs text-muted">
+              <span className={KELAS_BANTUAN}>
                 Total untuk pesanan ini, bukan per hari. Selisihnya dengan harga pelanggan adalah
                 margin Anda.
               </span>
             </label>
 
             <label className="flex items-center gap-2 text-sm sm:col-span-2">
-              <input type="checkbox" {...register('supplierPaid')} />
+              <input type="checkbox" {...register('supplierPaid')} className={KELAS_CENTANG} />
               Sudah dibayar ke pemasok
             </label>
-          </div>
+          </KolomForm>
         ) : null}
-      </section>
+        </div>
+      </BagianForm>
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="font-bold">Catatan</h2>
+      <BagianForm judul="Catatan">
+        <div className="space-y-4">
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold">Catatan dari pelanggan</span>
-          <textarea rows={2} {...register('notes')} className={kelas} />
+          <span className={KELAS_LABEL}>Catatan dari pelanggan</span>
+          <textarea rows={2} {...register('notes')} className={KELAS_ISIAN} />
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm font-semibold">Catatan internal</span>
-          <textarea rows={2} {...register('adminNotes')} className={kelas} />
+          <span className={KELAS_LABEL}>Catatan internal</span>
+          <textarea rows={2} {...register('adminNotes')} className={KELAS_ISIAN} />
         </label>
-      </section>
+        </div>
+      </BagianForm>
 
-      <button
-        type="submit"
-        disabled={mengirim}
-        className="rounded-lg bg-lians-500 px-6 py-3 font-semibold text-white hover:bg-lians-600 disabled:opacity-50"
-      >
-        {mengirim ? 'Menyimpan…' : 'Simpan pesanan'}
-      </button>
+      <AksiForm>
+        <button type="submit" disabled={mengirim} className={KELAS_TOMBOL_UTAMA}>
+          {mengirim ? 'Menyimpan…' : 'Simpan pesanan'}
+        </button>
+        <Link href="/booking" className="text-sm font-semibold text-muted hover:text-lians-600">
+          Batal
+        </Link>
+      </AksiForm>
     </form>
   );
 }

@@ -6,6 +6,7 @@ import { TestimonialForm } from '@/components/admin/TestimonialForm';
 import { DeleteButton } from '@/components/admin/DeleteButton';
 import { updateTestimonial, deleteTestimonial } from '@/actions/admin-testimonials';
 import { requireAdminPage } from '@/actions/auth-guard';
+import { berbentukUuid } from '@/lib/uuid';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,9 @@ export default async function TestimoniEditPage({ params }: { params: Promise<{ 
   await requireAdminPage();
 
   const { id } = await params;
+  // Halaman ini menyusun kuerinya sendiri, jadi penjaga UUID-nya juga di sini.
+  if (!berbentukUuid(id)) notFound();
+
   const [testimonial] = await db
     .select()
     .from(testimonials)

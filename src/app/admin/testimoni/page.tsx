@@ -3,13 +3,28 @@ import { Plus, Star } from 'lucide-react';
 import { getAllTestimonials } from '@/queries/testimonials';
 import { formatTanggal } from '@/lib/dates';
 import { pickLocale } from '@/i18n';
+import { PencarianAdmin } from '@/components/admin/PencarianAdmin';
 import { requireAdminPage } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
 
-export default async function TestimoniListPage() {
+export default async function TestimoniListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   await requireAdminPage();
-  const semua = await getAllTestimonials();
+  const { q } = await searchParams;
+  const semuaTestimoni = await getAllTestimonials();
+
+  const cari = q?.trim().toLowerCase();
+  const semua = cari
+    ? semuaTestimoni.filter((t) =>
+        [t.customerName, pickLocale(t.reviewText, 'id') ?? ''].some((teks) =>
+          teks.toLowerCase().includes(cari),
+        ),
+      )
+    : semuaTestimoni;
 
   return (
     <div className="space-y-6">
@@ -22,6 +37,13 @@ export default async function TestimoniListPage() {
           <Plus className="h-4 w-4" aria-hidden /> Tambah testimoni
         </Link>
       </div>
+
+      <PencarianAdmin
+        nilai={q}
+        placeholder="Cari nama atau isi ulasan…"
+        aksi="/testimoni"
+        jumlah={semua.length}
+      />
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
         <table className="w-full text-sm">

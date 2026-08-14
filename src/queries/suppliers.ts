@@ -1,17 +1,20 @@
 import { and, asc, eq, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import { suppliers, supplierVehicles, bookings } from '@/db/schema';
+import { berbentukUuid } from '@/lib/uuid';
 
 export async function getSuppliers() {
   return db.select().from(suppliers).orderBy(asc(suppliers.name));
 }
 
 export async function getSupplierById(id: string) {
+  if (!berbentukUuid(id)) return null;
   const [row] = await db.select().from(suppliers).where(eq(suppliers.id, id)).limit(1);
   return row ?? null;
 }
 
 export async function getSupplierVehicles(supplierId: string) {
+  if (!berbentukUuid(supplierId)) return [];
   return db
     .select()
     .from(supplierVehicles)

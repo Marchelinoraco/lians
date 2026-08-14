@@ -5,11 +5,10 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Trash2, KeyRound } from 'lucide-react';
 import type { ActionResult } from '@/actions/result';
+import { KELAS_ISIAN } from './kelas-form';
 
 type Staf = { id: string; name: string; email: string };
 type Values = { name: string; email: string; password: string };
-
-const kelas = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
 export function StaffManager({
   staf,
@@ -116,11 +115,11 @@ export function StaffManager({
       <form onSubmit={tambah} className="grid gap-3 border-t border-slate-200 pt-5 sm:grid-cols-3">
         <label>
           <span className="mb-1 block text-xs font-semibold">Nama</span>
-          <input {...register('name', { required: true })} className={kelas} />
+          <input {...register('name', { required: true })} className={KELAS_ISIAN} />
         </label>
         <label>
           <span className="mb-1 block text-xs font-semibold">Email</span>
-          <input type="email" {...register('email', { required: true })} className={kelas} />
+          <input type="email" {...register('email', { required: true })} className={KELAS_ISIAN} />
         </label>
         <label>
           <span className="mb-1 block text-xs font-semibold">Kata sandi</span>
@@ -128,7 +127,7 @@ export function StaffManager({
             type="password"
             autoComplete="new-password"
             {...register('password', { required: true })}
-            className={kelas}
+            className={KELAS_ISIAN}
           />
         </label>
 

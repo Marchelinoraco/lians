@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { LOCALES, DEFAULT_LOCALE, type Locale } from '@/i18n';
 import type { Localized } from '@/i18n/localized';
 import { LocaleTabs } from './LocaleTabs';
+import { KELAS_ISIAN } from './kelas-form';
 
 export function LocalizedTextInput({
   label,
@@ -27,9 +28,7 @@ export function LocalizedTextInput({
   ) as Record<Locale, boolean>;
 
   const set = (teks: string) => onChange({ ...values, [aktif]: teks });
-  const kelas = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
-
-  return (
+    return (
     <div className="space-y-2">
       <span className="block text-sm font-semibold">
         {label}
@@ -44,14 +43,14 @@ export function LocalizedTextInput({
           value={values[aktif] ?? ''}
           onChange={(e) => set(e.target.value)}
           aria-label={`${label} (${aktif})`}
-          className={kelas}
+          className={KELAS_ISIAN}
         />
       ) : (
         <input
           value={values[aktif] ?? ''}
           onChange={(e) => set(e.target.value)}
           aria-label={`${label} (${aktif})`}
-          className={kelas}
+          className={KELAS_ISIAN}
         />
       )}
 

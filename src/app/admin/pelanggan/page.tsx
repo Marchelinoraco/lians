@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { getCustomers } from '@/queries/customers';
 import { formatTanggal } from '@/lib/dates';
+import { PencarianAdmin } from '@/components/admin/PencarianAdmin';
 import { requireAdminPage } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
@@ -28,20 +29,12 @@ export default async function PelangganPage({
         </Link>
       </div>
 
-      <form method="get" className="flex gap-2">
-        <input
-          name="q"
-          defaultValue={q ?? ''}
-          placeholder="Cari nama atau nomor…"
-          className="w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2 text-sm"
-        />
-        <button
-          type="submit"
-          className="rounded-lg border border-slate-300 px-4 text-sm font-semibold hover:border-lians-400"
-        >
-          Cari
-        </button>
-      </form>
+      <PencarianAdmin
+        nilai={q}
+        placeholder="Cari nama atau nomor…"
+        aksi="/pelanggan"
+        jumlah={daftar.length}
+      />
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
         <table className="w-full text-sm">

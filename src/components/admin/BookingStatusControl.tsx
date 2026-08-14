@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { ActionResult } from '@/actions/result';
+import { KELAS_ISIAN } from './kelas-form';
 
 const STATUS = [
   { value: 'pending', label: 'Menunggu konfirmasi' },
@@ -62,7 +63,7 @@ export function BookingStatusControl({
           value={nilai}
           disabled={sibuk}
           onChange={(e) => void ubahStatus(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className={KELAS_ISIAN}
         >
           {STATUS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -79,7 +80,7 @@ export function BookingStatusControl({
           value={teks}
           onChange={(e) => setTeks(e.target.value)}
           placeholder="Sudah ditelepon, minta dijemput jam 8…"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className={KELAS_ISIAN}
         />
         <span className="mt-1 block text-xs text-muted">
           Hanya terlihat oleh staf, tidak pernah tampil di situs publik.

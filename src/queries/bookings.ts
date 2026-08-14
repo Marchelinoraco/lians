@@ -1,6 +1,7 @@
 import { count, desc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
+import { berbentukUuid } from '@/lib/uuid';
 
 type Status = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 
@@ -16,6 +17,7 @@ export async function getBookings(status?: Status) {
 }
 
 export async function getBookingById(id: string) {
+  if (!berbentukUuid(id)) return null;
   const [row] = await db.select().from(bookings).where(eq(bookings.id, id)).limit(1);
   return row ?? null;
 }

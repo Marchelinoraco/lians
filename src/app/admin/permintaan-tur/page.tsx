@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getTourRequests } from '@/queries/tour-requests';
 import { formatTanggal } from '@/lib/dates';
+import { PencarianAdmin } from '@/components/admin/PencarianAdmin';
 import { requireAdminPage } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
@@ -22,14 +23,23 @@ const WARNA_STATUS: Record<string, string> = {
 export default async function PermintaanTurPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string }>;
 }) {
   await requireAdminPage();
 
-  const { status } = await searchParams;
+  const { status, q } = await searchParams;
   const valid = ['pending', 'confirmed', 'completed', 'cancelled'];
   const filter = status && valid.includes(status) ? (status as 'pending') : undefined;
-  const daftar = await getTourRequests(filter);
+  const semua = await getTourRequests(filter);
+
+  const cari = q?.trim().toLowerCase();
+  const daftar = cari
+    ? semua.filter((r) =>
+        [r.requestCode, r.customerName, r.phone, r.tourNameSnapshot]
+          .filter(Boolean)
+          .some((teks) => String(teks).toLowerCase().includes(cari)),
+      )
+    : semua;
 
   return (
     <div className="space-y-6">
@@ -41,9 +51,17 @@ export default async function PermintaanTurPage({
         </p>
       </div>
 
+      <PencarianAdmin
+        nilai={q}
+        placeholder="Cari kode, nama, atau paket…"
+        aksi="/permintaan-tur"
+        tersembunyi={{ status: filter }}
+        jumlah={daftar.length}
+      />
+
       <nav className="flex flex-wrap gap-2">
         <Link
-          href="/permintaan-tur"
+          href={q ? `/permintaan-tur?q=${encodeURIComponent(q)}` : '/permintaan-tur'}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium ${!filter ? 'bg-lians-50 text-lians-700' : 'text-slate-600 hover:bg-slate-100'}`}
         >
           Semua
@@ -51,7 +69,7 @@ export default async function PermintaanTurPage({
         {valid.map((s) => (
           <Link
             key={s}
-            href={`/permintaan-tur?status=${s}`}
+            href={`/permintaan-tur?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ''}`}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium ${filter === s ? 'bg-lians-50 text-lians-700' : 'text-slate-600 hover:bg-slate-100'}`}
           >
             {LABEL_STATUS[s]}

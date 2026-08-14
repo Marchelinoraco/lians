@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { EksporPesanan } from '@/components/admin/EksporPesanan';
+import { PencarianAdmin } from '@/components/admin/PencarianAdmin';
 import { getBookings } from '@/queries/bookings';
 import { formatRupiah } from '@/lib/format';
 import { formatTanggal } from '@/lib/dates';
@@ -25,15 +26,27 @@ const WARNA_STATUS: Record<string, string> = {
 export default async function BookingListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; q?: string }>;
 }) {
   await requireAdminPage();
   const superAdmin = (await sesiSekarang())?.role === 'super_admin';
 
-  const { status } = await searchParams;
+  const { status, q } = await searchParams;
   const valid = ['pending', 'confirmed', 'completed', 'cancelled'];
   const filter = status && valid.includes(status) ? (status as 'pending') : undefined;
-  const daftar = await getBookings(filter);
+  const semua = await getBookings(filter);
+
+  // Dicari di sisi server pada data yang sudah diambil: jumlah pesanan sebuah
+  // rental muat di memori, dan kueri ILIKE tiga kolom untuk itu justru lebih
+  // mahal daripada menyaringnya di sini.
+  const cari = q?.trim().toLowerCase();
+  const daftar = cari
+    ? semua.filter((b) =>
+        [b.bookingCode, b.customerName, b.phone, b.vehicleNameSnapshot, b.routeNameSnapshot]
+          .filter(Boolean)
+          .some((teks) => String(teks).toLowerCase().includes(cari)),
+      )
+    : semua;
 
   return (
     <div className="space-y-6">
@@ -50,9 +63,17 @@ export default async function BookingListPage({
         </div>
       </div>
 
+      <PencarianAdmin
+        nilai={q}
+        placeholder="Cari kode, nama, atau nomor…"
+        aksi="/booking"
+        tersembunyi={{ status: filter }}
+        jumlah={daftar.length}
+      />
+
       <nav className="flex flex-wrap gap-2">
         <Link
-          href="/booking"
+          href={q ? `/booking?q=${encodeURIComponent(q)}` : '/booking'}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium ${!filter ? 'bg-lians-50 text-lians-700' : 'text-slate-600 hover:bg-slate-100'}`}
         >
           Semua
@@ -60,7 +81,7 @@ export default async function BookingListPage({
         {valid.map((s) => (
           <Link
             key={s}
-            href={`/booking?status=${s}`}
+            href={`/booking?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ''}`}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium ${filter === s ? 'bg-lians-50 text-lians-700' : 'text-slate-600 hover:bg-slate-100'}`}
           >
             {LABEL_STATUS[s]}

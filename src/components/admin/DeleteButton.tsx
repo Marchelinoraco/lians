@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,6 +15,7 @@ export function DeleteButton({
   redirectTo: string;
   konfirmasi: string;
 }) {
+  const router = useRouter();
   const [menghapus, setMenghapus] = useState(false);
 
   async function klik() {
@@ -27,7 +29,7 @@ export function DeleteButton({
       toast.error(hasil.message);
       return;
     }
-    window.location.href = redirectTo;
+    router.push(redirectTo);
   }
 
   return (

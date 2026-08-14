@@ -1,6 +1,7 @@
 import { asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { vehicles } from '@/db/schema';
+import { berbentukUuid } from '@/lib/uuid';
 
 export async function getPublishedVehicles() {
   return db
@@ -16,6 +17,7 @@ export async function getVehicleBySlug(slug: string) {
 }
 
 export async function getVehicleById(id: string) {
+  if (!berbentukUuid(id)) return null;
   const [row] = await db.select().from(vehicles).where(eq(vehicles.id, id)).limit(1);
   return row ?? null;
 }

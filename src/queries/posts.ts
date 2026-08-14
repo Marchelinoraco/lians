@@ -1,6 +1,7 @@
 import { desc, eq, and } from 'drizzle-orm';
 import { db } from '@/db';
 import { posts } from '@/db/schema';
+import { berbentukUuid } from '@/lib/uuid';
 
 /** Hanya artikel terbit, terbaru dulu. Dipakai halaman publik. */
 export async function getPublishedPosts() {
@@ -31,6 +32,7 @@ export async function getAllPosts() {
 }
 
 export async function getPostById(id: string) {
+  if (!berbentukUuid(id)) return null;
   const [row] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
   return row ?? null;
 }

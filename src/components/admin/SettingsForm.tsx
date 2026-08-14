@@ -6,8 +6,7 @@ import { toast } from 'sonner';
 import type { SettingsInput } from '@/schemas/settings';
 import type { ActionResult } from '@/actions/result';
 import { LocalizedTextInput } from './LocalizedTextInput';
-
-const kelas = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
+import { KELAS_ISIAN } from './kelas-form';
 
 export function SettingsForm({
   settings,
@@ -56,26 +55,26 @@ export function SettingsForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <label>
             <span className="mb-1 block text-sm font-semibold">Nomor WhatsApp</span>
-            <input {...register('whatsappNumber')} placeholder="081234567890" className={kelas} />
+            <input {...register('whatsappNumber')} placeholder="081234567890" className={KELAS_ISIAN} />
           </label>
           <label>
             <span className="mb-1 block text-sm font-semibold">Telepon</span>
-            <input {...register('phone')} className={kelas} />
+            <input {...register('phone')} className={KELAS_ISIAN} />
           </label>
           <label>
             <span className="mb-1 block text-sm font-semibold">Email</span>
-            <input type="email" {...register('email')} className={kelas} />
+            <input type="email" {...register('email')} className={KELAS_ISIAN} />
           </label>
         </div>
 
         <label className="block">
           <span className="mb-1 block text-sm font-semibold">Alamat</span>
-          <textarea rows={2} {...register('address')} className={kelas} />
+          <textarea rows={2} {...register('address')} className={KELAS_ISIAN} />
         </label>
 
         <label className="block">
           <span className="mb-1 block text-sm font-semibold">URL peta Google (opsional)</span>
-          <input {...register('mapsUrl')} className={kelas} />
+          <input {...register('mapsUrl')} className={KELAS_ISIAN} />
           <span className="mt-1 block text-xs text-muted">
             Kosongkan agar peta disusun otomatis dari alamat di atas.
           </span>

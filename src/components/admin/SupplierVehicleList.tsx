@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Plus, Trash2 } from 'lucide-react';
 import type { SupplierVehicle } from '@/db/schema';
 import type { ActionResult } from '@/actions/result';
+import { KELAS_ISIAN } from './kelas-form';
 
 type Values = { name: string; notes: string };
 
@@ -82,7 +83,7 @@ export function SupplierVehicleList({
           <input
             {...register('name', { required: true })}
             placeholder="Avanza 2022"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={KELAS_ISIAN}
           />
         </label>
         <label>
@@ -90,7 +91,7 @@ export function SupplierVehicleList({
           <input
             {...register('notes')}
             placeholder="Plat DB 1234 XX"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={KELAS_ISIAN}
           />
         </label>
         <div className="sm:col-span-2">

@@ -3,14 +3,30 @@ import { Plus } from 'lucide-react';
 import { getSuppliers, getUtangPemasok } from '@/queries/suppliers';
 import { formatRupiah } from '@/lib/format';
 import { formatTanggal } from '@/lib/dates';
+import { PencarianAdmin } from '@/components/admin/PencarianAdmin';
 import { requireAdminPage } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PemasokPage() {
+export default async function PemasokPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   await requireAdminPage();
 
-  const [daftar, utang] = await Promise.all([getSuppliers(), getUtangPemasok()]);
+  const { q } = await searchParams;
+  const [semua, utang] = await Promise.all([getSuppliers(), getUtangPemasok()]);
+
+  // Pencarian hanya menyaring daftar pemasok, bukan panel utang di atasnya:
+  // total yang harus dibayar tidak boleh ikut menyusut saat mengetik, karena
+  // angka itu dipakai untuk menyiapkan uang.
+  const cari = q?.trim().toLowerCase();
+  const daftar = cari
+    ? semua.filter((s) =>
+        [s.name, s.phone ?? ''].some((teks) => teks.toLowerCase().includes(cari)),
+      )
+    : semua;
   const totalUtang = utang.reduce((jml, u) => jml + u.total, 0);
 
   return (
@@ -65,7 +81,15 @@ export default async function PemasokPage() {
         )}
       </section>
 
-      <section className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+      <section className="space-y-3">
+        <PencarianAdmin
+          nilai={q}
+          placeholder="Cari nama pemasok atau nomor…"
+          aksi="/pemasok"
+          jumlah={daftar.length}
+        />
+
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-muted">
             <tr>
@@ -98,10 +122,13 @@ export default async function PemasokPage() {
         </table>
 
         {daftar.length === 0 ? (
-          <p className="p-12 text-center text-muted">
-            Belum ada pemasok. Tambahkan rekanan yang kendaraannya sering Anda pinjam.
-          </p>
-        ) : null}
+            <p className="p-12 text-center text-muted">
+              {cari
+                ? 'Tidak ada pemasok yang cocok dengan pencarian itu.'
+                : 'Belum ada pemasok. Tambahkan rekanan yang kendaraannya sering Anda pinjam.'}
+            </p>
+          ) : null}
+        </div>
       </section>
     </div>
   );

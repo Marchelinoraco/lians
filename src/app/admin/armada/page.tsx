@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { Plus, ImageOff } from 'lucide-react';
 import { getAllVehicles } from '@/queries/vehicles';
 import { formatRupiah } from '@/lib/format';
+import { PencarianAdmin } from '@/components/admin/PencarianAdmin';
 import { requireAdminPage } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
@@ -17,9 +18,21 @@ const LABEL_KATEGORI: Record<string, string> = {
   bus: 'Bus / Hiace',
 };
 
-export default async function ArmadaPage() {
+export default async function ArmadaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   await requireAdminPage();
-  const armada = await getAllVehicles();
+  const { q } = await searchParams;
+  const semua = await getAllVehicles();
+
+  const cari = q?.trim().toLowerCase();
+  const armada = cari
+    ? semua.filter((v) =>
+        [v.name, v.category, v.slug].some((teks) => teks.toLowerCase().includes(cari)),
+      )
+    : semua;
 
   const tanpaFoto = armada.filter((v) => v.images.length === 0).length;
   const tanpaPelayanan = armada.filter((v) => v.ratePelayanan === null).length;
@@ -44,6 +57,13 @@ export default async function ArmadaPage() {
           <Plus className="h-4 w-4" aria-hidden /> Tambah kendaraan
         </Link>
       </div>
+
+      <PencarianAdmin
+        nilai={q}
+        placeholder="Cari nama atau kategori…"
+        aksi="/armada"
+        jumlah={armada.length}
+      />
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
         <table className="w-full text-sm">

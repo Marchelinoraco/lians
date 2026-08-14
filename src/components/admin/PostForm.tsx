@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -9,14 +11,14 @@ import type { Localized } from '@/i18n/localized';
 import { LocalizedTextInput } from './LocalizedTextInput';
 import { LocalizedListInput } from './LocalizedListInput';
 import { ImageUploader } from './ImageUploader';
+import { KELAS_ISIAN, KELAS_LABEL, KELAS_BANTUAN, KELAS_CENTANG, KELAS_TOMBOL_UTAMA } from './kelas-form';
+import { BagianForm, KolomForm, AksiForm } from './BagianForm';
 
 type Values = {
   slug: string;
   publishedAt: string;
   isPublished: boolean;
 };
-
-const kelas = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
 /** Mengubah judul menjadi slug: huruf kecil, tanda hubung, tanpa aksen. */
 function jadikanSlug(teks: string): string {
@@ -38,6 +40,7 @@ export function PostForm({
   post: Post | null;
   onSubmit: (input: unknown) => Promise<ActionResult<{ id: string }>>;
 }) {
+  const router = useRouter();
   const [mengirim, setMengirim] = useState(false);
   const [title, setTitle] = useState<Localized<string>>(post?.title ?? { id: '' });
   const [excerpt, setExcerpt] = useState<Localized<string>>(post?.excerpt ?? { id: '' });
@@ -64,11 +67,12 @@ export function PostForm({
     }
 
     toast.success('Artikel tersimpan.');
-    window.location.href = '/blog';
+    router.push('/blog');
   });
 
   return (
-    <form onSubmit={kirim} className="max-w-3xl space-y-6">
+    <form onSubmit={kirim} className="max-w-3xl space-y-5 pb-2">
+      <BagianForm judul="Judul dan alamat">
       <LocalizedTextInput
         label="Judul artikel"
         values={title}
@@ -82,22 +86,26 @@ export function PostForm({
         }}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="mt-5">
+        <KolomForm>
         <label>
-          <span className="mb-1 block text-sm font-semibold">Slug (alamat artikel)</span>
-          <input {...register('slug', { required: true })} placeholder="tips-sewa-mobil" className={kelas} />
-          <span className="mt-1 block text-xs text-muted">
+          <span className={KELAS_LABEL}>Slug (alamat artikel)</span>
+          <input {...register('slug', { required: true })} placeholder="tips-sewa-mobil" className={KELAS_ISIAN} />
+          <span className={KELAS_BANTUAN}>
             Tampil di alamat: lians.id/blog/<em>slug</em>. Hindari mengubahnya setelah artikel
             tayang — tautan lama akan mati.
           </span>
         </label>
 
         <label>
-          <span className="mb-1 block text-sm font-semibold">Tanggal terbit</span>
-          <input type="date" {...register('publishedAt', { required: true })} className={kelas} />
+          <span className={KELAS_LABEL}>Tanggal terbit</span>
+          <input type="date" {...register('publishedAt', { required: true })} className={KELAS_ISIAN} />
         </label>
+        </KolomForm>
       </div>
+      </BagianForm>
 
+      <BagianForm judul="Isi artikel">
       <LocalizedTextInput
         label="Ringkasan (tampil di daftar artikel dan hasil pencarian)"
         values={excerpt}
@@ -105,7 +113,7 @@ export function PostForm({
         onChange={setExcerpt}
       />
 
-      <div>
+      <div className="mt-6">
         <LocalizedListInput
           label="Isi artikel — satu baris satu paragraf"
           placeholder="Tulis satu paragraf, lalu Enter untuk paragraf berikutnya"
@@ -123,24 +131,32 @@ export function PostForm({
         </div>
       </div>
 
-      <div>
-        <p className="mb-2 text-sm font-semibold">Foto sampul (opsional, satu saja)</p>
+      </BagianForm>
+
+      <BagianForm judul="Foto sampul" keterangan="Opsional, satu foto saja.">
         <ImageUploader images={coverImage} onChange={(next) => setCoverImage(next.slice(0, 1))} />
-      </div>
+      </BagianForm>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" {...register('isPublished')} />
-        Terbitkan artikel ini
-        <span className="text-xs text-muted">— selama tidak dicentang, hanya Anda yang bisa melihatnya</span>
-      </label>
+      <BagianForm judul="Penerbitan">
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" {...register('isPublished')} className={`mt-0.5 ${KELAS_CENTANG}`} />
+          <span>
+            Terbitkan artikel ini
+            <span className="block text-xs text-muted">
+              Selama tidak dicentang, hanya Anda yang bisa melihatnya.
+            </span>
+          </span>
+        </label>
+      </BagianForm>
 
-      <button
-        type="submit"
-        disabled={mengirim}
-        className="rounded-lg bg-lians-500 px-6 py-2.5 font-semibold text-white hover:bg-lians-600 disabled:opacity-50"
-      >
-        {mengirim ? 'Menyimpan…' : 'Simpan artikel'}
-      </button>
+      <AksiForm>
+        <button type="submit" disabled={mengirim} className={KELAS_TOMBOL_UTAMA}>
+          {mengirim ? 'Menyimpan…' : 'Simpan artikel'}
+        </button>
+        <Link href="/blog" className="text-sm font-semibold text-muted hover:text-lians-600">
+          Batal
+        </Link>
+      </AksiForm>
     </form>
   );
 }

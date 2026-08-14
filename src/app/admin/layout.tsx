@@ -49,7 +49,11 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               pendingCount={pendingCount}
               superAdmin={sesi?.role === 'super_admin'}
             />
-            <main className="flex-1 overflow-x-auto p-8">{children}</main>
+            {/* Tanpa overflow-x-auto di sini: properti itu membuat <main>
+                menjadi wadah gulir sendiri, dan semua yang position:sticky di
+                dalamnya (baris tombol simpan) berhenti menempel. Setiap tabel
+                admin sudah punya pembungkus overflow-nya masing-masing. */}
+            <main className="min-w-0 flex-1 p-8">{children}</main>
             <Toaster position="top-right" richColors />
           </div>
         </SessionProvider>

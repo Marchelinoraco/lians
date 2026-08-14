@@ -1,6 +1,7 @@
 import { desc, eq, ilike, or } from 'drizzle-orm';
 import { db } from '@/db';
 import { customers, bookings } from '@/db/schema';
+import { berbentukUuid } from '@/lib/uuid';
 
 export async function getCustomers(q?: string) {
   if (!q?.trim()) return db.select().from(customers).orderBy(desc(customers.updatedAt));
@@ -16,11 +17,13 @@ export async function getCustomers(q?: string) {
 }
 
 export async function getCustomerById(id: string) {
+  if (!berbentukUuid(id)) return null;
   const [row] = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
   return row ?? null;
 }
 
 export async function getCustomerBookings(id: string) {
+  if (!berbentukUuid(id)) return [];
   return db
     .select()
     .from(bookings)

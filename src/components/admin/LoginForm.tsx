@@ -1,13 +1,16 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { signIn } from 'next-auth/react';
+import { KELAS_ISIAN } from './kelas-form';
 
 type Values = { email: string; password: string };
 
 export function LoginForm() {
   const { register, handleSubmit } = useForm<Values>();
+  const router = useRouter();
   const [galat, setGalat] = useState<string | null>(null);
   const [mengirim, setMengirim] = useState(false);
 
@@ -24,7 +27,7 @@ export function LoginForm() {
       setGalat('Email atau kata sandi salah.');
       return;
     }
-    window.location.href = '/';
+    router.push('/');
   });
 
   return (
@@ -35,7 +38,7 @@ export function LoginForm() {
           type="email"
           autoComplete="username"
           {...register('email', { required: true })}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className={KELAS_ISIAN}
         />
       </label>
 
@@ -45,7 +48,7 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           {...register('password', { required: true })}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className={KELAS_ISIAN}
         />
       </label>
 

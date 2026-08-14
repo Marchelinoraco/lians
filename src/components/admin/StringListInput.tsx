@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
+import { KELAS_ISIAN_DASAR } from './kelas-form';
 
 export function StringListInput({
   label,
@@ -38,7 +39,7 @@ export function StringListInput({
           }}
           placeholder={placeholder}
           aria-label={label}
-          className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className={`flex-1 ${KELAS_ISIAN_DASAR}`}
         />
         <button
           type="button"

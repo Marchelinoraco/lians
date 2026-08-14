@@ -1,6 +1,7 @@
 import { asc, eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { travelRoutes } from '@/db/schema';
+import { berbentukUuid } from '@/lib/uuid';
 
 export async function getPublishedRoutes() {
   return db
@@ -15,6 +16,7 @@ export async function getAllRoutes() {
 }
 
 export async function getRouteById(id: string) {
+  if (!berbentukUuid(id)) return null;
   const [row] = await db.select().from(travelRoutes).where(eq(travelRoutes.id, id)).limit(1);
   return row ?? null;
 }

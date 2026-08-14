@@ -4,10 +4,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { ActionResult } from '@/actions/result';
+import { KELAS_ISIAN } from './kelas-form';
 
 type Values = { passwordLama: string; passwordBaru: string; ulangi: string };
-
-const kelas = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
 export function PasswordForm({
   onSubmit,
@@ -60,7 +59,7 @@ export function PasswordForm({
             type="password"
             autoComplete="current-password"
             {...register('passwordLama', { required: true })}
-            className={kelas}
+            className={KELAS_ISIAN}
           />
         </label>
 
@@ -70,7 +69,7 @@ export function PasswordForm({
             type="password"
             autoComplete="new-password"
             {...register('passwordBaru', { required: true })}
-            className={kelas}
+            className={KELAS_ISIAN}
           />
         </label>
 
@@ -80,7 +79,7 @@ export function PasswordForm({
             type="password"
             autoComplete="new-password"
             {...register('ulangi', { required: true })}
-            className={kelas}
+            className={KELAS_ISIAN}
           />
           {tidakCocok ? (
             <span role="alert" className="mt-1 block text-xs font-medium text-red-600">

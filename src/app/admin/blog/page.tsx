@@ -2,13 +2,27 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { getAllPosts } from '@/queries/posts';
 import { formatTanggal } from '@/lib/dates';
+import { PencarianAdmin } from '@/components/admin/PencarianAdmin';
+import { pickLocale } from '@/i18n';
 import { requireAdminPage } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BlogAdminPage() {
+export default async function BlogAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   await requireAdminPage();
-  const daftar = await getAllPosts();
+  const { q } = await searchParams;
+  const semua = await getAllPosts();
+
+  const cari = q?.trim().toLowerCase();
+  const daftar = cari
+    ? semua.filter((p) =>
+        [pickLocale(p.title, 'id') ?? '', p.slug].some((teks) => teks.toLowerCase().includes(cari)),
+      )
+    : semua;
 
   return (
     <div className="space-y-6">
@@ -27,6 +41,13 @@ export default async function BlogAdminPage() {
           <Plus className="h-4 w-4" aria-hidden /> Tulis artikel
         </Link>
       </div>
+
+      <PencarianAdmin
+        nilai={q}
+        placeholder="Cari judul atau slug artikel…"
+        aksi="/blog"
+        jumlah={daftar.length}
+      />
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
         <table className="w-full text-sm">
