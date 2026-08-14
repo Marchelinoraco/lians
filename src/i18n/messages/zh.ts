@@ -82,6 +82,19 @@ const zh: Messages = {
     title: '他们的行程，交由我们',
     subtitle: '曾使用 LIANS 服务的机构与企业，从日常用车到大型团队接送。',
   },
+  homeSections: {
+    galleryTitle: '旅途掠影',
+    gallerySubtitle: '我们的车队，以及客人与它同行的旅程。',
+    blogTitle: '最新文章',
+    blogSubtitle: '预订前值得一读的实用指南。',
+    reviewsTitle: 'Google 评价',
+    reviewsSubtitle: '客人直接在我们 Google 资料页上留下的评价。',
+    reviewsFrom: '共 {n} 条评价',
+    reviewsSeeAll: '在 Google 查看全部评价',
+    reviewsFallback:
+      '我们的客户评价都在 LIANS 的 Google 资料页上。欢迎查阅——若您曾在此租车，您的留言对我们意义重大。',
+    poweredByGoogle: '来源：Google',
+  },
   blog: {
     title: '资讯与文章',
     subtitle: '出行贴士、北苏拉威西值得一看的去处，以及 LIANS 的最新消息。',

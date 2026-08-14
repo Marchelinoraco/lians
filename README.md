@@ -39,6 +39,7 @@ npm run dev
 | `NEXT_PUBLIC_SITE_URL` | `https://lians.id` di produksi |
 | `NEXT_PUBLIC_ADMIN_URL` | `https://admin.lians.id` di produksi |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | hanya dibaca oleh `db:seed` |
+| `GOOGLE_PLACES_API_KEY` / `GOOGLE_PLACE_ID` | opsional, untuk ulasan Google di beranda |
 
 Cloudinary memakai **satu** variabel, bukan tiga terpisah: ketiga nilai di dalamnya dijamin cocok
 satu sama lain, sehingga kesalahan `cloud_name mismatch` tidak mungkin terjadi.
@@ -129,6 +130,13 @@ bolong.
 
 **Foto tours ditaruh di `public/tours/<slug>/`** lalu nama berkasnya didaftarkan pada `images` di
 berkas paketnya. Halaman tetap rapi selama daftar itu kosong.
+
+**Ulasan Google diambil lewat Places API resmi, bukan dengan mengikis halaman pencarian.** Google
+memblokir pengambilan otomatis, dan menyalin ulasan ke database sendiri berarti menayangkan tulisan
+orang tanpa izin sekaligus membekukannya — ulasan yang kemudian dihapus penulisnya akan tetap
+tampil di situs ini. Tanpa `GOOGLE_PLACES_API_KEY` dan `GOOGLE_PLACE_ID`, beranda menampilkan
+ajakan membaca di profil Google, **bukan** angka atau kutipan karangan. Nama penulis wajib
+ditampilkan — itu syarat Google untuk menayangkan ulasan di luar platformnya.
 
 **Blog dan Galeri dikelola di admin, berbeda dari paket Tours yang statis.** Artikel ditulis
 berkala dan foto ditambah terus; meminta deploy tiap kali menulis bukan alur kerja yang masuk akal.

@@ -86,6 +86,19 @@ const id = {
     subtitle:
       'Instansi dan perusahaan yang pernah memakai layanan LIANS, dari kebutuhan harian sampai rombongan besar.',
   },
+  homeSections: {
+    galleryTitle: 'Sekilas Perjalanan',
+    gallerySubtitle: 'Potret armada dan perjalanan pelanggan LIANS.',
+    blogTitle: 'Tulisan Terbaru',
+    blogSubtitle: 'Panduan praktis sebelum Anda memesan.',
+    reviewsTitle: 'Ulasan di Google',
+    reviewsSubtitle: 'Penilaian yang ditulis pelanggan langsung di profil Google kami.',
+    reviewsFrom: 'dari {n} ulasan',
+    reviewsSeeAll: 'Lihat semua ulasan di Google',
+    reviewsFallback:
+      'Ulasan pelanggan kami ada di profil Google LIANS. Silakan baca — dan bila Anda pernah menyewa di sini, tulisan Anda sangat berarti.',
+    poweredByGoogle: 'Sumber: Google',
+  },
   blog: {
     title: 'Blog & Berita',
     subtitle: 'Tips perjalanan, tempat menarik di Sulawesi Utara, dan kabar dari LIANS.',

@@ -3,9 +3,15 @@ import Link from 'next/link';
 import { getFeaturedVehicles } from '@/queries/vehicles';
 import { getFeaturedTestimonials } from '@/queries/testimonials';
 import { getSettings } from '@/queries/settings';
+import { getPublishedGallery } from '@/queries/gallery';
+import { getPublishedPosts } from '@/queries/posts';
+import { ambilUlasanGoogle } from '@/lib/google-reviews';
 import { Hero } from '@/components/home/Hero';
 import { ServiceCards } from '@/components/home/ServiceCards';
 import { OurClients } from '@/components/home/OurClients';
+import { HomeGallery } from '@/components/home/HomeGallery';
+import { HomeBlog } from '@/components/home/HomeBlog';
+import { GoogleReviews } from '@/components/home/GoogleReviews';
 import { Reveal } from '@/components/ui/Reveal';
 import { VehicleGrid } from '@/components/vehicle/VehicleGrid';
 import { TestimonialCard } from '@/components/testimonial/TestimonialCard';
@@ -35,10 +41,13 @@ export default async function BerandaPage({ params }: { params: Promise<{ locale
   const { locale } = await params;
   const t = getMessages(locale);
 
-  const [kendaraan, testimoni, settings] = await Promise.all([
+  const [kendaraan, testimoni, settings, galeri, artikel, ulasanGoogle] = await Promise.all([
     getFeaturedVehicles(6),
     getFeaturedTestimonials(3),
     getSettings(),
+    getPublishedGallery(),
+    getPublishedPosts(),
+    ambilUlasanGoogle(),
   ]);
 
   const tarif = kendaraan
@@ -96,16 +105,25 @@ export default async function BerandaPage({ params }: { params: Promise<{ locale
         </section>
       </Reveal>
 
-      {/* Ditaruh setelah armada dan sebelum testimoni: pengunjung sudah melihat
-          kendaraannya, dan daftar klien menjawab pertanyaan berikutnya —
-          "siapa lagi yang sudah memakai ini?" — tepat sebelum ulasannya. */}
+      {/* Urutan beranda mengikuti pertanyaan yang muncul berurutan di kepala
+          pengunjung: apa yang ditawarkan, mobilnya seperti apa, wujud nyatanya
+          bagaimana, siapa yang sudah memakai, apa kata mereka, dan apa yang
+          perlu saya tahu sebelum memesan. */}
+      <Reveal>
+        <HomeGallery items={galeri} locale={locale} />
+      </Reveal>
+
       <Reveal>
         <OurClients locale={locale} />
       </Reveal>
 
+      <Reveal>
+        <GoogleReviews data={ulasanGoogle} locale={locale} />
+      </Reveal>
+
       {testimoni.length > 0 ? (
         <Reveal>
-          <section className="bg-slate-50 py-16">
+          <section className="bg-white py-16">
           <div className="mx-auto max-w-6xl px-4">
             <h2 className="mb-8 text-center text-2xl font-black sm:text-3xl">
               {t.home.whatCustomersSay}
@@ -119,6 +137,10 @@ export default async function BerandaPage({ params }: { params: Promise<{ locale
           </section>
         </Reveal>
       ) : null}
+
+      <Reveal>
+        <HomeBlog posts={artikel} locale={locale} />
+      </Reveal>
     </>
   );
 }

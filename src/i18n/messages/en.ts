@@ -85,6 +85,19 @@ const en: Messages = {
     subtitle:
       'Institutions and companies that have used LIANS, from day-to-day needs to large groups.',
   },
+  homeSections: {
+    galleryTitle: 'Glimpses of the Road',
+    gallerySubtitle: 'Our fleet and the journeys customers have taken with it.',
+    blogTitle: 'Latest Writing',
+    blogSubtitle: 'Practical guidance before you book.',
+    reviewsTitle: 'Reviews on Google',
+    reviewsSubtitle: 'Ratings written by customers directly on our Google profile.',
+    reviewsFrom: 'from {n} reviews',
+    reviewsSeeAll: 'Read all reviews on Google',
+    reviewsFallback:
+      'Our customer reviews live on the LIANS Google profile. Have a read — and if you have rented with us, yours would mean a lot.',
+    poweredByGoogle: 'Source: Google',
+  },
   blog: {
     title: 'Blog & News',
     subtitle: 'Travel tips, places worth seeing in North Sulawesi, and news from LIANS.',

@@ -10,7 +10,12 @@ const nextConfig: NextConfig = {
   // next/image menolak host luar yang tidak didaftarkan. Foto armada
   // diunggah ke Cloudinary, jadi domainnya harus diizinkan di sini.
   images: {
-    remotePatterns: [{ protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' }],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/**' },
+      // Foto profil penulis ulasan Google. Wajib didaftarkan, kalau tidak
+      // next/image menolaknya dan kartu ulasan tampil tanpa wajah.
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+    ],
   },
 
 };

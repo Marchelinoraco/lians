@@ -82,6 +82,19 @@ const ko: Messages = {
     title: '이분들이 함께하셨습니다',
     subtitle: 'LIANS를 이용해 주신 기관과 기업들입니다. 일상적인 이동부터 대규모 단체까지.',
   },
+  homeSections: {
+    galleryTitle: '여정의 한 장면',
+    gallerySubtitle: '저희 차량과, 그 차와 함께한 고객들의 여정입니다.',
+    blogTitle: '최근 글',
+    blogSubtitle: '예약 전에 읽어 두면 좋은 실용 안내입니다.',
+    reviewsTitle: 'Google 리뷰',
+    reviewsSubtitle: '고객이 저희 Google 프로필에 직접 남긴 평가입니다.',
+    reviewsFrom: '{n}개의 리뷰',
+    reviewsSeeAll: 'Google에서 전체 리뷰 보기',
+    reviewsFallback:
+      '고객 리뷰는 LIANS의 Google 프로필에 있습니다. 한번 읽어 봐 주세요. 이용해 보셨다면 남겨 주시는 한 줄이 큰 힘이 됩니다.',
+    poweredByGoogle: '출처: Google',
+  },
   blog: {
     title: '소식과 이야기',
     subtitle: '여행 팁, 북술라웨시의 가볼 만한 곳, 그리고 LIANS의 소식입니다.',
