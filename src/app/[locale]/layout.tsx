@@ -51,7 +51,7 @@ export default async function PublicRootLayout({
       <body className="font-sans antialiased">
     <div className="flex min-h-screen flex-col">
       <Header whatsappUrl={whatsappUrl} locale={locale} />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pt-[var(--tinggi-bilah)]">{children}</main>
       <Footer settings={settings} locale={locale} />
       <WhatsAppFloat url={whatsappUrl} label={getMessages(locale).nav.contactUs} />
       <Toaster position="top-center" richColors />

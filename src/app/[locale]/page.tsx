@@ -6,6 +6,7 @@ import { getSettings } from '@/queries/settings';
 import { Hero } from '@/components/home/Hero';
 import { ServiceCards } from '@/components/home/ServiceCards';
 import { OurClients } from '@/components/home/OurClients';
+import { Reveal } from '@/components/ui/Reveal';
 import { VehicleGrid } from '@/components/vehicle/VehicleGrid';
 import { TestimonialCard } from '@/components/testimonial/TestimonialCard';
 import { buildAutoRentalJsonLd, buildAlternates, SITE_URL } from '@/lib/seo';
@@ -76,9 +77,12 @@ export default async function BerandaPage({ params }: { params: Promise<{ locale
         </p>
       ) : null}
 
-      <ServiceCards locale={locale} />
+      <Reveal>
+        <ServiceCards locale={locale} />
+      </Reveal>
 
-      <section className="mx-auto max-w-6xl px-4 py-8">
+      <Reveal>
+        <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-6 flex items-end justify-between gap-4">
           <h2 className="text-2xl font-black sm:text-3xl">{t.home.featuredFleet}</h2>
           <Link
@@ -88,16 +92,20 @@ export default async function BerandaPage({ params }: { params: Promise<{ locale
             {t.common.viewAll} →
           </Link>
         </div>
-        <VehicleGrid vehicles={kendaraan} locale={locale} />
-      </section>
+          <VehicleGrid vehicles={kendaraan} locale={locale} />
+        </section>
+      </Reveal>
 
       {/* Ditaruh setelah armada dan sebelum testimoni: pengunjung sudah melihat
           kendaraannya, dan daftar klien menjawab pertanyaan berikutnya —
           "siapa lagi yang sudah memakai ini?" — tepat sebelum ulasannya. */}
-      <OurClients locale={locale} />
+      <Reveal>
+        <OurClients locale={locale} />
+      </Reveal>
 
       {testimoni.length > 0 ? (
-        <section className="bg-slate-50 py-16">
+        <Reveal>
+          <section className="bg-slate-50 py-16">
           <div className="mx-auto max-w-6xl px-4">
             <h2 className="mb-8 text-center text-2xl font-black sm:text-3xl">
               {t.home.whatCustomersSay}
@@ -108,7 +116,8 @@ export default async function BerandaPage({ params }: { params: Promise<{ locale
               ))}
             </div>
           </div>
-        </section>
+          </section>
+        </Reveal>
       ) : null}
     </>
   );

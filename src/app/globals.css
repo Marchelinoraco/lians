@@ -22,6 +22,20 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Tinggi ruang yang harus dikosongkan di bawah bilah atas yang mengambang.
+   Satu sumber angka: <main> memakainya sebagai padding, dan hero menariknya
+   kembali dengan margin negatif agar gradasinya tetap menembus ke belakang
+   pil. Mengubah tinggi bilah cukup di sini. */
+:root {
+  --tinggi-bilah: 76px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --tinggi-bilah: 96px;
+  }
+}
+
 body {
   background-color: #ffffff;
   color: var(--color-ink);
@@ -59,5 +73,61 @@ body {
 
   .jalur-logo-salinan {
     display: none;
+  }
+}
+
+/* ── Animasi masuk ───────────────────────────────────────────────────────────
+   Semuanya CSS; JavaScript hanya dipakai untuk memasang penanda saat elemen
+   memasuki layar. Tanpa pustaka animasi, jadi tidak ada tambahan berat unduhan.
+
+   Aturan penyembunyi awal dibungkus @media (scripting: enabled). Penanda
+   data-reveal ikut terkirim dari server, jadi tanpa pembungkus itu seksi yang
+   disembunyikan akan tetap tak terlihat SELAMANYA bila JavaScript dimatikan
+   atau gagal dimuat — halaman kosong karena animasi yang tidak pernah jalan.
+   Dengan pembungkus itu, peramban tanpa skrip tidak pernah menyembunyikannya. */
+
+@keyframes muncul-naik {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Seksi yang muncul saat digulir sampai ke layar. */
+@media (scripting: enabled) {
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  [data-reveal='tampil'] {
+    animation: muncul-naik 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+/* Judul yang naik per kata. Jeda tiap kata dikirim lewat --jeda dari markup,
+   sehingga urutannya diatur di tempat kata itu ditulis, bukan lewat nth-child
+   yang akan putus begitu jumlah katanya berubah antarbahasa. */
+.kata-muncul {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.5em);
+  animation: muncul-naik 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--jeda, 0s);
+}
+
+/* Gerakan yang tidak diminta membuat sebagian orang pusing. Bagi mereka,
+   semuanya langsung terlihat tanpa perpindahan. */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-reveal='tampil'],
+  .kata-muncul {
+    opacity: 1;
+    transform: none;
+    animation: none;
   }
 }
