@@ -204,6 +204,10 @@ export const tourRequests = pgTable('tour_requests', {
   endDate: date('end_date'),
   notes: text('notes'),
   status: bookingStatusEnum('status').notNull().default('pending'),
+  // Sama seperti pesanan: tanpa kolom ini, staf tidak dapat membedakan
+  // permintaan yang masuk sendiri lewat situs dari yang mereka ketik sendiri
+  // setelah menerima telepon — dan keduanya butuh tindak lanjut berbeda.
+  source: bookingSourceEnum('source').notNull().default('website'),
   adminNotes: text('admin_notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -233,6 +237,10 @@ export const ticketRequests = pgTable('ticket_requests', {
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
   notes: text('notes'),
   status: bookingStatusEnum('status').notNull().default('pending'),
+  // Sama seperti pesanan: tanpa kolom ini, staf tidak dapat membedakan
+  // permintaan yang masuk sendiri lewat situs dari yang mereka ketik sendiri
+  // setelah menerima telepon — dan keduanya butuh tindak lanjut berbeda.
+  source: bookingSourceEnum('source').notNull().default('website'),
   adminNotes: text('admin_notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

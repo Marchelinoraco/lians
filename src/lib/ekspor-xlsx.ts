@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
-import type { BarisEkspor, Kolom } from './ekspor-pesanan';
+import type { BarisEkspor, Kolom, KonteksEkspor } from './ekspor-pesanan';
+import { KONTEKS_PESANAN } from './ekspor-pesanan';
 
 /**
  * Menyusun berkas .xlsx sungguhan, bukan CSV.
@@ -13,12 +14,13 @@ export async function berkasXlsx(
   baris: BarisEkspor[],
   kolom: Kolom[],
   sertakanUang: boolean,
+  konteks: KonteksEkspor = KONTEKS_PESANAN,
 ): Promise<Buffer> {
   const buku = new ExcelJS.Workbook();
   buku.creator = 'LIANS';
   buku.created = new Date();
 
-  const lembar = buku.addWorksheet('Pesanan', {
+  const lembar = buku.addWorksheet(konteks.lembar, {
     views: [{ state: 'frozen', ySplit: 1 }],
   });
 
@@ -44,13 +46,26 @@ export async function berkasXlsx(
     lembar.getColumn(k.kunci).numFmt = '"Rp"#,##0';
   }
 
-  if (sertakanUang && baris.length > 0) {
-    const total = lembar.addRow({
-      status: 'TOTAL',
-      total: baris.reduce((n, b) => n + (b.total ?? 0), 0),
-      biayaPemasok: baris.reduce((n, b) => n + (b.biayaPemasok ?? 0), 0),
-      margin: baris.reduce((n, b) => n + (b.margin ?? 0), 0),
-    });
+  // Baris jumlah disusun dari kolom uang yang benar-benar ada, bukan dari
+  // nama kolom yang ditulis tetap. Daftar lain punya kolom uang yang berbeda —
+  // atau tidak punya sama sekali, dan baris totalnya memang tidak perlu ada.
+  const kolomUang = kolom.filter((k) => k.uang);
+
+  if (kolomUang.length > 0 && baris.length > 0) {
+    const isi: Record<string, string | number> = {};
+
+    // Labelnya ditaruh di kolom bukan-uang terakhir, tepat sebelum angkanya.
+    const kolomLabel = [...kolom].reverse().find((k) => !k.uang);
+    if (kolomLabel) isi[kolomLabel.kunci] = 'TOTAL';
+
+    for (const k of kolomUang) {
+      isi[k.kunci] = baris.reduce((n, b) => {
+        const nilai = b[k.kunci];
+        return n + (typeof nilai === 'number' ? nilai : 0);
+      }, 0);
+    }
+
+    const total = lembar.addRow(isi);
     total.font = { bold: true };
     total.border = { top: { style: 'thin' } };
   }

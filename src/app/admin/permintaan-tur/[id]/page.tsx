@@ -56,6 +56,12 @@ export default async function DetailPermintaanTurPage({
       permintaan.endDate ? formatTanggal(new Date(permintaan.endDate), 'id') : '—',
     ],
     ['Masuk', formatTanggal(new Date(permintaan.createdAt), 'id')],
+    [
+      'Asal',
+      permintaan.source === 'manual'
+        ? 'Dicatat manual oleh staf'
+        : 'Dikirim sendiri lewat situs',
+    ],
   ];
 
   return (

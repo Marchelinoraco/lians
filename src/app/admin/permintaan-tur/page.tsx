@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { getTourRequests } from '@/queries/tour-requests';
 import { formatTanggal } from '@/lib/dates';
+import { Plus } from 'lucide-react';
 import { PencarianAdmin } from '@/components/admin/PencarianAdmin';
+import { TombolEkspor } from '@/components/admin/TombolEkspor';
 import { requireAdminPage } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
@@ -43,12 +45,24 @@ export default async function PermintaanTurPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-black">Permintaan Tur</h1>
-        <p className="mt-1 text-sm text-muted">
-          Paket wisatanya statis di dalam kode; yang tercatat di sini adalah permintaan penawaran
-          yang masuk lewat situs.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-black">Permintaan Tur</h1>
+          <p className="mt-1 max-w-xl text-sm text-muted">
+            Paket wisatanya statis di dalam kode. Yang tercatat di sini permintaan penawaran — baik
+            yang masuk lewat situs maupun yang Anda catat sendiri setelah menerima telepon.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <TombolEkspor aksi="/permintaan-tur/ekspor" statusAktif={filter} satuan="permintaan" />
+          <Link
+            href="/permintaan-tur/baru"
+            className="flex items-center gap-1.5 rounded-lg bg-lians-500 px-4 py-2 text-sm font-semibold text-white hover:bg-lians-600"
+          >
+            <Plus className="h-4 w-4" aria-hidden /> Catat manual
+          </Link>
+        </div>
       </div>
 
       <PencarianAdmin
@@ -82,6 +96,7 @@ export default async function PermintaanTurPage({
           <thead className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-muted">
             <tr>
               <th className="p-4">Kode</th>
+              <th className="p-4">Asal</th>
               <th className="p-4">Pelanggan</th>
               <th className="p-4">Paket</th>
               <th className="p-4">Peserta</th>
@@ -99,6 +114,20 @@ export default async function PermintaanTurPage({
                   >
                     {r.requestCode}
                   </Link>
+                </td>
+
+                {/* Penanda asal, bukan sekadar teks: staf perlu langsung tahu
+                    mana yang sudah pernah dibicarakan lewat telepon. */}
+                <td className="p-4">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      r.source === 'manual'
+                        ? 'bg-slate-200 text-slate-700'
+                        : 'bg-lians-50 text-lians-700'
+                    }`}
+                  >
+                    {r.source === 'manual' ? 'Manual' : 'Website'}
+                  </span>
                 </td>
                 <td className="p-4">
                   {r.customerName}

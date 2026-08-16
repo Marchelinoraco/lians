@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
-import type { BarisEkspor, Kolom, FilterEkspor } from './ekspor-pesanan';
+import type { BarisEkspor, Kolom, FilterEkspor, KonteksEkspor } from './ekspor-pesanan';
+import { KONTEKS_PESANAN } from './ekspor-pesanan';
 
 function rupiah(n: number | null | undefined): string {
   if (n === null || n === undefined) return '—';
@@ -17,6 +18,7 @@ export function berkasPdf(
   kolom: Kolom[],
   filter: FilterEkspor,
   sertakanUang: boolean,
+  konteks: KonteksEkspor = KONTEKS_PESANAN,
 ): Promise<Buffer> {
   return new Promise((selesai, gagal) => {
     const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 36 });
@@ -29,14 +31,14 @@ export function berkasPdf(
     const kiri = doc.page.margins.left;
     const lebarIsi = doc.page.width - kiri - doc.page.margins.right;
 
-    doc.fontSize(16).font('Helvetica-Bold').text('Daftar Pesanan LIANS', kiri, 36);
+    doc.fontSize(16).font('Helvetica-Bold').text(konteks.judul, kiri, 36);
 
     const keterangan: string[] = [];
     if (filter.dari || filter.sampai) {
       keterangan.push(`Periode ${filter.dari ?? 'awal'} sampai ${filter.sampai ?? 'sekarang'}`);
     }
     if (filter.status) keterangan.push(`Status: ${filter.status}`);
-    keterangan.push(`${baris.length} pesanan`);
+    keterangan.push(`${baris.length} ${konteks.satuan}`);
     keterangan.push(`Dicetak ${new Date().toLocaleDateString('id-ID')}`);
 
     doc.fontSize(9).font('Helvetica').fillColor('#64748b').text(keterangan.join(' · '));
@@ -98,19 +100,31 @@ export function berkasPdf(
       );
     }
 
-    if (sertakanUang && baris.length > 0) {
+    const kolomUang = kolom.filter((k) => k.uang);
+    const kunciLabel = [...kolom].reverse().find((k) => !k.uang)?.kunci;
+
+    if (kolomUang.length > 0 && baris.length > 0) {
       tulisBaris(
         kolom.map((k) => {
-          if (k.kunci === 'status') return 'TOTAL';
+          if (k.kunci === kunciLabel) return 'TOTAL';
           if (!k.uang) return '';
-          return rupiah(baris.reduce((n, b) => n + ((b[k.kunci] as number | null) ?? 0), 0));
+          return rupiah(
+            baris.reduce((n, b) => {
+              const nilai = b[k.kunci];
+              return n + (typeof nilai === 'number' ? nilai : 0);
+            }, 0),
+          );
         }),
         true,
       );
     }
 
     if (baris.length === 0) {
-      doc.moveDown(1).fontSize(10).fillColor('#64748b').text('Tidak ada pesanan pada filter ini.');
+      doc
+        .moveDown(1)
+        .fontSize(10)
+        .fillColor('#64748b')
+        .text(`Tidak ada ${konteks.satuan} pada filter ini.`);
     }
 
     doc.end();

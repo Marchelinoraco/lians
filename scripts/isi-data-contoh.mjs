@@ -311,8 +311,8 @@ async function utama() {
     await sql.query(
       `insert into tour_requests (
          request_code, tour_slug, tour_name_snapshot, customer_name, phone, email,
-         customer_id, pax, start_date, notes, status, created_at, updated_at
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12)`,
+         customer_id, pax, start_date, notes, status, source, created_at, updated_at
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13)`,
       [
         `TUR-CONTOH-${String(i + 1).padStart(3, '0')}`,
         slug,
@@ -325,16 +325,20 @@ async function utama() {
         tanggal(mulai),
         pilih(CATATAN),
         pilih(['pending', 'pending', 'confirmed', 'completed']),
+        acak() < 0.6 ? 'website' : 'manual',
         masuk.toISOString(),
       ],
     );
   }
 
+  // Kode maskapai, bukan namanya: kolom airline menyimpan kode, dan panel
+  // menerjemahkannya lewat namaMaskapai(). Diisi nama lengkap, kolomnya akan
+  // tampil kosong karena tidak ada kode yang cocok.
   const RUTE_UDARA = [
-    ['Manado', 'Jakarta', 'Garuda Indonesia'],
-    ['Manado', 'Surabaya', 'Lion Air'],
-    ['Jakarta', 'Manado', 'Batik Air'],
-    ['Manado', 'Denpasar', 'Citilink'],
+    ['Manado', 'Jakarta', 'garuda'],
+    ['Manado', 'Surabaya', 'lion'],
+    ['Jakarta', 'Manado', 'batik'],
+    ['Manado', 'Denpasar', 'citilink'],
   ];
   const jumlahTiket = Math.max(1, Math.round(JUMLAH_PESANAN * 0.2));
   for (let i = 0; i < jumlahTiket; i += 1) {
@@ -348,8 +352,8 @@ async function utama() {
     await sql.query(
       `insert into ticket_requests (
          request_code, origin, destination, airline, departure_date, pax,
-         customer_name, phone, email, customer_id, notes, status, created_at, updated_at
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13)`,
+         customer_name, phone, email, customer_id, notes, status, source, created_at, updated_at
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14)`,
       [
         `TKT-CONTOH-${String(i + 1).padStart(3, '0')}`,
         asal,
@@ -363,6 +367,7 @@ async function utama() {
         orang.id,
         pilih(CATATAN),
         pilih(['pending', 'confirmed', 'completed']),
+        acak() < 0.6 ? 'website' : 'manual',
         masuk.toISOString(),
       ],
     );

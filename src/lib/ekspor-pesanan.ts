@@ -11,20 +11,31 @@ function tanggalRingkas(d: Date): string {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
-export type BarisEkspor = {
-  kode: string;
-  masuk: string;
-  asal: string;
-  pelanggan: string;
-  telepon: string;
-  pesanan: string;
-  mulai: string;
-  selesai: string;
-  status: string;
-  /** Hanya diisi untuk super admin; undefined berarti kolomnya tidak ditulis. */
-  total?: number | null;
-  biayaPemasok?: number | null;
-  margin?: number | null;
+/**
+ * Satu baris ekspor, apa pun daftarnya.
+ *
+ * Sengaja tidak diketat per daftar: pembuat berkas xlsx dan pdf tidak perlu
+ * tahu apakah yang dicetak pesanan, permintaan tur, atau permintaan tiket —
+ * yang menentukan bentuk tabelnya adalah larik kolom yang diberikan. Bentuk
+ * masing-masing daftar tetap dijaga oleh tipe kembalian penyusun barisnya.
+ */
+export type NilaiSel = string | number | null | undefined;
+export type BarisEkspor = Record<string, NilaiSel>;
+
+/** Judul berkas dan kata untuk menyebut satu barisnya. */
+export type KonteksEkspor = {
+  /** Judul di kepala PDF, misalnya "Daftar Pesanan LIANS". */
+  judul: string;
+  /** Nama lembar di Excel. */
+  lembar: string;
+  /** Kata benda untuk jumlah baris: "pesanan", "permintaan". */
+  satuan: string;
+};
+
+export const KONTEKS_PESANAN: KonteksEkspor = {
+  judul: 'Daftar Pesanan LIANS',
+  lembar: 'Pesanan',
+  satuan: 'pesanan',
 };
 
 const LABEL_STATUS: Record<string, string> = {
@@ -66,7 +77,7 @@ export function saringPesanan(semua: Booking[], filter: FilterEkspor): Booking[]
  */
 export function susunBaris(pesanan: Booking[], sertakanUang: boolean): BarisEkspor[] {
   return pesanan.map((b) => {
-    const baris: BarisEkspor = {
+    const baris: Record<string, NilaiSel> = {
       kode: b.bookingCode,
       masuk: tanggalRingkas(new Date(b.createdAt)),
       asal: b.source === 'manual' ? 'Manual' : 'Website',
@@ -89,7 +100,7 @@ export function susunBaris(pesanan: Booking[], sertakanUang: boolean): BarisEksp
   });
 }
 
-export type Kolom = { kunci: keyof BarisEkspor; judul: string; lebar: number; uang?: boolean };
+export type Kolom = { kunci: string; judul: string; lebar: number; uang?: boolean };
 
 export function kolomEkspor(sertakanUang: boolean): Kolom[] {
   const dasar: Kolom[] = [

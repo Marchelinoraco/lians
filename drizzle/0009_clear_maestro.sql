@@ -1,0 +1,2 @@
+ALTER TABLE "ticket_requests" ADD COLUMN "source" "booking_source" DEFAULT 'website' NOT NULL;--> statement-breakpoint
+ALTER TABLE "tour_requests" ADD COLUMN "source" "booking_source" DEFAULT 'website' NOT NULL;

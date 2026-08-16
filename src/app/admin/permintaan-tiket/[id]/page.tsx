@@ -55,6 +55,12 @@ export default async function DetailPermintaanTiketPage({
     ],
     ['Jumlah penumpang', `${permintaan.pax} orang`],
     ['Masuk', formatTanggal(new Date(permintaan.createdAt), 'id')],
+    [
+      'Asal',
+      permintaan.source === 'manual'
+        ? 'Dicatat manual oleh staf'
+        : 'Dikirim sendiri lewat situs',
+    ],
   ];
 
   return (

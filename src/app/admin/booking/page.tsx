@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
-import { EksporPesanan } from '@/components/admin/EksporPesanan';
+import { TombolEkspor } from '@/components/admin/TombolEkspor';
 import { PencarianAdmin } from '@/components/admin/PencarianAdmin';
 import { getBookings } from '@/queries/bookings';
 import { formatRupiah } from '@/lib/format';
@@ -53,7 +53,13 @@ export default async function BookingListPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-black">Booking</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <EksporPesanan statusAktif={filter} superAdmin={superAdmin} />
+          <TombolEkspor
+          aksi="/booking/ekspor"
+          statusAktif={filter}
+          catatanPeran={
+            superAdmin ? undefined : 'Kolom harga dan margin tidak disertakan pada akun staf.'
+          }
+        />
           <Link
             href="/booking/manual"
             className="flex items-center gap-1.5 rounded-lg bg-lians-500 px-4 py-2 text-sm font-semibold text-white hover:bg-lians-600"

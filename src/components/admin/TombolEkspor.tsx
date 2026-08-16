@@ -1,26 +1,37 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Download, FileSpreadsheet, FileText, ChevronDown } from 'lucide-react';
 
 /**
- * Tombol unduh daftar pesanan.
+ * Tombol unduh untuk daftar admin mana pun.
  *
  * Rentang tanggal disediakan di sini, bukan mengikuti filter tabel: yang
  * dibutuhkan saat mengekspor hampir selalu "bulan lalu" atau "tahun ini",
  * sementara filter tabel hanya berdasarkan status.
  */
-export function EksporPesanan({
+export function TombolEkspor({
+  aksi,
   statusAktif,
-  superAdmin,
+  satuan = 'pesanan',
+  catatanPeran,
 }: {
+  /** Alamat route ekspornya, misalnya "/booking/ekspor". */
+  aksi: string;
   statusAktif?: string;
-  superAdmin: boolean;
+  /** Kata untuk menyebut isinya di teks bantuan. */
+  satuan?: string;
+  /**
+   * Ditampilkan bila ada kolom yang disembunyikan dari peran ini. Daftar tanpa
+   * kolom uang tidak menyembunyikan apa pun, jadi tidak perlu diisi.
+   */
+  catatanPeran?: string;
 }) {
   const [terbuka, setTerbuka] = useState(false);
   const [dari, setDari] = useState('');
   const [sampai, setSampai] = useState('');
   const wadah = useRef<HTMLDivElement>(null);
+  const idPanel = useId();
 
   useEffect(() => {
     if (!terbuka) return;
@@ -45,7 +56,7 @@ export function EksporPesanan({
     if (statusAktif) q.set('status', statusAktif);
     if (dari) q.set('dari', dari);
     if (sampai) q.set('sampai', sampai);
-    return `/booking/ekspor?${q.toString()}`;
+    return `${aksi}?${q.toString()}`;
   }
 
   const kelasTanggal = 'w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm';
@@ -56,7 +67,7 @@ export function EksporPesanan({
         type="button"
         onClick={() => setTerbuka((v) => !v)}
         aria-expanded={terbuka}
-        aria-controls="panel-ekspor"
+        aria-controls={idPanel}
         className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold transition-colors hover:border-lians-400"
       >
         <Download className="h-4 w-4" aria-hidden />
@@ -69,7 +80,7 @@ export function EksporPesanan({
 
       {terbuka ? (
         <div
-          id="panel-ekspor"
+          id={idPanel}
           className="absolute right-0 top-full z-50 mt-1 w-72 space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-lg"
         >
           <div className="grid grid-cols-2 gap-2">
@@ -94,7 +105,7 @@ export function EksporPesanan({
           </div>
 
           <p className="text-xs text-muted">
-            Dikosongkan berarti seluruh pesanan.
+            Dikosongkan berarti seluruh {satuan}.
             {statusAktif ? ' Filter status yang sedang aktif ikut diterapkan.' : null}
           </p>
 
@@ -119,10 +130,8 @@ export function EksporPesanan({
             </a>
           </div>
 
-          {!superAdmin ? (
-            <p className="border-t border-slate-100 pt-3 text-xs text-muted">
-              Kolom harga dan margin tidak disertakan pada akun staf.
-            </p>
+          {catatanPeran ? (
+            <p className="border-t border-slate-100 pt-3 text-xs text-muted">{catatanPeran}</p>
           ) : null}
         </div>
       ) : null}
