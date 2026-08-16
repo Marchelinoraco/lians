@@ -22,6 +22,20 @@ import { neon } from '@neondatabase/serverless';
 
 const sql = neon(process.env.DATABASE_URL);
 
+/**
+ * Jumlah pesanan contoh. Bawaannya sepuluh — cukup untuk melihat daftar,
+ * pencarian, dan ekspor bekerja, tanpa menumpuk catatan palsu di basis data
+ * yang sebentar lagi dipakai sungguhan.
+ *
+ * Ubah lewat argumen bila ingin lebih banyak, misalnya untuk melihat bentuk
+ * grafik setahun penuh:
+ *   node --env-file=.env.local scripts/isi-data-contoh.mjs 120
+ */
+const JUMLAH_PESANAN = Number(process.argv[2] ?? 10);
+if (!Number.isInteger(JUMLAH_PESANAN) || JUMLAH_PESANAN < 1) {
+  throw new Error(`Jumlah pesanan harus bilangan bulat positif, bukan "${process.argv[2]}".`);
+}
+
 /** Acak yang dapat diulang, supaya menjalankan ulang memberi bentuk yang sama. */
 let benih = 20260816;
 function acak() {
@@ -97,8 +111,14 @@ async function utama() {
   console.log(`pemasok       : ${PEMASOK.length} (+${idKendaraanPemasok.length} kendaraan)`);
 
   // ── Pelanggan ─────────────────────────────────────────────────────────────
+  //
+  // Sekitar dua pertiga jumlah pesanan, dibatasi daftar nama yang ada. Dengan
+  // satu pelanggan per pesanan tidak akan ada pelanggan berulang, padahal
+  // justru pelanggan yang menyewa lagi itu yang ingin terlihat di panel.
+  const jumlahPelanggan = Math.min(NAMA.length, Math.max(3, Math.ceil(JUMLAH_PESANAN * 0.7)));
+
   const pelanggan = [];
-  for (let i = 0; i < NAMA.length; i += 1) {
+  for (let i = 0; i < jumlahPelanggan; i += 1) {
     const nama = NAMA[i];
     const telepon = `62812${String(30000000 + i * 137911).slice(0, 8)}`;
     const surel = `${nama.split(' ')[0].toLowerCase()}${i}@contoh.invalid`;
@@ -117,25 +137,74 @@ async function utama() {
   // itu harus tetap jatuh di sana berapa pun bulan skrip ini dijalankan.
   // Sebaran rata membuat grafik terlihat seperti data buatan, sedangkan yang
   // ingin dilihat justru apakah grafiknya membaca musim dengan benar.
-  const POLA_BULAN = {
+  const BOBOT_BULAN = {
     0: 6, 1: 5, 2: 7, 3: 8, 4: 9, 5: 15,
     6: 16, 7: 10, 8: 7, 9: 8, 10: 9, 11: 13,
   };
+
+  const sekarang = new Date();
+
+  // Dua belas bulan ke belakang, urut dari yang terlama.
+  const bulanan = [];
+  for (let m = 0; m < 12; m += 1) {
+    bulanan.push(new Date(sekarang.getFullYear(), sekarang.getMonth() - (11 - m), 1));
+  }
+
+  // Bobot dikalikan lagi ke arah bulan terbaru. Pada jumlah kecil, sebaran
+  // musim saja akan menaruh hampir semua pesanan di masa lalu, dan panel
+  // dibuka dengan daftar yang seluruhnya sudah selesai — tidak ada yang
+  // menunggu konfirmasi, yang justru pekerjaan sehari-harinya.
+  const bobot = bulanan.map((b, m) => BOBOT_BULAN[b.getMonth()] * (1 + m * 0.35));
+  const totalBobot = bobot.reduce((a, b) => a + b, 0);
+
+  // Sisa pembagian dibawa ke bulan berikutnya, supaya jumlah akhirnya persis
+  // sebanyak yang diminta — pembulatan per bulan akan meleset beberapa baris.
+  const jatah = [];
+  let bawa = 0;
+  for (let m = 0; m < 12; m += 1) {
+    const tepat = (bobot[m] / totalBobot) * JUMLAH_PESANAN + bawa;
+    const bulat = Math.round(tepat);
+    bawa = tepat - bulat;
+    jatah.push(Math.max(0, bulat));
+  }
+  // Pembulatan bisa menyisakan selisih satu; ditambal di bulan terbaru.
+  let selisih = JUMLAH_PESANAN - jatah.reduce((a, b) => a + b, 0);
+  while (selisih !== 0) {
+    const i = selisih > 0 ? 11 : jatah.findLastIndex((n) => n > 0);
+    if (i < 0) break;
+    jatah[i] += selisih > 0 ? 1 : -1;
+    selisih += selisih > 0 ? -1 : 1;
+  }
+
+  // Bulan berjalan dijamin kebagian, dan status pesanan ditentukan umurnya —
+  // tanpa jaminan ini, sepuluh pesanan bisa jatuh seluruhnya di masa lalu dan
+  // panel dibuka tanpa satu pun berstatus "Menunggu". Padahal justru pesanan
+  // yang menunggu konfirmasi itu pekerjaan hariannya; daftar yang semuanya
+  // sudah selesai tidak menunjukkan apa pun tentang cara panel ini dipakai.
+  const minimalBaru = Math.min(JUMLAH_PESANAN, Math.max(2, Math.round(JUMLAH_PESANAN * 0.2)));
+  while (jatah[11] < minimalBaru) {
+    // Diambil dari bulan terlama yang masih terisi, supaya jumlah totalnya tetap.
+    const donor = jatah.findIndex((n, i) => n > 0 && i < 11);
+    if (donor < 0) break;
+    jatah[donor] -= 1;
+    jatah[11] += 1;
+  }
+
   let nomor = 0;
   let jumlah = 0;
   let belumLunas = 0;
 
-  const sekarang = new Date();
-
   for (let m = 0; m < 12; m += 1) {
-    const bulan = new Date(sekarang.getFullYear(), sekarang.getMonth() - (11 - m), 1);
+    const bulan = bulanan[m];
     const hariTerakhir = new Date(bulan.getFullYear(), bulan.getMonth() + 1, 0).getDate();
     // Bulan berjalan hanya terisi sampai hari ini.
     const batas = m === 11 ? sekarang.getDate() : hariTerakhir;
 
-    for (let i = 0; i < POLA_BULAN[bulan.getMonth()]; i += 1) {
+    for (let i = 0; i < jatah[m]; i += 1) {
       const masuk = new Date(bulan);
-      masuk.setDate(antara(1, batas));
+      // Di bulan berjalan, condongkan ke sepuluh hari terakhir: umur itulah
+      // yang membuat statusnya "Menunggu" alih-alih langsung selesai.
+      masuk.setDate(m === 11 ? antara(Math.max(1, batas - 10), batas) : antara(1, batas));
       masuk.setHours(antara(7, 20), antara(0, 59), 0, 0);
 
       const orang = pilih(pelanggan);
@@ -162,7 +231,7 @@ async function utama() {
       const umurHari = Math.floor((sekarang - masuk) / 86400000);
       const status =
         umurHari > 45
-          ? acak() < 0.9
+          ? acak() < 0.94
             ? 'completed'
             : 'cancelled'
           : umurHari > 7
@@ -230,7 +299,8 @@ async function utama() {
     ['likupang-pantai-paal', 'Likupang & Pantai Paal'],
     ['bukit-kasih-danau-linow', 'Bukit Kasih & Danau Linow'],
   ];
-  for (let i = 0; i < 7; i += 1) {
+  const jumlahTur = Math.max(1, Math.round(JUMLAH_PESANAN * 0.3));
+  for (let i = 0; i < jumlahTur; i += 1) {
     const orang = pilih(pelanggan);
     const [slug, nama] = pilih(TUR);
     const masuk = new Date(sekarang);
@@ -266,7 +336,8 @@ async function utama() {
     ['Jakarta', 'Manado', 'Batik Air'],
     ['Manado', 'Denpasar', 'Citilink'],
   ];
-  for (let i = 0; i < 5; i += 1) {
+  const jumlahTiket = Math.max(1, Math.round(JUMLAH_PESANAN * 0.2));
+  for (let i = 0; i < jumlahTiket; i += 1) {
     const orang = pilih(pelanggan);
     const [asal, tujuan, maskapai] = pilih(RUTE_UDARA);
     const masuk = new Date(sekarang);
@@ -296,7 +367,7 @@ async function utama() {
       ],
     );
   }
-  console.log('permintaan    : 7 tur, 5 tiket');
+  console.log(`permintaan    : ${jumlahTur} tur, ${jumlahTiket} tiket`);
 
   console.log('\nSemua data contoh dapat dihapus dengan:');
   console.log('  node --env-file=.env.local scripts/hapus-data-contoh.mjs');
