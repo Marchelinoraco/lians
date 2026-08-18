@@ -19,22 +19,23 @@ import { readFileSync } from 'node:fs';
  * Jalankan: node --env-file=.env.local scripts/unggah-foto-armada.mjs
  */
 const sql = neon(process.env.DATABASE_URL);
-const SUMBER = '../website-rental-mobil/public/images/cars';
+const MOBIL = '../website-rental-mobil/public/images/cars';
 
 const PASANGAN = [
-  ['toyota-avanza', 'new-avanza.png', 'All New Avanza / Xenia'],
-  ['mitsubishi-xpander', 'xpander-ultimate.webp', 'Mitsubishi Xpander'],
-  ['innova-reborn', 'innova-reborn.png', 'Innova Reborn'],
-  ['innova-zenix-g', 'innova-zenix-g.png', 'Innova Zenix G'],
+  ['toyota-avanza', `${MOBIL}/new-avanza.png`, 'All New Avanza / Xenia'],
+  ['mitsubishi-xpander', `${MOBIL}/xpander-ultimate.webp`, 'Mitsubishi Xpander'],
+  ['innova-reborn', `${MOBIL}/innova-reborn.png`, 'Innova Reborn'],
+  ['innova-zenix-g', `${MOBIL}/innova-zenix-g.png`, 'Innova Zenix G'],
   // Berkas zenix-q identik dengan zenix-g; dari luar keduanya memang serupa,
   // yang membedakan hanya kursi kapten di kabin.
-  ['innova-zenix-q-captain-seat', 'innova-zenix-q.png', 'Innova Zenix Q (Captain Seat)'],
-  ['toyota-fortuner', 'toyota-fortuner.png', 'Fortuner'],
-  ['pajero-sport', 'pajero-sport.png', 'Pajero Sport'],
-  ['toyota-alphard', 'alphard.png', 'Alphard Facelift'],
-  ['hiace-commuter', 'hiace-commuter.png', 'Hiace Commuter'],
-  ['hiace-premio-14-seat', 'hiace-premio.png', 'Hiace Premio (14 Seat)'],
-  // Bus Pariwisata 31 seat tidak punya berkas di folder sumber.
+  ['innova-zenix-q-captain-seat', `${MOBIL}/innova-zenix-q.png`, 'Innova Zenix Q (Captain Seat)'],
+  ['toyota-fortuner', `${MOBIL}/toyota-fortuner.png`, 'Fortuner'],
+  ['pajero-sport', `${MOBIL}/pajero-sport.png`, 'Pajero Sport'],
+  ['toyota-alphard', `${MOBIL}/alphard.png`, 'Alphard Facelift'],
+  ['hiace-commuter', `${MOBIL}/hiace-commuter.png`, 'Hiace Commuter'],
+  ['hiace-premio-14-seat', `${MOBIL}/hiace-premio.png`, 'Hiace Premio (14 Seat)'],
+  // Busnya tidak ada di folder itu; berkasnya ditaruh terpisah oleh pemilik.
+  ['bus-pariwisata-31-seat', 'assets/bus-pariwisata.jpg', 'Bus Pariwisata (31 Seat)'],
 ];
 
 if (!process.env.CLOUDINARY_URL) {
@@ -42,8 +43,7 @@ if (!process.env.CLOUDINARY_URL) {
   process.exit(1);
 }
 
-for (const [slug, berkas, alt] of PASANGAN) {
-  const jalur = `${SUMBER}/${berkas}`;
+for (const [slug, jalur, alt] of PASANGAN) {
   readFileSync(jalur); // gagal cepat bila berkasnya tidak ada
 
   const publicId = `lians/kendaraan/${slug}`;
