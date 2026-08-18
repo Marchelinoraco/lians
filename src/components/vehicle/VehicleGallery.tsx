@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/cn';
 import type { VehicleImage } from '@/db/schema';
+import { denganCapLogo } from '@/lib/cap-logo';
 
 export function VehicleGallery({
   images,
@@ -28,7 +29,7 @@ export function VehicleGallery({
     <div className="space-y-3">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100">
         <Image
-          src={images[aktif].url}
+          src={denganCapLogo(images[aktif].url)}
           alt={images[aktif].alt || alt}
           fill
           sizes="(max-width: 1024px) 100vw, 50vw"

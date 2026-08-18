@@ -4,6 +4,7 @@ import { Users, Cog, Fuel, Briefcase } from 'lucide-react';
 import type { Vehicle } from '@/db/schema';
 import { formatRupiah } from '@/lib/format';
 import { getMessages, localeHref, type Locale } from '@/i18n';
+import { denganCapLogo } from '@/lib/cap-logo';
 
 const LABEL_KATEGORI: Record<string, string> = {
   hatchback: 'Hatchback',
@@ -24,7 +25,7 @@ export function VehicleCard({ vehicle, locale }: { vehicle: Vehicle; locale: Loc
       <div className="relative aspect-[4/3] bg-slate-100">
         {gambar ? (
           <Image
-            src={gambar.url}
+            src={denganCapLogo(gambar.url)}
             alt={gambar.alt || vehicle.name}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"

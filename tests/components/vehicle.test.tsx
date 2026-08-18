@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { VehicleCard } from '@/components/vehicle/VehicleCard';
+import { CAP_LOGO } from '@/lib/cap-logo';
 import { VehicleGrid } from '@/components/vehicle/VehicleGrid';
 import type { Vehicle } from '@/db/schema';
 
@@ -105,5 +106,25 @@ describe('VehicleGrid', () => {
   it('menampilkan satu kartu per kendaraan', () => {
     render(<VehicleGrid vehicles={[dasar, { ...dasar, id: 'lain', slug: 'brio', name: 'Brio' }]} locale="id" />);
     expect(screen.getAllByRole('article')).toHaveLength(2);
+  });
+});
+
+describe('cap logo pada foto kendaraan', () => {
+  const berfoto = {
+    ...dasar,
+    images: [
+      {
+        url: 'https://res.cloudinary.com/lians/image/upload/v1/lians/kendaraan/zenix.jpg',
+        publicId: 'lians/kendaraan/zenix',
+        alt: 'Innova Zenix G',
+      },
+    ],
+  } as unknown as Vehicle;
+
+  it('menandai foto katalog dengan logo LIANS', () => {
+    render(<VehicleCard vehicle={berfoto} locale="id" />);
+    const src = screen.getByRole('img').getAttribute('src') ?? '';
+    // next/image membungkus URL aslinya sebagai parameter terkode.
+    expect(decodeURIComponent(src)).toContain(CAP_LOGO);
   });
 });
