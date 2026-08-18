@@ -1,28 +1,32 @@
 import Link from 'next/link';
-import { Key, UserRound, Bus } from 'lucide-react';
+import { Car, Plane, Map } from 'lucide-react';
 import { getMessages, localeHref, type Locale } from '@/i18n';
 
 export function ServiceCards({ locale }: { locale: Locale }) {
   const t = getMessages(locale);
 
+  // Tiga lini usaha LIANS, bukan tiga jenis sewa: pengunjung beranda perlu
+  // tahu lebih dulu bahwa tiket pesawat dan paket wisata pun dilayani di sini.
+  // Jenis sewanya — lepas kunci atau dengan sopir — disebut di deskripsi kartu
+  // pertama, dan dipilih di halaman kendaraannya.
   const LAYANAN = [
     {
-      Icon: Key,
-      title: t.home.serviceSelfDrive,
-      desc: t.home.serviceSelfDriveDesc,
+      Icon: Car,
+      title: t.home.serviceRental,
+      desc: t.home.serviceRentalDesc,
       href: '/mobil',
     },
     {
-      Icon: UserRound,
-      title: t.home.serviceWithDriver,
-      desc: t.home.serviceWithDriverDesc,
-      href: '/booking',
+      Icon: Plane,
+      title: t.home.serviceFlight,
+      desc: t.home.serviceFlightDesc,
+      href: '/tiket',
     },
     {
-      Icon: Bus,
-      title: t.home.serviceTourism,
-      desc: t.home.serviceTourismDesc,
-      href: '/mobil?category=bus',
+      Icon: Map,
+      title: t.home.serviceTour,
+      desc: t.home.serviceTourDesc,
+      href: '/tours',
     },
   ];
 

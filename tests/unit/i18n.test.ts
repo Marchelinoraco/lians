@@ -79,7 +79,9 @@ describe('kamus pesan', () => {
   });
 
   it('menerjemahkan label navigasi ke bahasa masing-masing', () => {
-    expect(getMessages('id').nav.vehicles).toBe('Kendaraan');
+    expect(getMessages('id').nav.vehicles).toBe('Rental Mobil');
+    expect(getMessages('id').nav.tours).toBe('Paket Tour');
+    expect(getMessages('id').nav.ticketing).toBe('Tiket Pesawat');
     expect(getMessages('en').nav.vehicles).toBe('Vehicles');
     expect(getMessages('zh').nav.vehicles).toBe('车辆');
     expect(getMessages('ko').nav.vehicles).toBe('차량');

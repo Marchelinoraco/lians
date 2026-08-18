@@ -12,7 +12,7 @@ describe('Footer', () => {
 
   it('menampilkan seluruh tautan navigasi utama', () => {
     render(<Footer settings={DEFAULT_SETTINGS} locale="id" />);
-    for (const label of ['Beranda', 'Kendaraan', 'Testimoni', 'Tentang', 'Kontak']) {
+    for (const label of ['Beranda', 'Rental Mobil', 'Paket Tour', 'Tiket Pesawat', 'Kontak']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument();
     }
   });
@@ -38,7 +38,7 @@ describe('Footer', () => {
 
   it('tidak memberi awalan pada tautan bahasa Indonesia', () => {
     render(<Footer settings={DEFAULT_SETTINGS} locale="id" />);
-    expect(screen.getByRole('link', { name: 'Kendaraan' })).toHaveAttribute('href', '/mobil');
+    expect(screen.getByRole('link', { name: 'Rental Mobil' })).toHaveAttribute('href', '/mobil');
   });
 
   it('menampilkan jam operasional dalam bahasa yang diminta', () => {
