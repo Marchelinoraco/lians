@@ -2,6 +2,16 @@ import { z } from 'zod';
 
 const tanggal = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal tidak valid');
 
+// Kolom angka yang dikosongkan dikirim form sebagai string kosong, bukan
+// undefined. Tanpa cabang literal('') itu, admin yang hanya mengisi satu pos
+// biaya akan ditolak karena pos lain yang sengaja dibiarkan kosong.
+const rupiah = z.union([z.literal(''), z.coerce.number().int().min(0)]).optional();
+
+/** Kebalikannya, untuk sisi penyimpanan: string kosong berarti belum diisi, bukan nol. */
+export function nominal(nilai: number | '' | undefined): number | null {
+  return nilai === '' || nilai === undefined ? null : Number(nilai);
+}
+
 /**
  * Berbeda dari booking website dalam dua hal yang disengaja: tanggal hanya
  * keterangan, dan total harga diketik admin.
@@ -36,6 +46,14 @@ export const manualBookingInputSchema = z
     supplierVehicleId: z.union([z.literal(''), z.string().uuid()]).optional(),
     supplierCost: z.union([z.literal(''), z.coerce.number().int().min(0)]).optional(),
     supplierPaid: z.boolean().default(false),
+
+    // Biaya yang keluar dari kantong LIANS untuk menjalankan pesanan ini —
+    // berlaku sama untuk kendaraan sendiri maupun pinjaman dari pemasok.
+    costFuel: rupiah,
+    costDriver: rupiah,
+    costTollParking: rupiah,
+    costOther: rupiah,
+    costOtherNote: z.string().trim().max(200, 'Keterangan biaya lain-lain terlalu panjang').optional(),
 
     notes: z.string().max(2000).optional(),
     adminNotes: z.string().max(2000).optional(),

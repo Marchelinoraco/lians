@@ -164,6 +164,17 @@ export const bookings = pgTable('bookings', {
   // terpisah dari totalPrice yang dibayar pelanggan. Selisihnya adalah margin.
   supplierCost: integer('supplier_cost'),
   supplierPaid: boolean('supplier_paid').notNull().default(false),
+  // Biaya operasional: yang keluar dari kantong LIANS untuk menjalankan
+  // pesanan ini. Berlaku juga saat kendaraannya dari pemasok — BBM, sopir, dan
+  // tol tetap tanggungan LIANS meski mobilnya pinjaman.
+  //
+  // Nullable, bukan default 0: pesanan yang biayanya belum sempat dicatat harus
+  // dapat dibedakan dari pesanan yang biayanya memang nihil.
+  costFuel: integer('cost_fuel'),
+  costDriver: integer('cost_driver'),
+  costTollParking: integer('cost_toll_parking'),
+  costOther: integer('cost_other'),
+  costOtherNote: text('cost_other_note'),
   vehicleNameSnapshot: text('vehicle_name_snapshot'),
   routeNameSnapshot: text('route_name_snapshot'),
   startDate: date('start_date').notNull(),
@@ -173,6 +184,10 @@ export const bookings = pgTable('bookings', {
   driverDays: integer('driver_days').notNull().default(0),
   totalPrice: integer('total_price'),
   priceBreakdown: jsonb('price_breakdown').$type<PriceBreakdownJson | null>(),
+  // Terisi saat admin mengubah total harga pesanan yang datang dari situs.
+  // Rincian otomatisnya sengaja tidak dihapus: yang hilang bukan hanya angka,
+  // tetapi jejak harga yang pernah dilihat dan disetujui pelanggan.
+  priceEditedAt: timestamp('price_edited_at', { withTimezone: true }),
   notes: text('notes'),
   status: bookingStatusEnum('status').notNull().default('pending'),
   // Memisahkan pesanan yang masuk lewat situs dari yang dicatat staf lewat

@@ -22,6 +22,11 @@ function pesanan(over: Partial<Booking> = {}): Booking {
     supplierNameSnapshot: null,
     supplierCost: null,
     supplierPaid: false,
+    costFuel: null,
+    costDriver: null,
+    costTollParking: null,
+    costOther: null,
+    costOtherNote: null,
     vehicleNameSnapshot: 'Avanza',
     routeNameSnapshot: null,
     startDate: '2026-08-10',
@@ -31,6 +36,7 @@ function pesanan(over: Partial<Booking> = {}): Booking {
     driverDays: 0,
     totalPrice: 500000,
     priceBreakdown: null,
+    priceEditedAt: null,
     notes: null,
     status: 'confirmed',
     source: 'website',
@@ -74,6 +80,7 @@ describe('susunBaris', () => {
 
     expect(baris.total).toBeUndefined();
     expect(baris.biayaPemasok).toBeUndefined();
+    expect(baris.biayaOperasional).toBeUndefined();
     expect(baris.margin).toBeUndefined();
     // Kolom operasional tetap ada — staf memang perlu daftar ini.
     expect(baris.pelanggan).toBe('Budi');
@@ -88,12 +95,37 @@ describe('susunBaris', () => {
     expect(baris.margin).toBe(250000);
   });
 
-  it('mengosongkan margin bila salah satu angkanya tidak ada', () => {
-    const [tanpaPemasok] = susunBaris([pesanan({ totalPrice: 700000, supplierCost: null })], true);
-    expect(tanpaPemasok.margin).toBeNull();
+  it('mengurangi biaya operasional dari margin, juga pada kendaraan sendiri', () => {
+    const [baris] = susunBaris(
+      [
+        pesanan({
+          totalPrice: 2000000,
+          supplierCost: null,
+          costFuel: 400000,
+          costDriver: 250000,
+        }),
+      ],
+      true,
+    );
 
-    const [tanpaTotal] = susunBaris([pesanan({ totalPrice: null, supplierCost: 100000 })], true);
-    expect(tanpaTotal.margin).toBeNull();
+    expect(baris.biayaOperasional).toBe(650000);
+    expect(baris.margin).toBe(1350000);
+  });
+
+  it('mengurangi biaya operasional di atas biaya pemasok pada mobil pinjaman', () => {
+    const [baris] = susunBaris(
+      [pesanan({ totalPrice: 3600000, supplierCost: 2000000, costFuel: 650000 })],
+      true,
+    );
+
+    expect(baris.margin).toBe(950000);
+  });
+
+  // Rute travel tanpa tarif tetap: angkanya memang belum ada, dan "Rp 0" akan
+  // terbaca sebagai pesanan yang tidak menghasilkan apa-apa.
+  it('mengosongkan margin bila harga ke pelanggan belum ditentukan', () => {
+    const [baris] = susunBaris([pesanan({ totalPrice: null, supplierCost: 100000 })], true);
+    expect(baris.margin).toBeNull();
   });
 
   it('menandai asal pesanan', () => {

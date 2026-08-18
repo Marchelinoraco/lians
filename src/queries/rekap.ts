@@ -1,6 +1,7 @@
 import { and, eq, gte, isNotNull, lte, ne, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
+import { hitungBiayaOperasional } from '@/lib/biaya';
 import { requireSuperAdmin } from '@/actions/auth-guard';
 
 export type Rekap = {
@@ -9,6 +10,7 @@ export type Rekap = {
   jumlahManual: number;
   pendapatan: number;
   biayaPemasok: number;
+  biayaOperasional: number;
   margin: number;
   utangBelumLunas: number;
 };
@@ -34,9 +36,11 @@ export async function hitungRekap(dari: Date, sampai: Date): Promise<Rekap> {
 
   const pendapatan = dihitung.reduce((n, b) => n + (b.totalPrice ?? 0), 0);
   const biayaPemasok = dihitung.reduce((n, b) => n + (b.supplierCost ?? 0), 0);
+  const biayaOperasional = dihitung.reduce((n, b) => n + hitungBiayaOperasional(b), 0);
 
   // Utang dihitung dari seluruh pesanan yang belum lunas, tanpa batas tanggal:
-  // utang tahun lalu tetap utang hari ini.
+  // utang tahun lalu tetap utang hari ini. Hanya biaya ke pemasok yang masuk —
+  // biaya operasional adalah uang LIANS sendiri, bukan kewajiban ke pihak lain.
   const [utang] = await db
     .select({ total: sql<number>`coalesce(sum(${bookings.supplierCost}), 0)::int` })
     .from(bookings)
@@ -54,7 +58,11 @@ export async function hitungRekap(dari: Date, sampai: Date): Promise<Rekap> {
     jumlahManual: dihitung.filter((b) => b.source === 'manual').length,
     pendapatan,
     biayaPemasok,
-    margin: pendapatan - biayaPemasok,
+    biayaOperasional,
+    // Biaya operasional ikut dikurangi meski kendaraannya milik LIANS sendiri:
+    // BBM dan sopir tetap uang keluar, dan margin yang tidak menghitungnya
+    // adalah angka yang membesar-besarkan untung.
+    margin: pendapatan - biayaPemasok - biayaOperasional,
     utangBelumLunas: utang?.total ?? 0,
   };
 }

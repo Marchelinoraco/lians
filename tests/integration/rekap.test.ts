@@ -68,7 +68,7 @@ jalankan('hitungRekap', () => {
     expect(sesudah.jumlahManual - sebelum.jumlahManual).toBe(1);
   });
 
-  it('menghitung margin sebagai pendapatan dikurangi biaya pemasok', async () => {
+  it('mengurangi biaya pemasok dari margin dan mencatatnya sebagai utang', async () => {
     superAdmin();
     const sebelum = await hitungRekap(dari, sampai);
 
@@ -85,6 +85,46 @@ jalankan('hitungRekap', () => {
     expect(sesudah.biayaPemasok - sebelum.biayaPemasok).toBe(600000);
     expect(sesudah.margin - sebelum.margin).toBe(400000);
     expect(sesudah.utangBelumLunas - sebelum.utangBelumLunas).toBe(600000);
+  });
+
+  it('ikut mengurangi biaya operasional dari margin', async () => {
+    superAdmin();
+    const sebelum = await hitungRekap(dari, sampai);
+
+    await buatPesanan({
+      totalPrice: 2000000,
+      supplierCost: 800000,
+      costFuel: 400000,
+      costDriver: 250000,
+      costTollParking: 50000,
+      status: 'confirmed',
+      source: 'manual',
+    });
+
+    const sesudah = await hitungRekap(dari, sampai);
+
+    expect(sesudah.biayaOperasional - sebelum.biayaOperasional).toBe(700000);
+    // 2.000.000 − 800.000 pemasok − 700.000 operasional
+    expect(sesudah.margin - sebelum.margin).toBe(500000);
+  });
+
+  // Biaya operasional keluar dari kantong LIANS sendiri, bukan dari kantong
+  // pemasok — jadi tidak boleh muncul sebagai utang yang harus dibayarkan.
+  it('tidak menghitung biaya operasional sebagai utang ke pemasok', async () => {
+    superAdmin();
+    const sebelum = await hitungRekap(dari, sampai);
+
+    await buatPesanan({
+      totalPrice: 1000000,
+      costFuel: 300000,
+      supplierPaid: false,
+      status: 'confirmed',
+      source: 'manual',
+    });
+
+    const sesudah = await hitungRekap(dari, sampai);
+
+    expect(sesudah.utangBelumLunas - sebelum.utangBelumLunas).toBe(0);
   });
 
   it('tidak menghitung pesanan di luar rentang tanggal', async () => {

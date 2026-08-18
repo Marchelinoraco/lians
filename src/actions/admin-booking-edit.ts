@@ -2,31 +2,43 @@
 
 import { revalidatePath } from 'next/cache';
 import { eq } from 'drizzle-orm';
-import { z } from 'zod';
 import { db } from '@/db';
 import { bookings } from '@/db/schema';
 import { manualBookingInputSchema, nominal } from '@/schemas/manual-booking';
-import { generateBookingCode } from '@/lib/booking-code';
 import { ambilNamaPemasok } from '@/lib/pemasok-snapshot';
 import { cocokkanAtauBuatPelanggan } from '@/lib/customer-match';
 import { normalizePhone } from '@/lib/whatsapp';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
 
-async function jaga(): Promise<string | null> {
+/**
+ * Mengubah pesanan yang sudah tercatat, memakai isian yang sama persis dengan
+ * form booking manual.
+ *
+ * Berlaku untuk pesanan dari situs maupun yang dicatat staf. Yang tidak
+ * disentuh di sini: status dan catatan internal — keduanya punya kendali
+ * sendiri di halaman detail, dan menggandakannya di dua tempat hanya membuat
+ * perubahan terakhir saling menimpa tanpa disadari.
+ */
+export async function updateBooking(
+  id: string,
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
   try {
     await requireSession();
-    return null;
   } catch {
-    return 'Sesi tidak valid. Silakan login kembali.';
+    return fail('Sesi tidak valid. Silakan login kembali.');
   }
-}
 
-export async function createManualBooking(
-  input: unknown,
-): Promise<ActionResult<{ id: string; bookingCode: string }>> {
-  const galat = await jaga();
-  if (galat) return fail(galat);
+  const [sebelum] = await db.select().from(bookings).where(eq(bookings.id, id)).limit(1);
+  if (!sebelum) return fail('Pesanan tidak ditemukan.');
+
+  // Penjaganya di sini, bukan hanya di halaman: pesanan yang sudah selesai
+  // adalah catatan keuangan yang sudah masuk rekap. Mengubahnya berarti
+  // mengubah angka bulan yang sudah ditutup.
+  if (sebelum.status === 'completed') {
+    return fail('Pesanan yang sudah selesai tidak bisa diubah lagi.');
+  }
 
   const parsed = manualBookingInputSchema.safeParse(input);
   if (!parsed.success) {
@@ -51,34 +63,31 @@ export async function createManualBooking(
     email: data.email,
   });
 
-  const bookingCode = generateBookingCode(new Date());
+  // Rincian harga otomatis dari situs sengaja dibiarkan utuh; yang dicatat
+  // hanya bahwa totalnya pernah diubah, supaya halaman detail dapat
+  // menampilkan keduanya berdampingan.
+  const hargaBerubah = sebelum.totalPrice !== data.totalPrice;
+  const priceEditedAt =
+    hargaBerubah && sebelum.priceBreakdown ? new Date() : sebelum.priceEditedAt;
 
-  const [row] = await db
-    .insert(bookings)
-    .values({
-      bookingCode,
+  await db
+    .update(bookings)
+    .set({
       customerName: data.customerName,
       phone: normalizePhone(data.phone),
       email: data.email || null,
       customerId,
       serviceType: data.serviceType,
-      // Tautan ke armada hanya untuk kendaraan sendiri; nama tetap disalin
-      // terpisah agar keterangan yang diketik admin tidak hilang saat mobilnya
-      // kelak dihapus dari armada.
       vehicleId: dariPemasok ? null : data.vehicleId || null,
       vehicleNameSnapshot: data.itemName,
       startDate: data.startDate,
       endDate: data.endDate || null,
-      // Harga diketik admin, tidak dihitung dari tanggal. Rincian sengaja
-      // dikosongkan karena memang tidak ada rumus di baliknya untuk ditampilkan.
       totalPrice: data.totalPrice,
-      priceBreakdown: null,
+      priceEditedAt,
       supplierVehicleId: dariPemasok ? data.supplierVehicleId || null : null,
       supplierNameSnapshot,
       supplierCost: dariPemasok ? nominal(data.supplierCost) : null,
       supplierPaid: dariPemasok ? data.supplierPaid : false,
-      // Biaya operasional tidak bersyarat asal kendaraan: BBM, sopir, dan tol
-      // tetap keluar dari kantong LIANS meski mobilnya pinjaman dari pemasok.
       costFuel: nominal(data.costFuel),
       costDriver: nominal(data.costDriver),
       costTollParking: nominal(data.costTollParking),
@@ -86,38 +95,13 @@ export async function createManualBooking(
       costOtherNote: data.costOtherNote || null,
       notes: data.notes || null,
       adminNotes: data.adminNotes || null,
-      // Dicatat staf berarti sudah disepakati lewat telepon; tidak ada yang
-      // perlu dikonfirmasi lagi seperti pada pesanan dari situs.
-      status: 'confirmed',
-      source: 'manual',
+      updatedAt: new Date(),
     })
-    .returning({ id: bookings.id });
+    .where(eq(bookings.id, id));
 
-  revalidatePath('/booking');
-  revalidatePath('/pemasok');
   revalidatePath('/');
-  return ok({ id: row.id, bookingCode });
-}
-
-export async function updateSupplierPaid(
-  id: string,
-  lunas: unknown,
-): Promise<ActionResult<{ id: string }>> {
-  const galat = await jaga();
-  if (galat) return fail(galat);
-
-  const parsed = z.boolean().safeParse(lunas);
-  if (!parsed.success) return fail('Nilai status pembayaran tidak dikenal.');
-
-  const [row] = await db
-    .update(bookings)
-    .set({ supplierPaid: parsed.data, updatedAt: new Date() })
-    .where(eq(bookings.id, id))
-    .returning({ id: bookings.id });
-
-  if (!row) return fail('Pesanan tidak ditemukan.');
-
-  revalidatePath('/pemasok');
+  revalidatePath('/booking');
   revalidatePath(`/booking/${id}`);
-  return ok({ id: row.id });
+  revalidatePath('/pemasok');
+  return ok({ id });
 }

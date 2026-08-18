@@ -71,6 +71,13 @@
       "when": 1786893355515,
       "tag": "0009_clear_maestro",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787025818604,
+      "tag": "0010_mighty_guardian",
+      "breakpoints": true
     }
   ]
 }

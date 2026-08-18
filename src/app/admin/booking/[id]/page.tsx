@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 import { getBookingById } from '@/queries/bookings';
 import { adalahRincianLama } from '@/db/schema';
 import { getSettings } from '@/queries/settings';
-import { formatRupiah } from '@/lib/format';
+import { formatRupiah, formatRupiahBertanda } from '@/lib/format';
+import { hitungBiayaOperasional, hitungMargin } from '@/lib/biaya';
 import { formatTanggal } from '@/lib/dates';
 import { waLink } from '@/lib/whatsapp';
 import { BookingStatusControl } from '@/components/admin/BookingStatusControl';
@@ -65,6 +66,15 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   }
 
   const rincian = booking.priceBreakdown;
+  const biayaOperasional = hitungBiayaOperasional(booking);
+  const margin = hitungMargin(booking);
+
+  const posBiaya: [string, number | null][] = [
+    ['BBM', booking.costFuel],
+    ['Sopir', booking.costDriver],
+    ['Tol & parkir', booking.costTollParking],
+    ['Lain-lain', booking.costOther],
+  ];
 
   // Harga dibaca dari salinan beku di pesanan, bukan dihitung ulang dari tabel
   // vehicles — kenaikan tarif tidak boleh mengubah angka pesanan lama.
@@ -88,11 +98,25 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </Link>
           <h1 className="text-2xl font-black">{booking.customerName}</h1>
         </div>
-        <DeleteButton
-          onDelete={hapus}
-          redirectTo="/booking"
-          konfirmasi={`Hapus pesanan ${booking.bookingCode}? Tindakan ini tidak bisa dibatalkan.`}
-        />
+        <div className="flex items-center gap-3">
+          {/* Pesanan selesai sudah masuk rekap; mengubahnya berarti mengubah
+              angka bulan yang sudah ditutup. Tombolnya ditiadakan, bukan
+              sekadar dinonaktifkan — tombol mati mengundang orang mencari
+              cara menyalakannya. */}
+          {booking.status === 'completed' ? null : (
+            <Link
+              href={`/booking/${booking.id}/ubah`}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold hover:border-lians-400"
+            >
+              Ubah pesanan
+            </Link>
+          )}
+          <DeleteButton
+            onDelete={hapus}
+            redirectTo="/booking"
+            konfirmasi={`Hapus pesanan ${booking.bookingCode}? Tindakan ini tidak bisa dibatalkan.`}
+          />
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
@@ -141,7 +165,14 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
-            <h2 className="mb-4 font-bold">Harga saat dipesan</h2>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <h2 className="font-bold">Harga saat dipesan</h2>
+              {booking.priceEditedAt ? (
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                  Diubah admin
+                </span>
+              ) : null}
+            </div>
             {rincian ? (
               adalahRincianLama(rincian) ? (
                 <dl className="space-y-2 text-sm">
@@ -189,9 +220,22 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                 catat kesepakatannya di catatan internal.
               </p>
             )}
-            <p className="mt-3 text-xs text-muted">
-              Angka ini disimpan saat pesanan dibuat dan tidak berubah meski tarif diperbarui.
-            </p>
+            {booking.priceEditedAt ? (
+              <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm">
+                <div className="flex justify-between font-bold text-amber-900">
+                  <span>Total setelah diubah admin</span>
+                  <span>{booking.totalPrice === null ? '—' : formatRupiah(booking.totalPrice)}</span>
+                </div>
+                <p className="mt-1 text-xs text-amber-800">
+                  Rincian di atas adalah harga yang dilihat pelanggan saat memesan lewat situs.
+                  Sengaja tidak dihapus — yang berlaku adalah angka di baris ini.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-3 text-xs text-muted">
+                Angka ini disimpan saat pesanan dibuat dan tidak berubah meski tarif diperbarui.
+              </p>
+            )}
           </section>
 
           {booking.supplierVehicleId || booking.supplierNameSnapshot ? (
@@ -206,14 +250,6 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
                   <dt className="text-xs text-muted">Biaya ke pemasok</dt>
                   <dd className="font-medium">
                     {booking.supplierCost === null ? '—' : formatRupiah(booking.supplierCost)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-muted">Margin</dt>
-                  <dd className="font-medium">
-                    {booking.totalPrice !== null && booking.supplierCost !== null
-                      ? formatRupiah(booking.totalPrice - booking.supplierCost)
-                      : '—'}
                   </dd>
                 </div>
                 <div>
@@ -238,6 +274,56 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
               </form>
             </section>
           ) : null}
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5">
+            <h2 className="mb-1 font-bold">Biaya operasional &amp; margin</h2>
+            <p className="mb-4 text-sm text-muted">
+              Biaya yang keluar dari kantong LIANS untuk menjalankan pesanan ini — berlaku juga
+              saat kendaraannya dipinjam dari pemasok.
+            </p>
+
+            <dl className="grid gap-3 sm:grid-cols-4">
+              {posBiaya.map(([nama, nilai]) => (
+                <div key={nama}>
+                  <dt className="text-xs text-muted">{nama}</dt>
+                  <dd className="font-medium">{nilai === null ? '—' : formatRupiah(nilai)}</dd>
+                </div>
+              ))}
+            </dl>
+
+            {booking.costOtherNote ? (
+              <p className="mt-3 text-xs text-muted">Lain-lain: {booking.costOtherNote}</p>
+            ) : null}
+
+            <dl className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-sm">
+              <div className="flex justify-between">
+                <dt>Total ke pelanggan</dt>
+                <dd>{booking.totalPrice === null ? '—' : formatRupiah(booking.totalPrice)}</dd>
+              </div>
+              {booking.supplierCost !== null ? (
+                <div className="flex justify-between text-muted">
+                  <dt>Biaya ke pemasok</dt>
+                  <dd>&minus; {formatRupiah(booking.supplierCost)}</dd>
+                </div>
+              ) : null}
+              <div className="flex justify-between text-muted">
+                <dt>Biaya operasional</dt>
+                <dd>&minus; {formatRupiah(biayaOperasional)}</dd>
+              </div>
+              <div className="flex justify-between border-t border-slate-200 pt-2 font-bold">
+                <dt>Margin</dt>
+                <dd className={margin !== null && margin < 0 ? 'text-red-600' : 'text-lians-700'}>
+                  {margin === null ? '—' : formatRupiahBertanda(margin)}
+                </dd>
+              </div>
+            </dl>
+
+            {margin !== null && margin < 0 ? (
+              <p className="mt-3 text-xs text-red-600">
+                Biaya melampaui harga ke pelanggan. Pesanan ini merugi.
+              </p>
+            ) : null}
+          </section>
         </div>
 
         <div className="space-y-6">

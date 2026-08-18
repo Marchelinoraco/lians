@@ -1,4 +1,6 @@
 import type { Booking } from '@/db/schema';
+import { hitungBiayaOperasional, hitungMargin } from '@/lib/biaya';
+
 /**
  * Tanggal ringkas dd/mm/yyyy, bukan "15 Agustus 2026".
  *
@@ -92,8 +94,8 @@ export function susunBaris(pesanan: Booking[], sertakanUang: boolean): BarisEksp
     if (sertakanUang) {
       baris.total = b.totalPrice;
       baris.biayaPemasok = b.supplierCost;
-      baris.margin =
-        b.totalPrice !== null && b.supplierCost !== null ? b.totalPrice - b.supplierCost : null;
+      baris.biayaOperasional = hitungBiayaOperasional(b);
+      baris.margin = hitungMargin(b);
     }
 
     return baris;
@@ -122,6 +124,7 @@ export function kolomEkspor(sertakanUang: boolean): Kolom[] {
     ...dasar,
     { kunci: 'total', judul: 'Total', lebar: 15, uang: true },
     { kunci: 'biayaPemasok', judul: 'Biaya pemasok', lebar: 17, uang: true },
+    { kunci: 'biayaOperasional', judul: 'Biaya operasional', lebar: 19, uang: true },
     { kunci: 'margin', judul: 'Margin', lebar: 15, uang: true },
   ];
 }

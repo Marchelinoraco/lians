@@ -1,5 +1,5 @@
 import { hitungRekap } from '@/queries/rekap';
-import { formatRupiah } from '@/lib/format';
+import { formatRupiah, formatRupiahBertanda } from '@/lib/format';
 import { requireSuperAdminPage } from '@/actions/auth-guard';
 
 export const dynamic = 'force-dynamic';
@@ -30,7 +30,8 @@ export default async function RekapPage({
   const kartu = [
     { label: 'Pendapatan', nilai: formatRupiah(rekap.pendapatan), tekan: true },
     { label: 'Biaya ke pemasok', nilai: formatRupiah(rekap.biayaPemasok), tekan: false },
-    { label: 'Margin', nilai: formatRupiah(rekap.margin), tekan: true },
+    { label: 'Biaya operasional', nilai: formatRupiah(rekap.biayaOperasional), tekan: false },
+    { label: 'Margin', nilai: formatRupiahBertanda(rekap.margin), tekan: true },
     { label: 'Utang belum dibayar', nilai: formatRupiah(rekap.utangBelumLunas), tekan: false },
   ];
 

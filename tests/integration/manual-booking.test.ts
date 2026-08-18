@@ -80,6 +80,35 @@ jalankan('booking manual', () => {
     expect(row.status).toBe('confirmed');
   });
 
+  it('menyimpan biaya operasional yang diisi saat pesanan dicatat', async () => {
+    bersesi();
+    const hasil = await createManualBooking({
+      customerName: 'Uji Biaya',
+      phone: nomorUji(),
+      serviceType: 'with-driver',
+      itemName: 'Innova + sopir',
+      startDate: '2099-09-01',
+      totalPrice: 2000000,
+      asalKendaraan: 'sendiri',
+      costFuel: 400000,
+      costDriver: 250000,
+      costTollParking: 75000,
+      costOther: 25000,
+      costOtherNote: 'Cuci mobil',
+    });
+
+    expect(hasil.ok).toBe(true);
+    if (!hasil.ok) return;
+    await catat(hasil.data.id);
+
+    const [row] = await db.select().from(bookings).where(eq(bookings.id, hasil.data.id));
+    expect(row.costFuel).toBe(400000);
+    expect(row.costDriver).toBe(250000);
+    expect(row.costTollParking).toBe(75000);
+    expect(row.costOther).toBe(25000);
+    expect(row.costOtherNote).toBe('Cuci mobil');
+  });
+
   it('menolak total harga kosong', async () => {
     bersesi();
     const hasil = await createManualBooking({
