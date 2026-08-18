@@ -7,7 +7,7 @@
  * ulang satu pun foto.
  *
  * Arti tiap bagiannya:
- *   l_lians:logo-putih  lapisan logo; titik dua, bukan garis miring, karena
+ *   l_lians:logo-biru   lapisan logo; titik dua, bukan garis miring, karena
  *                       begitulah Cloudinary menulis jalur folder di overlay
  *   w_0.16,fl_relative  lebarnya 16% lebar foto, bukan piksel tetap — cap yang
  *                       pas di foto besar akan menutupi mobil di foto kecil
@@ -15,8 +15,14 @@
  *                       mobil pada foto katalog
  *   o_75                agak tembus pandang; cap pekat terbaca sebagai
  *                       kerusakan gambar, bukan sebagai tanda kepemilikan
+ *
+ * Dipakai logo BIRU, bukan putih. Seluruh foto katalog saat ini adalah render
+ * pabrikan berlatar putih, dan logo putih di atasnya sama sekali tidak
+ * terlihat. Bila kelak katalog diisi foto asli di luar ruangan yang cenderung
+ * gelap, tukar `logo-biru` menjadi `logo-putih` di baris berikut — keduanya
+ * sudah terunggah oleh scripts/unggah-logo-cap.mjs.
  */
-export const CAP_LOGO = 'l_lians:logo-putih,w_0.16,fl_relative,g_south_east,x_0.04,y_0.04,o_75';
+export const CAP_LOGO = 'l_lians:logo-biru,w_0.16,fl_relative,g_south_east,x_0.04,y_0.04,o_75';
 
 const PENANDA = '/image/upload/';
 
