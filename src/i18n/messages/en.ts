@@ -217,7 +217,6 @@ const en: Messages = {
     seeOtherVehicles: 'See other vehicles',
   },
   home: {
-    servingArea: 'Serving Manado & North Sulawesi',
     viewFleet: 'View the fleet',
     ourServices: 'Our Services',
     featuredFleet: 'Featured Vehicles',

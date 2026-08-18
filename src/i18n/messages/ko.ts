@@ -209,7 +209,6 @@ const ko: Messages = {
     seeOtherVehicles: '다른 차량 보기',
   },
   home: {
-    servingArea: '마나도 및 북술라웨시 지역 서비스',
     viewFleet: '차량 보기',
     ourServices: '서비스 안내',
     featuredFleet: '추천 차량',

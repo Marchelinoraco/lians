@@ -131,3 +131,54 @@ body {
     animation: none;
   }
 }
+
+/* ── Latar hero yang berganti sendiri ────────────────────────────────────────
+   Tanpa JavaScript, sama seperti animasi teks hero: yang dibutuhkan hanyalah
+   enam lapisan gambar yang saling melembut bergantian, dan CSS sudah cukup
+   untuk itu. Menjadikan hero sebagai client component demi ini berarti
+   mengirim JavaScript hanya untuk hiasan yang tidak bisa disentuh siapa pun.
+
+   Tiap lapisan memakai keyframe yang sama dan hanya berbeda penundaannya.
+   Persentasenya terikat pada enam takuk — 100/6 = 16,66% per foto, dengan 3%
+   di antaranya untuk saling melembut. Mengubah jumlah takuk berarti mengubah
+   angka-angka ini DAN TAKUK_LATAR di Hero.tsx; keduanya harus sama.
+
+   Penundaan dikurangi 1,08s (3% dari 36s) supaya foto pertama sudah pekat di
+   detik nol. Tanpa itu, hero dibuka dengan kotak gelap yang baru terisi
+   sedetik kemudian. */
+.hero-silih {
+  opacity: 0;
+  animation: hero-silih 36s linear infinite;
+  animation-delay: calc(var(--urutan) * 6s - 1.08s);
+}
+
+@keyframes hero-silih {
+  0% {
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  16.66% {
+    opacity: 1;
+  }
+  19.66% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Latar yang berganti terus-menerus di belakang teks adalah gerakan yang tidak
+   diminta. Bagi yang mematikannya, foto pertama saja yang diam di tempat. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-silih {
+    animation: none;
+    opacity: 0;
+  }
+
+  .hero-silih:first-child {
+    opacity: 1;
+  }
+}

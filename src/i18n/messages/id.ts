@@ -219,7 +219,6 @@ const id = {
     seeOtherVehicles: 'Lihat kendaraan lain',
   },
   home: {
-    servingArea: 'Melayani Manado & Sulawesi Utara',
     viewFleet: 'Lihat armada',
     ourServices: 'Layanan Kami',
     featuredFleet: 'Armada Pilihan',

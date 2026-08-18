@@ -78,6 +78,7 @@ export default async function BerandaPage({ params }: { params: Promise<{ locale
         title={pickLocale(settings.heroTitle, locale) ?? ''}
         subtitle={pickLocale(settings.heroSubtitle, locale) ?? ''}
         locale={locale}
+        galeri={galeri}
       />
 
       {promo ? (

@@ -207,7 +207,6 @@ const zh: Messages = {
     seeOtherVehicles: '查看其他车辆',
   },
   home: {
-    servingArea: '服务万鸦老与北苏拉威西',
     viewFleet: '查看车队',
     ourServices: '我们的服务',
     featuredFleet: '精选车辆',

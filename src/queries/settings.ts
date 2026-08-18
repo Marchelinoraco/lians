@@ -19,16 +19,20 @@ export const DEFAULT_SETTINGS: SettingsInput = {
     ko: '매일 07:00 – 21:00 (WITA)',
   },
   heroTitle: {
-    id: 'Rental Mobil Terpercaya di Manado',
-    en: 'Trusted Car Rental in Manado',
-    zh: '万鸦老值得信赖的租车服务',
-    ko: '마나도의 믿을 수 있는 렌터카',
+    id: 'Jelajahi dan Nikmati Keindahan Sulawesi Utara Bersama Kami',
+    en: 'Explore and Enjoy Wonderful North Sulawesi with Us',
+    zh: '与我们一起探索北苏拉威西之美',
+    ko: '북술라웨시의 아름다움을 저희와 함께 즐겨보세요',
   },
   heroSubtitle: {
-    id: 'Lepas kunci, dengan sopir, bus pariwisata, dan antar-jemput bandara. Armada terawat, harga jelas.',
-    en: 'Self-drive, with driver, tour buses, and airport transfers. Well-maintained fleet, transparent pricing.',
-    zh: '自驾、含司机、旅游巴士与机场接送。车况良好，价格透明。',
-    ko: '자차 운전, 기사 포함, 관광버스, 공항 픽업. 잘 관리된 차량과 투명한 요금.',
+    id:
+      'Kami merupakan penyedia jasa rental mobil dan paket wisata di Manado yang telah berpengalaman. Untuk kenyamanan Anda, kami menyediakan berbagai kendaraan keluaran terbaru, driver dan tour guide berpengalaman yang siap menemani perjalanan Anda selama berada di Manado dan sekitarnya.',
+    en:
+      'An experienced car rental and tour operator in Manado. For your comfort we provide late-model vehicles, with seasoned drivers and tour guides ready to accompany you throughout Manado and the surrounding area.',
+    zh:
+      '我们是万鸦老经验丰富的租车与旅游套餐服务商。为让您舒心出行，我们提供多款新款车辆，以及经验丰富的司机和导游，全程陪伴您在万鸦老及周边的行程。',
+    ko:
+      '저희는 마나도에서 경험을 쌓아온 렌터카·투어 패키지 전문 업체입니다. 편안한 여행을 위해 최신 차량과 경험 많은 기사, 투어 가이드가 마나도와 인근 지역 일정 내내 함께합니다.',
   },
   aboutText: { id: '' },
   promoBanner: { id: '' },
