@@ -78,12 +78,31 @@ describe('kamus pesan', () => {
     }
   });
 
+  // Satu layanan, satu sebutan — di bilah atas maupun di kartu beranda, dalam
+  // bahasa apa pun. Sebutan yang berbeda-beda membuat pengunjung mengira
+  // keduanya menuju dua layanan yang berlainan.
+  //
+  // Diperiksa sebagai aturan untuk seluruh bahasa, bukan satu per satu:
+  // ketidakseragaman ini sudah muncul tiga kali di bahasa yang berbeda, dan
+  // memeriksanya satu per satu berarti bahasa berikutnya kembali terlewat.
+  it('memakai sebutan yang sama antara menu dan kartu layanan di semua bahasa', () => {
+    for (const locale of LOCALES) {
+      const t = getMessages(locale);
+      expect([t.nav.vehicles, t.nav.ticketing, t.nav.tours]).toEqual([
+        t.home.serviceRental,
+        t.home.serviceFlight,
+        t.home.serviceTour,
+      ]);
+    }
+  });
+
   it('menerjemahkan label navigasi ke bahasa masing-masing', () => {
     expect(getMessages('id').nav.vehicles).toBe('Rental Mobil');
     expect(getMessages('id').nav.tours).toBe('Paket Tour');
     expect(getMessages('id').nav.ticketing).toBe('Tiket Pesawat');
-    expect(getMessages('en').nav.vehicles).toBe('Vehicles');
-    expect(getMessages('zh').nav.vehicles).toBe('车辆');
-    expect(getMessages('ko').nav.vehicles).toBe('차량');
+    expect(getMessages('en').nav.vehicles).toBe('Car Rental');
+    expect(getMessages('en').nav.ticketing).toBe('Ticketing');
+    expect(getMessages('zh').nav.vehicles).toBe('租车');
+    expect(getMessages('ko').nav.vehicles).toBe('렌터카');
   });
 });

@@ -22,10 +22,17 @@ describe('ServiceCards', () => {
 
   it('menerjemahkan judul dan memberi awalan bahasa pada tautan', () => {
     render(<ServiceCards locale="en" />);
-    expect(screen.getByRole('link', { name: /Flight Tickets/ })).toHaveAttribute(
-      'href',
-      '/en/tiket',
-    );
+    expect(screen.getByRole('link', { name: /Ticketing/ })).toHaveAttribute('href', '/en/tiket');
+  });
+
+  // Kartu dan bilah atas menyebut hal yang sama, jadi harus memakai kata yang
+  // sama. Penyebutan yang berbeda-beda membuat pengunjung mengira keduanya
+  // menuju dua layanan yang berlainan.
+  it('memakai penyebutan yang sama dengan label menu', () => {
+    render(<ServiceCards locale="en" />);
+    for (const judul of ['Car Rental', 'Ticketing', 'Tours']) {
+      expect(screen.getByRole('link', { name: new RegExp(judul) })).toBeInTheDocument();
+    }
   });
 
   // Ketiga kartu memakai satu daftar ikon dan tautan untuk semua bahasa. Judul

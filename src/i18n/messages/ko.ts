@@ -3,9 +3,9 @@ import type { Messages } from '../index';
 const ko: Messages = {
   nav: {
     home: '홈',
-    vehicles: '차량',
+    vehicles: '렌터카',
     tours: '투어 패키지',
-    ticketing: '항공권 예약',
+    ticketing: '항공권',
     blog: '소식',
     terms: '약관',
     testimonials: '후기',

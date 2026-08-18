@@ -33,7 +33,10 @@ describe('Footer', () => {
 
   it('menerjemahkan navigasi dan memberi awalan bahasa pada tautan', () => {
     render(<Footer settings={DEFAULT_SETTINGS} locale="en" />);
-    expect(screen.getByRole('link', { name: 'Vehicles' })).toHaveAttribute('href', '/en/mobil');
+    expect(screen.getByRole('link', { name: 'Car Rental' })).toHaveAttribute(
+      'href',
+      '/en/mobil',
+    );
   });
 
   it('tidak memberi awalan pada tautan bahasa Indonesia', () => {

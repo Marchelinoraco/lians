@@ -3,9 +3,9 @@ import type { Messages } from '../index';
 const zh: Messages = {
   nav: {
     home: '首页',
-    vehicles: '车辆',
+    vehicles: '租车',
     tours: '旅游套餐',
-    ticketing: '机票预订',
+    ticketing: '机票',
     blog: '资讯',
     terms: '条款',
     testimonials: '评价',

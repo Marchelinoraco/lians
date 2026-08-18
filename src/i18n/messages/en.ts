@@ -3,9 +3,9 @@ import type { Messages } from '../index';
 const en: Messages = {
   nav: {
     home: 'Home',
-    vehicles: 'Vehicles',
+    vehicles: 'Car Rental',
     tours: 'Tours',
-    ticketing: 'Flights',
+    ticketing: 'Ticketing',
     blog: 'Blog',
     terms: 'Terms',
     testimonials: 'Reviews',
@@ -223,9 +223,9 @@ const en: Messages = {
     whatCustomersSay: 'What Customers Say',
     serviceRental: 'Car Rental',
     serviceRentalDesc: 'Self-drive or with a driver, by the day or by the week.',
-    serviceFlight: 'Flight Tickets',
+    serviceFlight: 'Ticketing',
     serviceFlightDesc: 'Tell us your route and dates — we will find you a fare.',
-    serviceTour: 'Tour Packages',
+    serviceTour: 'Tours',
     serviceTourDesc: 'Bunaken, Likupang, and the Minahasa highlands.',
   },
   testimonials: {
