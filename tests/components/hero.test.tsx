@@ -30,6 +30,11 @@ describe('Hero', () => {
     expect(screen.getByRole('link', { name: 'Armada Kami' })).toHaveAttribute('href', '/mobil');
   });
 
+  it('memakai sebutan yang sama untuk tombol armada dalam bahasa Inggris', () => {
+    render(<Hero title="T" subtitle="S" locale="en" galeri={[]} />);
+    expect(screen.getByRole('link', { name: 'Our Fleet' })).toHaveAttribute('href', '/en/mobil');
+  });
+
   it('tidak lagi menampilkan pil daerah layanan', () => {
     pasang();
     expect(screen.queryByText(/Melayani Manado/)).not.toBeInTheDocument();

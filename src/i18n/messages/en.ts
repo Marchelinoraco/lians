@@ -217,7 +217,7 @@ const en: Messages = {
     seeOtherVehicles: 'See other vehicles',
   },
   home: {
-    viewFleet: 'View the fleet',
+    viewFleet: 'Our Fleet',
     ourServices: 'Our Services',
     featuredFleet: 'Featured Vehicles',
     whatCustomersSay: 'What Customers Say',
