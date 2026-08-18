@@ -1,15 +1,25 @@
 import { describe, it, expect } from 'vitest';
-import { denganCapLogo, CAP_LOGO } from '@/lib/cap-logo';
+import { denganCapLogo, CAP_LOGO, OLAHAN_KATALOG } from '@/lib/cap-logo';
 
 const asli =
   'https://res.cloudinary.com/lians/image/upload/v1712345678/lians/kendaraan/innova.jpg';
 
 describe('denganCapLogo', () => {
-  it('menyisipkan lapisan logo tepat sesudah /upload/', () => {
+  it('menyisipkan olahan katalog tepat sesudah /upload/', () => {
     const hasil = denganCapLogo(asli);
-    expect(hasil).toContain(`/image/upload/${CAP_LOGO}/`);
+    expect(hasil).toContain(`/image/upload/${OLAHAN_KATALOG}/`);
     // Segmen versi dan jalur berkasnya tidak boleh ikut tergeser atau hilang.
     expect(hasil).toContain('/v1712345678/lians/kendaraan/innova.jpg');
+  });
+
+  // Sumbernya render pabrikan yang lebih lebar dari kotak 4:3 di kartu, dan
+  // object-cover memangkas tepi kiri-kanan — persis tempat capnya berdiri.
+  // Menyerahkan penyamaan rasio ke Cloudinary membuat tidak ada lagi yang
+  // tersisa untuk dipangkas peramban.
+  it('menyamakan rasio gambar dengan wadahnya sebelum mencap', () => {
+    const hasil = denganCapLogo(asli);
+    const olahan = hasil.split('/image/upload/')[1];
+    expect(olahan.indexOf('c_pad,ar_4:3')).toBeLessThan(olahan.indexOf('l_lians'));
   });
 
   // Dipanggil dari kartu maupun galeri; keduanya bisa menerima URL yang sudah
@@ -32,6 +42,7 @@ describe('denganCapLogo', () => {
   it('tetap bekerja pada URL yang sudah punya transformasi lain', () => {
     const sudah = 'https://res.cloudinary.com/lians/image/upload/w_800,q_auto/v1/a/b.jpg';
     const hasil = denganCapLogo(sudah);
-    expect(hasil).toContain(`/image/upload/${CAP_LOGO}/w_800,q_auto/`);
+    expect(hasil).toContain(`/image/upload/${OLAHAN_KATALOG}/w_800,q_auto/`);
+    expect(hasil).toContain(CAP_LOGO);
   });
 });
