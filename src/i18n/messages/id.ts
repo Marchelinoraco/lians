@@ -219,7 +219,7 @@ const id = {
     seeOtherVehicles: 'Lihat kendaraan lain',
   },
   home: {
-    viewFleet: 'Lihat armada',
+    viewFleet: 'Armada Kami',
     ourServices: 'Layanan Kami',
     featuredFleet: 'Armada Pilihan',
     whatCustomersSay: 'Kata Pelanggan',

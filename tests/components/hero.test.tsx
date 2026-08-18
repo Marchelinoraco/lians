@@ -25,6 +25,11 @@ describe('Hero', () => {
     expect(container.textContent).toContain('Subjudul uji.');
   });
 
+  it('menamai tombol armada dengan sebutan Indonesia yang dipakai LIANS', () => {
+    pasang();
+    expect(screen.getByRole('link', { name: 'Armada Kami' })).toHaveAttribute('href', '/mobil');
+  });
+
   it('tidak lagi menampilkan pil daerah layanan', () => {
     pasang();
     expect(screen.queryByText(/Melayani Manado/)).not.toBeInTheDocument();
