@@ -9,6 +9,7 @@ import { cariBentrokUnit, type Bentrok } from '@/queries/fleet-units';
 import { normalisasiNopol } from '@/lib/ketersediaan-unit';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 async function jaga(): Promise<string | null> {
   try {
@@ -57,7 +58,14 @@ export async function createFleetUnit(input: unknown): Promise<ActionResult<{ id
         notes: parsed.data.notes || null,
         isActive: parsed.data.isActive,
       })
-      .returning({ id: fleetUnits.id });
+      .returning({ id: fleetUnits.id, plate: fleetUnits.plate });
+
+    await catatAktivitas({
+      aksi: 'unit.buat',
+      ringkasan: `Menambah unit ${row.plate} (${model.name})`,
+      entitas: 'fleet_unit',
+      entitasId: row.id,
+    });
 
     segar();
     return ok({ id: row.id });
@@ -100,9 +108,16 @@ export async function updateFleetUnit(
         updatedAt: new Date(),
       })
       .where(eq(fleetUnits.id, id))
-      .returning({ id: fleetUnits.id });
+      .returning({ id: fleetUnits.id, plate: fleetUnits.plate });
 
     if (!row) return fail('Unit tidak ditemukan.');
+
+    await catatAktivitas({
+      aksi: 'unit.ubah',
+      ringkasan: `Mengubah unit ${row.plate} (${model.name})`,
+      entitas: 'fleet_unit',
+      entitasId: id,
+    });
 
     segar(id);
     return ok({ id: row.id });
@@ -117,8 +132,17 @@ export async function deleteFleetUnit(id: string): Promise<ActionResult<{ id: st
 
   const [row] = await db.delete(fleetUnits).where(eq(fleetUnits.id, id)).returning({
     id: fleetUnits.id,
+    plate: fleetUnits.plate,
+    vehicleNameSnapshot: fleetUnits.vehicleNameSnapshot,
   });
   if (!row) return fail('Unit tidak ditemukan.');
+
+  await catatAktivitas({
+    aksi: 'unit.hapus',
+    ringkasan: `Menghapus unit ${row.plate} (${row.vehicleNameSnapshot})`,
+    entitas: 'fleet_unit',
+    entitasId: id,
+  });
 
   segar();
   return ok({ id: row.id });

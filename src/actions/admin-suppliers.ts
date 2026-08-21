@@ -7,6 +7,7 @@ import { suppliers, supplierVehicles } from '@/db/schema';
 import { supplierInputSchema, supplierVehicleInputSchema } from '@/schemas/supplier';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 async function jaga(): Promise<string | null> {
   try {
@@ -40,6 +41,11 @@ export async function createSupplier(input: unknown): Promise<ActionResult<{ id:
     .returning({ id: suppliers.id });
 
   revalidatePath('/pemasok');
+  await catatAktivitas({
+    aksi: 'pemasok.buat',
+    ringkasan: `Menambah pemasok ${parsed.data.name}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -74,6 +80,11 @@ export async function updateSupplier(
 
   revalidatePath('/pemasok');
   revalidatePath(`/pemasok/${id}`);
+  await catatAktivitas({
+    aksi: 'pemasok.ubah',
+    ringkasan: `Mengubah pemasok ${parsed.data.name}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -86,10 +97,16 @@ export async function deleteSupplier(id: string): Promise<ActionResult<{ id: str
   // kendaraannya tidak hilang dari riwayat.
   const [row] = await db.delete(suppliers).where(eq(suppliers.id, id)).returning({
     id: suppliers.id,
+    name: suppliers.name,
   });
   if (!row) return fail('Pemasok tidak ditemukan.');
 
   revalidatePath('/pemasok');
+  await catatAktivitas({
+    aksi: 'pemasok.hapus',
+    ringkasan: `Menghapus pemasok ${row.name}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -115,6 +132,11 @@ export async function addSupplierVehicle(input: unknown): Promise<ActionResult<{
     .returning({ id: supplierVehicles.id });
 
   revalidatePath(`/pemasok/${parsed.data.supplierId}`);
+  await catatAktivitas({
+    aksi: 'pemasok.kendaraan-buat',
+    ringkasan: `Menambah kendaraan pemasok ${parsed.data.name}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -124,10 +146,16 @@ export async function deleteSupplierVehicle(id: string): Promise<ActionResult<{ 
 
   const [row] = await db.delete(supplierVehicles).where(eq(supplierVehicles.id, id)).returning({
     id: supplierVehicles.id,
+    name: supplierVehicles.name,
     supplierId: supplierVehicles.supplierId,
   });
   if (!row) return fail('Kendaraan pemasok tidak ditemukan.');
 
   revalidatePath(`/pemasok/${row.supplierId}`);
+  await catatAktivitas({
+    aksi: 'pemasok.kendaraan-hapus',
+    ringkasan: `Menghapus kendaraan pemasok ${row.name}`,
+  });
+
   return ok({ id: row.id });
 }

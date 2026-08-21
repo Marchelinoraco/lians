@@ -8,6 +8,7 @@ import { testimonialInputSchema } from '@/schemas/testimonial';
 import { LOCALES, localeHref } from '@/i18n';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 function segarkan() {
   for (const locale of LOCALES) {
@@ -39,9 +40,15 @@ export async function createTestimonial(input: unknown): Promise<ActionResult<{ 
 
   const [row] = await db.insert(testimonials).values(parsed.data).returning({
     id: testimonials.id,
+    customerName: testimonials.customerName,
   });
 
   segarkan();
+  await catatAktivitas({
+    aksi: 'testimoni.buat',
+    ringkasan: `Menambah testimoni dari ${parsed.data.customerName}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -69,6 +76,11 @@ export async function updateTestimonial(
   if (!row) return fail('Testimoni tidak ditemukan.');
 
   segarkan();
+  await catatAktivitas({
+    aksi: 'testimoni.ubah',
+    ringkasan: `Mengubah testimoni dari ${parsed.data.customerName}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -78,9 +90,15 @@ export async function deleteTestimonial(id: string): Promise<ActionResult<{ id: 
 
   const [row] = await db.delete(testimonials).where(eq(testimonials.id, id)).returning({
     id: testimonials.id,
+    customerName: testimonials.customerName,
   });
   if (!row) return fail('Testimoni tidak ditemukan.');
 
   segarkan();
+  await catatAktivitas({
+    aksi: 'testimoni.hapus',
+    ringkasan: `Menghapus testimoni dari ${row.customerName}`,
+  });
+
   return ok({ id: row.id });
 }

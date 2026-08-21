@@ -7,6 +7,7 @@ import { db } from '@/db';
 import { ticketRequests } from '@/db/schema';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 const statusSchema = z.enum(['pending', 'confirmed', 'completed', 'cancelled']);
 
@@ -33,12 +34,17 @@ export async function updateTicketRequestStatus(
     .update(ticketRequests)
     .set({ status: parsed.data, updatedAt: new Date() })
     .where(eq(ticketRequests.id, id))
-    .returning({ id: ticketRequests.id });
+    .returning({ id: ticketRequests.id, requestCode: ticketRequests.requestCode });
 
   if (!row) return fail('Permintaan tidak ditemukan.');
 
   revalidatePath('/permintaan-tiket');
   revalidatePath(`/permintaan-tiket/${id}`);
+  await catatAktivitas({
+    aksi: 'tiket.status',
+    ringkasan: `Mengubah status permintaan tiket ${row.requestCode}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -56,11 +62,16 @@ export async function updateTicketRequestNotes(
     .update(ticketRequests)
     .set({ adminNotes: parsed.data || null, updatedAt: new Date() })
     .where(eq(ticketRequests.id, id))
-    .returning({ id: ticketRequests.id });
+    .returning({ id: ticketRequests.id, requestCode: ticketRequests.requestCode });
 
   if (!row) return fail('Permintaan tidak ditemukan.');
 
   revalidatePath(`/permintaan-tiket/${id}`);
+  await catatAktivitas({
+    aksi: 'tiket.catatan',
+    ringkasan: `Mengubah catatan permintaan tiket ${row.requestCode}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -70,9 +81,15 @@ export async function deleteTicketRequest(id: string): Promise<ActionResult<{ id
 
   const [row] = await db.delete(ticketRequests).where(eq(ticketRequests.id, id)).returning({
     id: ticketRequests.id,
+    requestCode: ticketRequests.requestCode,
   });
   if (!row) return fail('Permintaan tidak ditemukan.');
 
   revalidatePath('/permintaan-tiket');
+  await catatAktivitas({
+    aksi: 'tiket.hapus',
+    ringkasan: `Menghapus permintaan tiket ${row.requestCode}`,
+  });
+
   return ok({ id: row.id });
 }

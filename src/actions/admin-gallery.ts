@@ -7,6 +7,7 @@ import { galleryItems } from '@/db/schema';
 import { galleryInputSchema } from '@/schemas/gallery';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 async function jaga(): Promise<string | null> {
   try {
@@ -46,6 +47,11 @@ export async function createGalleryItem(input: unknown): Promise<ActionResult<{ 
     .returning({ id: galleryItems.id });
 
   segarkan();
+  await catatAktivitas({
+    aksi: 'galeri.buat',
+    ringkasan: `Menambah foto galeri${parsed.data.caption.id ? ` ${parsed.data.caption.id}` : ''}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -78,6 +84,11 @@ export async function updateGalleryItem(
   if (!row) return fail('Foto tidak ditemukan.');
 
   segarkan();
+  await catatAktivitas({
+    aksi: 'galeri.ubah',
+    ringkasan: `Mengubah foto galeri${parsed.data.caption.id ? ` ${parsed.data.caption.id}` : ''}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -91,5 +102,10 @@ export async function deleteGalleryItem(id: string): Promise<ActionResult<{ id: 
   if (!row) return fail('Foto tidak ditemukan.');
 
   segarkan();
+  await catatAktivitas({
+    aksi: 'galeri.hapus',
+    ringkasan: 'Menghapus satu foto galeri',
+  });
+
   return ok({ id: row.id });
 }

@@ -10,6 +10,7 @@ import { cocokkanAtauBuatPelanggan } from '@/lib/customer-match';
 import { normalizePhone } from '@/lib/whatsapp';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 /**
  * Mengubah pesanan yang sudah tercatat, memakai isian yang sama persis dengan
@@ -102,6 +103,13 @@ export async function updateBooking(
       updatedAt: new Date(),
     })
     .where(eq(bookings.id, id));
+
+  await catatAktivitas({
+    aksi: 'pesanan.ubah',
+    ringkasan: `Mengubah pesanan ${sebelum.bookingCode} atas nama ${data.customerName}`,
+    entitas: 'booking',
+    entitasId: id,
+  });
 
   revalidatePath('/');
   revalidatePath('/booking');

@@ -8,6 +8,7 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { requireSession, requireSuperAdmin } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 const passwordBaru = z
   .string()
@@ -57,6 +58,8 @@ export async function changeOwnPassword(input: unknown): Promise<ActionResult<{ 
     .set({ passwordHash: await bcrypt.hash(parsed.data.passwordBaru, 12) })
     .where(eq(users.id, sesi.id));
 
+  await catatAktivitas({ aksi: 'akun.sandi-sendiri', ringkasan: 'Mengganti kata sandinya sendiri' });
+
   return ok({ ok: true });
 }
 
@@ -99,6 +102,13 @@ export async function resetStaffPassword(input: unknown): Promise<ActionResult<{
     .update(users)
     .set({ passwordHash: await bcrypt.hash(parsed.data.passwordBaru, 12) })
     .where(eq(users.id, parsed.data.userId));
+
+  await catatAktivitas({
+    aksi: 'akun.reset-sandi',
+    ringkasan: `Mereset kata sandi akun ${user.email}`,
+    entitas: 'user',
+    entitasId: parsed.data.userId,
+  });
 
   revalidatePath('/pengaturan');
   return ok({ ok: true });

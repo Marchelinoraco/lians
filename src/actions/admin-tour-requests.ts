@@ -7,6 +7,7 @@ import { db } from '@/db';
 import { tourRequests } from '@/db/schema';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 const statusSchema = z.enum(['pending', 'confirmed', 'completed', 'cancelled']);
 
@@ -33,12 +34,17 @@ export async function updateTourRequestStatus(
     .update(tourRequests)
     .set({ status: parsed.data, updatedAt: new Date() })
     .where(eq(tourRequests.id, id))
-    .returning({ id: tourRequests.id });
+    .returning({ id: tourRequests.id, requestCode: tourRequests.requestCode });
 
   if (!row) return fail('Permintaan tidak ditemukan.');
 
   revalidatePath('/permintaan-tur');
   revalidatePath(`/permintaan-tur/${id}`);
+  await catatAktivitas({
+    aksi: 'tur.status',
+    ringkasan: `Mengubah status permintaan tur ${row.requestCode}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -56,11 +62,16 @@ export async function updateTourRequestNotes(
     .update(tourRequests)
     .set({ adminNotes: parsed.data || null, updatedAt: new Date() })
     .where(eq(tourRequests.id, id))
-    .returning({ id: tourRequests.id });
+    .returning({ id: tourRequests.id, requestCode: tourRequests.requestCode });
 
   if (!row) return fail('Permintaan tidak ditemukan.');
 
   revalidatePath(`/permintaan-tur/${id}`);
+  await catatAktivitas({
+    aksi: 'tur.catatan',
+    ringkasan: `Mengubah catatan permintaan tur ${row.requestCode}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -70,9 +81,15 @@ export async function deleteTourRequest(id: string): Promise<ActionResult<{ id: 
 
   const [row] = await db.delete(tourRequests).where(eq(tourRequests.id, id)).returning({
     id: tourRequests.id,
+    requestCode: tourRequests.requestCode,
   });
   if (!row) return fail('Permintaan tidak ditemukan.');
 
   revalidatePath('/permintaan-tur');
+  await catatAktivitas({
+    aksi: 'tur.hapus',
+    ringkasan: `Menghapus permintaan tur ${row.requestCode}`,
+  });
+
   return ok({ id: row.id });
 }

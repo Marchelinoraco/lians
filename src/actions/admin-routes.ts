@@ -8,6 +8,7 @@ import { routeInputSchema } from '@/schemas/route';
 import { LOCALES, localeHref } from '@/i18n';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 function segarkan() {
   for (const locale of LOCALES) {
@@ -40,9 +41,15 @@ export async function createRoute(input: unknown): Promise<ActionResult<{ id: st
 
   const [row] = await db.insert(travelRoutes).values(parsed.data).returning({
     id: travelRoutes.id,
+    destination: travelRoutes.destination,
   });
 
   segarkan();
+  await catatAktivitas({
+    aksi: 'rute.buat',
+    ringkasan: `Menambah rute ${parsed.data.origin} – ${parsed.data.destination}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -70,6 +77,11 @@ export async function updateRoute(
   if (!row) return fail('Rute tidak ditemukan.');
 
   segarkan();
+  await catatAktivitas({
+    aksi: 'rute.ubah',
+    ringkasan: `Mengubah rute ${parsed.data.origin} – ${parsed.data.destination}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -79,9 +91,15 @@ export async function deleteRoute(id: string): Promise<ActionResult<{ id: string
 
   const [row] = await db.delete(travelRoutes).where(eq(travelRoutes.id, id)).returning({
     id: travelRoutes.id,
+    destination: travelRoutes.destination,
   });
   if (!row) return fail('Rute tidak ditemukan.');
 
   segarkan();
+  await catatAktivitas({
+    aksi: 'rute.hapus',
+    ringkasan: `Menghapus rute menuju ${row.destination}`,
+  });
+
   return ok({ id: row.id });
 }

@@ -12,6 +12,7 @@ import {
   Users,
   Truck,
   Wallet,
+  History,
   Route,
   Star,
   Newspaper,
@@ -66,7 +67,12 @@ export function AdminNav({
         { href: '/pemasok', label: 'Pemasok', Icon: Truck },
         // Menu ini disembunyikan, bukan diamankan. Penjaganya ada di halaman
         // /rekap dan di dalam hitungRekap sendiri.
-        ...(superAdmin ? [{ href: '/rekap', label: 'Rekap Keuangan', Icon: Wallet }] : []),
+        ...(superAdmin
+          ? [
+              { href: '/rekap', label: 'Rekap Keuangan', Icon: Wallet },
+              { href: '/aktivitas', label: 'Aktivitas', Icon: History },
+            ]
+          : []),
       ],
     },
     {

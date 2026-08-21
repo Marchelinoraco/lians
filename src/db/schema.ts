@@ -204,6 +204,33 @@ export const bookings = pgTable('bookings', {
 });
 
 /**
+ * Riwayat perubahan data oleh staf.
+ *
+ * Setiap Server Action yang mengubah data menuliskan satu baris di sini.
+ * Tanpanya, pertanyaan "siapa yang menghapus pesanan itu" tidak punya jawaban
+ * sama sekali — dan pada sistem yang dipakai bersama-sama, pertanyaan itu
+ * selalu datang setelah kerusakannya terjadi, bukan sebelumnya.
+ *
+ * Tidak ada aksi yang menyunting atau menghapus baris di sini. Riwayat yang
+ * dapat dirapikan pelakunya sendiri bukan riwayat.
+ */
+export const activityLog = pgTable('activity_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  // Email disalin: akun yang kelak dihapus tidak boleh membuat seluruh
+  // riwayatnya kehilangan keterangan siapa pelakunya.
+  userEmailSnapshot: text('user_email_snapshot').notNull(),
+  /** Slug bertingkat seperti "pesanan.buat", untuk menyaring per jenis. */
+  action: text('action').notNull(),
+  summary: text('summary').notNull(),
+  entity: text('entity'),
+  // Teks, bukan uuid: sebagian entitas dikenali lewat slug atau kunci
+  // pengaturan, dan riwayat tidak boleh gagal ditulis karena bentuk id-nya.
+  entityId: text('entity_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
  * Kendaraan fisik milik LIANS, satu baris per nomor polisi.
  *
  * Berbeda dari tabel `vehicles`, yang berisi MODEL untuk katalog publik: satu

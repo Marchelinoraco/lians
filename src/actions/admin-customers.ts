@@ -8,6 +8,7 @@ import { customerInputSchema } from '@/schemas/customer';
 import { normalizePhone } from '@/lib/whatsapp';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 async function jaga(): Promise<string | null> {
   try {
@@ -48,6 +49,11 @@ export async function createCustomer(input: unknown): Promise<ActionResult<{ id:
     .returning({ id: customers.id });
 
   revalidatePath('/pelanggan');
+  await catatAktivitas({
+    aksi: 'pelanggan.buat',
+    ringkasan: `Menambah pelanggan ${parsed.data.name}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -88,6 +94,11 @@ export async function updateCustomer(
 
   revalidatePath('/pelanggan');
   revalidatePath(`/pelanggan/${id}`);
+  await catatAktivitas({
+    aksi: 'pelanggan.ubah',
+    ringkasan: `Mengubah pelanggan ${parsed.data.name}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -100,9 +111,15 @@ export async function deleteCustomer(id: string): Promise<ActionResult<{ id: str
   // pesanannya tetap terbaca utuh.
   const [row] = await db.delete(customers).where(eq(customers.id, id)).returning({
     id: customers.id,
+    name: customers.name,
   });
   if (!row) return fail('Pelanggan tidak ditemukan.');
 
   revalidatePath('/pelanggan');
+  await catatAktivitas({
+    aksi: 'pelanggan.hapus',
+    ringkasan: `Menghapus pelanggan ${row.name}`,
+  });
+
   return ok({ id: row.id });
 }
