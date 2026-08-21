@@ -26,6 +26,9 @@ const bookingDibuat: string[] = [];
 const bersesi = (id = 'uji-admin') =>
   authMock.mockResolvedValue({ user: { id, email: 'uji@lians.id' } });
 const tanpaSesi = () => authMock.mockResolvedValue(null);
+/** Pengelolaan akun kini hanya milik pemilik, bukan setiap sesi yang sah. */
+const sebagaiPemilik = (id = 'uji-pemilik') =>
+  authMock.mockResolvedValue({ user: { id, email: 'bos@lians.id', role: 'super_admin' } });
 
 jalankan('Server Action rute', () => {
   it('menolak tanpa sesi', async () => {
@@ -152,7 +155,7 @@ jalankan('Server Action pengaturan', () => {
 
 jalankan('Server Action akun staf', () => {
   it('menolak kata sandi yang terlalu pendek', async () => {
-    bersesi();
+    sebagaiPemilik();
     const hasil = await createStaffUser({
       name: 'Staf Uji',
       email: `uji${Date.now()}@lians.id`,
@@ -162,7 +165,7 @@ jalankan('Server Action akun staf', () => {
   });
 
   it('membuat akun staf tanpa menyimpan kata sandi apa adanya', async () => {
-    bersesi();
+    sebagaiPemilik();
     const email = `staf${Date.now()}@lians.id`;
     const hasil = await createStaffUser({
       name: 'Staf Uji',
@@ -179,7 +182,7 @@ jalankan('Server Action akun staf', () => {
   });
 
   it('menolak email yang sudah dipakai', async () => {
-    bersesi();
+    sebagaiPemilik();
     const email = `kembar${Date.now()}@lians.id`;
     const a = await createStaffUser({ name: 'Staf A', email, password: 'kata-sandi-panjang' });
     expect(a.ok).toBe(true);
@@ -191,13 +194,15 @@ jalankan('Server Action akun staf', () => {
 
   it('menolak penghapusan akun yang sedang dipakai', async () => {
     const email = `sendiri${Date.now()}@lians.id`;
-    bersesi();
+    sebagaiPemilik();
     const dibuat = await createStaffUser({ name: 'Sendiri', email, password: 'kata-sandi-panjang' });
     expect(dibuat.ok).toBe(true);
     if (!dibuat.ok) return;
     stafDibuat.push(dibuat.data.id);
 
-    bersesi(dibuat.data.id);
+    // Pemilik yang menghapus dirinya sendiri: penjaga peran terlewati, sehingga
+    // yang diuji benar-benar penjaga "akun yang sedang dipakai".
+    sebagaiPemilik(dibuat.data.id);
     const hasil = await deleteStaffUser(dibuat.data.id);
     expect(hasil.ok).toBe(false);
     if (hasil.ok) return;
@@ -224,7 +229,7 @@ jalankan('Server Action booking admin', () => {
       .returning({ id: bookings.id });
     bookingDibuat.push(row.id);
 
-    bersesi();
+    sebagaiPemilik();
     expect(await updateBookingStatus(row.id, 'confirmed')).toMatchObject({ ok: true });
     expect(await updateAdminNotes(row.id, 'Sudah ditelepon.')).toMatchObject({ ok: true });
 
@@ -234,7 +239,7 @@ jalankan('Server Action booking admin', () => {
   });
 
   it('menolak status yang tidak dikenal', async () => {
-    bersesi();
+    sebagaiPemilik();
     expect(await updateBookingStatus(bookingDibuat[0], 'entah-apa')).toMatchObject({ ok: false });
   });
 
