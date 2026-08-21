@@ -9,7 +9,7 @@ vi.mock('next/headers', () => ({
 }));
 
 const { db } = await import('@/db');
-const { bookings, rateLimits, travelRoutes, customers } = await import('@/db/schema');
+const { bookings, rateLimits, travelRoutes, customers, vehicles } = await import('@/db/schema');
 const { createBooking } = await import('@/actions/booking');
 const { getPublishedVehicles } = await import('@/queries/vehicles');
 
@@ -17,6 +17,7 @@ const { getPublishedVehicles } = await import('@/queries/vehicles');
 const jalankan = process.env.DATABASE_URL ? describe : describe.skip;
 const dibuat: string[] = [];
 const ruteDibuat: string[] = [];
+const kendaraanDibuat: string[] = [];
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const besok = () => {
@@ -102,11 +103,28 @@ jalankan('createBooking', () => {
   });
 
   it('menolak kategori yang tarifnya tidak diisi admin', async () => {
-    const mobil = (await getPublishedVehicles()).find(
-      (v) => v.status === 'available' && v.ratePelayanan === null,
-    );
-    expect(mobil).toBeTruthy();
-    if (!mobil) return;
+    // Kendaraannya dibuat di sini, bukan dicari di antara data yang ada:
+    // bergantung pada kebetulan adanya armada tanpa tarif pelayanan membuat
+    // tes ini gagal begitu admin melengkapi tarif seluruh armadanya — kegagalan
+    // yang tidak ada hubungannya dengan apa yang sedang diuji.
+    const [mobil] = await db
+      .insert(vehicles)
+      .values({
+        slug: `uji-tanpa-tarif-${Date.now()}`,
+        name: 'Uji Tanpa Tarif Pelayanan',
+        category: 'mpv',
+        rateLepasKunci: 500000,
+        ratePelayanan: null,
+        serviceTypes: ['self-drive', 'with-driver'],
+        seats: 7,
+        transmission: 'automatic',
+        fuelType: 'petrol',
+        year: 2024,
+        status: 'available',
+        isPublished: true,
+      })
+      .returning({ id: vehicles.id });
+    kendaraanDibuat.push(mobil.id);
 
     const mulai = besok();
     const hasil = await createBooking({
@@ -200,5 +218,6 @@ afterAll(async () => {
   for (const id of dibuat) await db.delete(bookings).where(eq(bookings.id, id));
   for (const id of pelangganUji) await db.delete(customers).where(eq(customers.id, id));
   for (const id of ruteDibuat) await db.delete(travelRoutes).where(eq(travelRoutes.id, id));
+  for (const id of kendaraanDibuat) await db.delete(vehicles).where(eq(vehicles.id, id));
   await db.delete(rateLimits).where(eq(rateLimits.key, `booking:${IP_UJI}`));
 });

@@ -62,6 +62,7 @@ export function AdminNav({
       judul: 'Data usaha',
       item: [
         { href: '/pelanggan', label: 'Pelanggan', Icon: Users },
+        { href: '/kendaraan-lians', label: 'Kendaraan LIANS', Icon: Car },
         { href: '/pemasok', label: 'Pemasok', Icon: Truck },
         // Menu ini disembunyikan, bukan diamankan. Penjaganya ada di halaman
         // /rekap dan di dalam hitungRekap sendiri.

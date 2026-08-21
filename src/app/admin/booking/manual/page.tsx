@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { ManualBookingForm } from '@/components/admin/ManualBookingForm';
 import { createManualBooking } from '@/actions/admin-manual-booking';
+import { cekBentrokUnit } from '@/actions/admin-fleet-units';
+import { getFleetUnitsAktif } from '@/queries/fleet-units';
 import { getAllSupplierVehicles } from '@/queries/suppliers';
 import { getCustomers } from '@/queries/customers';
 import { getAllVehicles } from '@/queries/vehicles';
@@ -11,8 +13,9 @@ export const dynamic = 'force-dynamic';
 export default async function BookingManualPage() {
   await requireAdminPage();
 
-  const [armada, kendaraanPemasok, pelanggan] = await Promise.all([
+  const [armada, unitArmada, kendaraanPemasok, pelanggan] = await Promise.all([
     getAllVehicles(),
+    getFleetUnitsAktif(),
     getAllSupplierVehicles(),
     getCustomers(),
   ]);
@@ -31,6 +34,8 @@ export default async function BookingManualPage() {
 
       <ManualBookingForm
         armada={armada.map((v) => ({ id: v.id, name: v.name }))}
+        unitArmada={unitArmada}
+        onCekBentrok={cekBentrokUnit}
         kendaraanPemasok={kendaraanPemasok}
         pelanggan={pelanggan.map((p) => ({
           id: p.id,

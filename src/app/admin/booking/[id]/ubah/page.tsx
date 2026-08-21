@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { ManualBookingForm } from '@/components/admin/ManualBookingForm';
 import { updateBooking } from '@/actions/admin-booking-edit';
+import { cekBentrokUnit } from '@/actions/admin-fleet-units';
+import { getFleetUnitsAktif } from '@/queries/fleet-units';
 import { getBookingById } from '@/queries/bookings';
 import { getAllSupplierVehicles } from '@/queries/suppliers';
 import { getCustomers } from '@/queries/customers';
@@ -22,8 +24,9 @@ export default async function BookingUbahPage({ params }: { params: Promise<{ id
   // orang tidak sampai mengetik ulang satu form penuh untuk kemudian ditolak.
   if (booking.status === 'completed') redirect(`/booking/${id}`);
 
-  const [armada, kendaraanPemasok, pelanggan] = await Promise.all([
+  const [armada, unitArmada, kendaraanPemasok, pelanggan] = await Promise.all([
     getAllVehicles(),
+    getFleetUnitsAktif(),
     getAllSupplierVehicles(),
     getCustomers(),
   ]);
@@ -49,6 +52,9 @@ export default async function BookingUbahPage({ params }: { params: Promise<{ id
         mode="ubah"
         batalKe={`/booking/${id}`}
         armada={armada.map((v) => ({ id: v.id, name: v.name }))}
+        unitArmada={unitArmada}
+        onCekBentrok={cekBentrokUnit}
+        bookingId={id}
         kendaraanPemasok={kendaraanPemasok}
         pelanggan={pelanggan.map((p) => ({
           id: p.id,
@@ -69,6 +75,7 @@ export default async function BookingUbahPage({ params }: { params: Promise<{ id
           totalPrice: booking.totalPrice ?? '',
           asalKendaraan: booking.supplierVehicleId ? 'pemasok' : 'sendiri',
           vehicleId: booking.vehicleId ?? '',
+          fleetUnitId: booking.fleetUnitId ?? '',
           supplierVehicleId: booking.supplierVehicleId ?? '',
           supplierCost: booking.supplierCost ?? '',
           supplierPaid: booking.supplierPaid,

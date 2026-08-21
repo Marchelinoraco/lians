@@ -7,6 +7,7 @@ const sah = {
   serviceType: 'with-driver' as const,
   itemName: 'Innova Zenix + sopir, 3 hari',
   startDate: '2026-09-01',
+  endDate: '2026-09-03',
   totalPrice: 3600000,
   asalKendaraan: 'sendiri' as const,
 };
@@ -50,5 +51,48 @@ describe('skema booking manual — biaya operasional', () => {
   it('menolak keterangan pos lain-lain yang kelewat panjang', () => {
     const hasil = manualBookingInputSchema.safeParse({ ...sah, costOtherNote: 'x'.repeat(201) });
     expect(hasil.success).toBe(false);
+  });
+});
+
+describe('skema booking manual — tanggal dan unit armada', () => {
+  // Tanpa tanggal selesai tidak ada rentang yang bisa dibandingkan, sehingga
+  // peringatan bentrok unit tidak punya dasar untuk berbunyi.
+  it('mewajibkan tanggal selesai', () => {
+    const { endDate: _abaikan, ...tanpaSelesai } = sah;
+    const hasil = manualBookingInputSchema.safeParse(tanpaSelesai);
+    expect(hasil.success).toBe(false);
+    if (hasil.success) return;
+    expect(hasil.error.flatten().fieldErrors.endDate?.[0]).toMatch(/wajib/i);
+  });
+
+  it('menolak tanggal selesai yang mendahului tanggal mulai', () => {
+    const hasil = manualBookingInputSchema.safeParse({
+      ...sah,
+      startDate: '2026-09-05',
+      endDate: '2026-09-01',
+    });
+    expect(hasil.success).toBe(false);
+  });
+
+  it('menerima sewa sehari, mulai dan selesai di tanggal yang sama', () => {
+    const hasil = manualBookingInputSchema.safeParse({
+      ...sah,
+      startDate: '2026-09-05',
+      endDate: '2026-09-05',
+    });
+    expect(hasil.success).toBe(true);
+  });
+
+  it('menerima penunjukan unit armada LIANS', () => {
+    const hasil = manualBookingInputSchema.safeParse({
+      ...sah,
+      fleetUnitId: '11111111-1111-4111-8111-111111111111',
+    });
+    expect(hasil.success).toBe(true);
+  });
+
+  // Pesanan dari pemasok dan paket gabungan tidak menunjuk unit LIANS mana pun.
+  it('menerima pesanan tanpa unit armada', () => {
+    expect(manualBookingInputSchema.safeParse({ ...sah, fleetUnitId: '' }).success).toBe(true);
   });
 });

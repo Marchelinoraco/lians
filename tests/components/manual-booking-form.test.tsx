@@ -6,6 +6,20 @@ import { ManualBookingForm } from '@/components/admin/ManualBookingForm';
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const armada = [{ id: '11111111-1111-4111-8111-111111111111', name: 'Innova Zenix G' }];
+const unitArmada = [
+  {
+    id: '33333333-3333-4333-8333-333333333333',
+    plate: 'B 2688 UOC',
+    vehicleId: '11111111-1111-4111-8111-111111111111',
+    vehicleName: 'Innova Zenix G',
+  },
+  {
+    id: '44444444-4444-4444-8444-444444444444',
+    plate: 'DB 1012 RI',
+    vehicleId: '55555555-5555-4555-8555-555555555555',
+    vehicleName: 'All New Avanza / Xenia',
+  },
+];
 const kendaraanPemasok = [
   {
     id: '22222222-2222-4222-8222-222222222222',
@@ -19,9 +33,11 @@ function pasang(props: Partial<Parameters<typeof ManualBookingForm>[0]> = {}) {
   render(
     <ManualBookingForm
       armada={armada}
+      unitArmada={unitArmada}
       kendaraanPemasok={kendaraanPemasok}
       pelanggan={[]}
       onSubmit={onSubmit}
+      onCekBentrok={vi.fn().mockResolvedValue({ ok: true, data: { bentrok: [] } })}
       {...props}
     />,
   );
@@ -113,5 +129,67 @@ describe('ManualBookingForm — mode ubah', () => {
   it('tetap menyebut simpan pesanan pada mode catat baru', () => {
     pasang();
     expect(screen.getByRole('button', { name: /simpan pesanan/i })).toBeInTheDocument();
+  });
+});
+
+describe('ManualBookingForm — unit armada LIANS', () => {
+  it('menawarkan unit lewat nomor polisinya, bukan nama model saja', () => {
+    pasang();
+    const pilihan = screen.getByLabelText(/unit armada/i);
+    expect(pilihan).toHaveTextContent('B 2688 UOC');
+    expect(pilihan).toHaveTextContent('DB 1012 RI');
+  });
+
+  it('menyembunyikan pilihan unit LIANS saat kendaraannya dari pemasok', async () => {
+    const user = userEvent.setup();
+    pasang();
+    await user.click(screen.getByLabelText(/dari pemasok/i));
+    expect(screen.queryByLabelText(/unit armada/i)).not.toBeInTheDocument();
+  });
+
+  it('tidak lagi menyebut tanggal selesai sebagai opsional', () => {
+    pasang();
+    expect(screen.queryByLabelText(/tanggal selesai \(opsional\)/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/tanggal selesai/i)).toBeInTheDocument();
+  });
+
+  // Peringatan harus muncul saat mengisi, bukan setelah menyimpan: pesanan
+  // biasanya sudah disepakati lewat telepon saat form ini diketik.
+  it('memperingatkan saat unit yang dipilih sudah dipakai di tanggal itu', async () => {
+    const user = userEvent.setup();
+    const onCekBentrok = vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        bentrok: [
+          {
+            id: 'b1',
+            bookingCode: 'LNS-2026-0042',
+            customerName: 'Grace Tumbelaka',
+            startDate: '2026-09-12',
+            endDate: '2026-09-14',
+          },
+        ],
+      },
+    });
+    pasang({ onCekBentrok });
+
+    await user.selectOptions(screen.getByLabelText(/unit armada/i), '33333333-3333-4333-8333-333333333333');
+    await user.type(screen.getByLabelText(/tanggal mulai/i), '2026-09-13');
+    await user.type(screen.getByLabelText(/tanggal selesai/i), '2026-09-15');
+
+    const peringatan = await screen.findByRole('status');
+    expect(peringatan).toHaveTextContent('LNS-2026-0042');
+    expect(peringatan).toHaveTextContent('Grace Tumbelaka');
+  });
+
+  it('diam bila unitnya bebas pada tanggal itu', async () => {
+    const user = userEvent.setup();
+    pasang();
+
+    await user.selectOptions(screen.getByLabelText(/unit armada/i), '33333333-3333-4333-8333-333333333333');
+    await user.type(screen.getByLabelText(/tanggal mulai/i), '2026-09-13');
+    await user.type(screen.getByLabelText(/tanggal selesai/i), '2026-09-15');
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });

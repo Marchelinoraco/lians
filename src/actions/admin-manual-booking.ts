@@ -66,6 +66,10 @@ export async function createManualBooking(
       // terpisah agar keterangan yang diketik admin tidak hilang saat mobilnya
       // kelak dihapus dari armada.
       vehicleId: dariPemasok ? null : data.vehicleId || null,
+      // Unit fisik hanya untuk kendaraan sendiri: pesanan dari pemasok memakai
+      // mobil yang bukan milik LIANS, dan menunjuknya ke unit sendiri akan
+      // membuat unit itu tampak terpakai padahal sedang menganggur.
+      fleetUnitId: dariPemasok ? null : data.fleetUnitId || null,
       vehicleNameSnapshot: data.itemName,
       startDate: data.startDate,
       endDate: data.endDate || null,

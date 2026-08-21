@@ -33,7 +33,13 @@ export const manualBookingInputSchema = z
     itemName: z.string().trim().min(2, 'Keterangan pesanan wajib diisi').max(200),
 
     startDate: tanggal,
-    endDate: z.union([z.literal(''), tanggal]).optional(),
+    // Wajib, berbeda dari sebelumnya: tanpa tanggal selesai tidak ada rentang
+    // yang bisa dibandingkan, sehingga peringatan bentrok unit armada tidak
+    // punya dasar untuk berbunyi. Sewa sehari diisi tanggal yang sama.
+    endDate: z
+      .string({ error: 'Tanggal selesai wajib diisi' })
+      .min(1, 'Tanggal selesai wajib diisi')
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal tidak valid'),
 
     // Minimal 1, bukan 0: form mengirim 0 untuk kolom yang dikosongkan, jadi
     // batas 0 akan meloloskan pesanan tanpa harga tanpa satu pun pesan galat.
@@ -44,6 +50,9 @@ export const manualBookingInputSchema = z
     // tertentu — paket gabungan, atau kendaraan yang belum terdaftar di armada.
     vehicleId: z.union([z.literal(''), z.string().uuid()]).optional(),
     supplierVehicleId: z.union([z.literal(''), z.string().uuid()]).optional(),
+    // Unit fisik LIANS yang dipakai. Boleh kosong: pesanan dari pemasok dan
+    // paket gabungan tidak menunjuk satu kendaraan milik sendiri pun.
+    fleetUnitId: z.union([z.literal(''), z.string().uuid()]).optional(),
     supplierCost: z.union([z.literal(''), z.coerce.number().int().min(0)]).optional(),
     supplierPaid: z.boolean().default(false),
 
@@ -59,6 +68,14 @@ export const manualBookingInputSchema = z
     adminNotes: z.string().max(2000).optional(),
   })
   .superRefine((data, ctx) => {
+    if (data.endDate && data.endDate < data.startDate) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['endDate'],
+        message: 'Tanggal selesai tidak boleh mendahului tanggal mulai',
+      });
+    }
+
     if (data.asalKendaraan !== 'pemasok') return;
 
     if (!data.supplierVehicleId) {

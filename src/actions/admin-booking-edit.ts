@@ -79,6 +79,10 @@ export async function updateBooking(
       customerId,
       serviceType: data.serviceType,
       vehicleId: dariPemasok ? null : data.vehicleId || null,
+      // Unit fisik hanya untuk kendaraan sendiri: pesanan dari pemasok memakai
+      // mobil yang bukan milik LIANS, dan menunjuknya ke unit sendiri akan
+      // membuat unit itu tampak terpakai padahal sedang menganggur.
+      fleetUnitId: dariPemasok ? null : data.fleetUnitId || null,
       vehicleNameSnapshot: data.itemName,
       startDate: data.startDate,
       endDate: data.endDate || null,

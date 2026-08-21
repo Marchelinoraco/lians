@@ -35,6 +35,7 @@ const dasar = {
   serviceType: 'with-driver' as const,
   itemName: 'Innova + sopir',
   startDate: '2099-09-01',
+  endDate: '2099-09-03',
   totalPrice: 3600000,
   asalKendaraan: 'sendiri' as const,
 };

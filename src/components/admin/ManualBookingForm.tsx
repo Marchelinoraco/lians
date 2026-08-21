@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { ActionResult } from '@/actions/result';
@@ -20,6 +20,14 @@ import { BagianForm, KolomForm, AksiForm } from './BagianForm';
 export type PilihanKendaraanPemasok = { id: string; name: string; supplierName: string };
 export type PilihanPelanggan = { id: string; name: string; phone: string; email: string | null };
 export type PilihanArmada = { id: string; name: string };
+export type PilihanUnit = { id: string; plate: string; vehicleId: string | null; vehicleName: string };
+export type Bentrok = {
+  id: string;
+  bookingCode: string;
+  customerName: string;
+  startDate: string;
+  endDate: string | null;
+};
 
 type Values = {
   customerName: string;
@@ -33,6 +41,7 @@ type Values = {
   asalKendaraan: 'sendiri' | 'pemasok';
   vehicleId: string;
   supplierVehicleId: string;
+  fleetUnitId: string;
   supplierCost: number | '';
   supplierPaid: boolean;
   costFuel: number | '';
@@ -57,17 +66,29 @@ const n = (v: number | '' | undefined): number | null => (v === '' || v === unde
  */
 export function ManualBookingForm({
   armada,
+  unitArmada,
   kendaraanPemasok,
   pelanggan,
   onSubmit,
+  onCekBentrok,
+  bookingId,
   mode = 'buat',
   awal,
   batalKe = '/booking',
 }: {
   armada: PilihanArmada[];
+  unitArmada: PilihanUnit[];
   kendaraanPemasok: PilihanKendaraanPemasok[];
   pelanggan: PilihanPelanggan[];
   onSubmit: (input: unknown) => Promise<ActionResult<{ id: string; bookingCode?: string }>>;
+  onCekBentrok: (
+    fleetUnitId: string,
+    startDate: string,
+    endDate: string | null,
+    kecuali?: string,
+  ) => Promise<ActionResult<{ bentrok: Bentrok[] }>>;
+  /** Pesanan yang sedang disunting, agar tidak dilaporkan bentrok dengan dirinya. */
+  bookingId?: string;
   mode?: 'buat' | 'ubah';
   awal?: Partial<Values>;
   batalKe?: string;
@@ -81,6 +102,7 @@ export function ManualBookingForm({
       asalKendaraan: 'sendiri',
       vehicleId: '',
       supplierPaid: false,
+      fleetUnitId: '',
       totalPrice: '',
       supplierCost: '',
       costFuel: '',
@@ -105,6 +127,29 @@ export function ManualBookingForm({
   const biayaOperasional = hitungBiayaOperasional(posBiaya);
   const biayaPemasok = dariPemasok ? n(nilai.supplierCost) : null;
   const margin = hitungMargin({ ...posBiaya, totalPrice: n(nilai.totalPrice), supplierCost: biayaPemasok });
+
+  // Diperiksa saat mengisi, bukan saat menyimpan: bentrok yang baru ketahuan
+  // setelah tombol simpan ditekan sudah terlambat menolong, sebab pesanannya
+  // biasanya sudah disepakati lewat telepon saat form ini diketik.
+  const [bentrok, setBentrok] = useState<Bentrok[]>([]);
+  const { fleetUnitId, startDate, endDate } = nilai;
+
+  useEffect(() => {
+    if (dariPemasok || !fleetUnitId || !startDate) {
+      setBentrok([]);
+      return;
+    }
+
+    // Penanda dipakai agar jawaban permintaan lama yang datang terlambat tidak
+    // menimpa hasil permintaan terbaru.
+    let berlaku = true;
+    onCekBentrok(fleetUnitId, startDate, endDate || null, bookingId).then((hasil) => {
+      if (berlaku) setBentrok(hasil.ok ? hasil.data.bentrok : []);
+    });
+    return () => {
+      berlaku = false;
+    };
+  }, [dariPemasok, fleetUnitId, startDate, endDate, bookingId, onCekBentrok]);
 
   /** Mengisi nama dan email otomatis bila nomornya sudah ada di daftar pelanggan. */
   function cocokkanPelanggan(nomor: string) {
@@ -199,8 +244,13 @@ export function ManualBookingForm({
           </label>
 
           <label>
-            <span className={KELAS_LABEL}>Tanggal selesai (opsional)</span>
-            <input type="date" {...register('endDate')} className={KELAS_ISIAN} />
+            <span className={KELAS_LABEL}>Tanggal selesai</span>
+            <input
+              type="date"
+              {...register('endDate', { required: true })}
+              className={KELAS_ISIAN}
+            />
+            <span className={KELAS_BANTUAN}>Sewa sehari diisi tanggal yang sama.</span>
           </label>
         </KolomForm>
 
@@ -238,32 +288,65 @@ export function ManualBookingForm({
         </fieldset>
 
         {dariPemasok ? null : (
-          <label className="block max-w-sm">
-            <span className={KELAS_LABEL}>Unit armada (opsional)</span>
-            <select
-              {...register('vehicleId')}
-              onChange={(e) => {
-                setValue('vehicleId', e.target.value);
-                const unit = armada.find((a) => a.id === e.target.value);
-                // Hanya mengisi keterangan yang masih kosong: admin yang sudah
-                // menulis "paket 3 hari harga negosiasi" tidak boleh kehilangan
-                // kalimatnya hanya karena memilih unit.
-                if (unit && !getValues('itemName')) setValue('itemName', unit.name);
-              }}
-              className={KELAS_ISIAN}
-            >
-              <option value="">Tidak terkait unit tertentu</option>
-              {armada.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-            <span className={KELAS_BANTUAN}>
-              Menautkan pesanan ke armada LIANS untuk keperluan rekap. Keterangan pesanan di atas
-              tetap yang tampil.
-            </span>
-          </label>
+          <div className="space-y-3">
+            <label className="block max-w-sm">
+              <span className={KELAS_LABEL}>Unit armada LIANS (opsional)</span>
+              <select
+                {...register('fleetUnitId')}
+                onChange={(e) => {
+                  setValue('fleetUnitId', e.target.value);
+                  const unit = unitArmada.find((u) => u.id === e.target.value);
+                  // Model diikutkan dari unitnya supaya rekap per model tetap
+                  // bekerja tanpa admin memilih dua kali hal yang sama.
+                  setValue('vehicleId', unit?.vehicleId ?? '');
+                  // Hanya mengisi keterangan yang masih kosong: admin yang sudah
+                  // menulis "paket 3 hari harga negosiasi" tidak boleh kehilangan
+                  // kalimatnya hanya karena memilih unit.
+                  if (unit && !getValues('itemName')) setValue('itemName', unit.vehicleName);
+                }}
+                className={KELAS_ISIAN}
+              >
+                <option value="">Tidak terkait unit tertentu</option>
+                {[...new Set(unitArmada.map((u) => u.vehicleName))].map((model) => (
+                  <optgroup key={model} label={model}>
+                    {unitArmada
+                      .filter((u) => u.vehicleName === model)
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.plate}
+                        </option>
+                      ))}
+                  </optgroup>
+                ))}
+              </select>
+              <span className={KELAS_BANTUAN}>
+                {unitArmada.length === 0
+                  ? 'Belum ada kendaraan LIANS terdaftar. Tambahkan di menu Kendaraan LIANS.'
+                  : 'Memilih nomor polisi memungkinkan sistem memperingatkan bila unit itu sudah dipakai di tanggal yang sama.'}
+              </span>
+            </label>
+
+            {bentrok.length > 0 ? (
+              <div
+                role="status"
+                className="max-w-xl rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+              >
+                <p className="font-semibold">Unit ini sudah dipakai pada tanggal tersebut.</p>
+                <ul className="mt-1 space-y-0.5">
+                  {bentrok.map((b) => (
+                    <li key={b.id}>
+                      {b.bookingCode} — {b.customerName}, {b.startDate}
+                      {b.endDate && b.endDate !== b.startDate ? ` s/d ${b.endDate}` : ''}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs">
+                  Pesanan ini tetap bisa disimpan. Siapkan unit lain, atau ambil kendaraan dari
+                  pemasok.
+                </p>
+              </div>
+            ) : null}
+          </div>
         )}
 
         {dariPemasok ? (

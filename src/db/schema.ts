@@ -8,6 +8,7 @@ import {
   jsonb,
   date,
   timestamp,
+  unique,
 } from 'drizzle-orm/pg-core';
 // Impor relatif, bukan alias @/ — drizzle-kit memuat berkas ini lewat esbuild
 // tanpa membaca paths di tsconfig, sehingga alias tidak terselesaikan di sana.
@@ -153,6 +154,10 @@ export const bookings = pgTable('bookings', {
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
   serviceType: serviceTypeEnum('service_type').notNull(),
   vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
+  // Unit fisik yang dipakai, bila kendaraannya milik LIANS. Inilah yang
+  // dibandingkan saat memeriksa bentrok tanggal; vehicleId hanya menyebut
+  // modelnya, dan tiga mobil sejenis tidak dapat dibedakan darinya.
+  fleetUnitId: uuid('fleet_unit_id'),
   routeId: uuid('route_id').references(() => travelRoutes.id, { onDelete: 'set null' }),
   // Hanya terisi pada booking manual: pesanan dari situs selalu memakai armada
   // LIANS sendiri, karena hanya kendaraan itu yang tayang di katalog publik.
@@ -197,6 +202,38 @@ export const bookings = pgTable('bookings', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Kendaraan fisik milik LIANS, satu baris per nomor polisi.
+ *
+ * Berbeda dari tabel `vehicles`, yang berisi MODEL untuk katalog publik: satu
+ * baris "Innova Zenix G" di sana mewakili tiga mobil sungguhan di sini. Tanpa
+ * pemisahan itu, tidak ada yang dapat menjawab apakah unit ketiga masih bebas
+ * pada tanggal tertentu.
+ *
+ * Nomor polisi TIDAK unik sendirian, melainkan unik per model. Pemiliknya
+ * menegaskan ada dua kendaraan berbeda dengan nomor tercatat sama; batasan
+ * ini tetap menangkap satu unit yang tanpa sengaja dimasukkan dua kali pada
+ * model yang sama, tanpa menolak data yang dinyatakan benar.
+ */
+export const fleetUnits = pgTable(
+  'fleet_units',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    plate: text('plate').notNull(),
+    vehicleId: uuid('vehicle_id').references(() => vehicles.id, { onDelete: 'set null' }),
+    // Nama model disalin: model yang kelak dihapus dari katalog tidak boleh
+    // membuat unit fisiknya kehilangan keterangan ia mobil apa.
+    vehicleNameSnapshot: text('vehicle_name_snapshot').notNull(),
+    notes: text('notes'),
+    // Unit yang dijual atau sedang lama di bengkel dinonaktifkan, bukan
+    // dihapus: pesanan lama yang memakainya harus tetap terbaca.
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique('fleet_units_plate_vehicle').on(t.plate, t.vehicleId)],
+);
 
 /**
  * Permintaan penawaran tur. Paketnya statis di dalam repo, tetapi permintaan
