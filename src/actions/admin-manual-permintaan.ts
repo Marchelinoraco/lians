@@ -13,6 +13,7 @@ import { cocokkanAtauBuatPelanggan } from '@/lib/customer-match';
 import { normalizePhone } from '@/lib/whatsapp';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 async function jaga(): Promise<string | null> {
   try {
@@ -86,6 +87,11 @@ export async function createManualTourRequest(
 
   revalidatePath('/permintaan-tur');
   revalidatePath('/');
+  await catatAktivitas({
+    aksi: 'tur.buat',
+    ringkasan: `Mencatat permintaan tur manual ${requestCode}`,
+  });
+
   return ok({ id: row.id, requestCode });
 }
 
@@ -137,5 +143,10 @@ export async function createManualTicketRequest(
 
   revalidatePath('/permintaan-tiket');
   revalidatePath('/');
+  await catatAktivitas({
+    aksi: 'tiket.buat',
+    ringkasan: `Mencatat permintaan tiket manual ${requestCode}`,
+  });
+
   return ok({ id: row.id, requestCode });
 }

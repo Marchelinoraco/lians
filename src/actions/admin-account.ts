@@ -6,8 +6,9 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import { requireSession } from './auth-guard';
+import { requireSession, requireSuperAdmin } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 const passwordBaru = z
   .string()
@@ -57,6 +58,8 @@ export async function changeOwnPassword(input: unknown): Promise<ActionResult<{ 
     .set({ passwordHash: await bcrypt.hash(parsed.data.passwordBaru, 12) })
     .where(eq(users.id, sesi.id));
 
+  await catatAktivitas({ aksi: 'akun.sandi-sendiri', ringkasan: 'Mengganti kata sandinya sendiri' });
+
   return ok({ ok: true });
 }
 
@@ -72,14 +75,16 @@ const resetSchema = z.object({
  * lupa kata sandinya terkunci selamanya. Kata sandi lama tidak diminta — orang
  * yang mereset memang tidak mengetahuinya.
  *
- * Semua staf punya hak yang sama, jadi siapa pun yang sudah login dapat
- * melakukan ini. Itu konsekuensi sadar dari tidak adanya tingkatan peran.
+ * Hanya pemilik. Sebelumnya siapa pun yang login dapat melakukannya — pilihan
+ * yang masuk akal ketika belum ada tingkatan peran, tetapi menjadi lubang
+ * begitu super admin diperkenalkan: staf dapat mereset kata sandi pemilik dan
+ * masuk sebagai dia, sehingga setiap penjaga peran di halaman lain runtuh.
  */
 export async function resetStaffPassword(input: unknown): Promise<ActionResult<{ ok: true }>> {
   try {
-    await requireSession();
+    await requireSuperAdmin();
   } catch {
-    return fail('Sesi tidak valid. Silakan login kembali.');
+    return fail('Hanya pemilik yang dapat mengelola akun.');
   }
 
   const parsed = resetSchema.safeParse(input);
@@ -97,6 +102,13 @@ export async function resetStaffPassword(input: unknown): Promise<ActionResult<{
     .update(users)
     .set({ passwordHash: await bcrypt.hash(parsed.data.passwordBaru, 12) })
     .where(eq(users.id, parsed.data.userId));
+
+  await catatAktivitas({
+    aksi: 'akun.reset-sandi',
+    ringkasan: `Mereset kata sandi akun ${user.email}`,
+    entitas: 'user',
+    entitasId: parsed.data.userId,
+  });
 
   revalidatePath('/pengaturan');
   return ok({ ok: true });

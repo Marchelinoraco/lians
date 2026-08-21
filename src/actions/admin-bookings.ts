@@ -7,8 +7,17 @@ import { db } from '@/db';
 import { bookings } from '@/db/schema';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 const statusSchema = z.enum(['pending', 'confirmed', 'cancelled', 'completed']);
+
+/** Riwayat dibaca manusia, jadi statusnya ditulis seperti yang tampil di layar. */
+const LABEL_STATUS: Record<string, string> = {
+  pending: 'menunggu',
+  confirmed: 'dikonfirmasi',
+  cancelled: 'dibatalkan',
+  completed: 'selesai',
+};
 
 async function jaga(): Promise<string | null> {
   try {
@@ -33,9 +42,16 @@ export async function updateBookingStatus(
     .update(bookings)
     .set({ status: parsed.data, updatedAt: new Date() })
     .where(eq(bookings.id, id))
-    .returning({ id: bookings.id });
+    .returning({ id: bookings.id, bookingCode: bookings.bookingCode });
 
   if (!row) return fail('Pesanan tidak ditemukan.');
+
+  await catatAktivitas({
+    aksi: 'pesanan.status',
+    ringkasan: `Mengubah status pesanan ${row.bookingCode} menjadi ${LABEL_STATUS[parsed.data]}`,
+    entitas: 'booking',
+    entitasId: id,
+  });
 
   revalidatePath('/');
   revalidatePath('/booking');
@@ -57,9 +73,16 @@ export async function updateAdminNotes(
     .update(bookings)
     .set({ adminNotes: parsed.data || null, updatedAt: new Date() })
     .where(eq(bookings.id, id))
-    .returning({ id: bookings.id });
+    .returning({ id: bookings.id, bookingCode: bookings.bookingCode });
 
   if (!row) return fail('Pesanan tidak ditemukan.');
+
+  await catatAktivitas({
+    aksi: 'pesanan.catatan',
+    ringkasan: `Mengubah catatan internal pesanan ${row.bookingCode}`,
+    entitas: 'booking',
+    entitasId: id,
+  });
 
   revalidatePath(`/booking/${id}`);
   return ok({ id: row.id });
@@ -71,8 +94,19 @@ export async function deleteBooking(id: string): Promise<ActionResult<{ id: stri
 
   const [row] = await db.delete(bookings).where(eq(bookings.id, id)).returning({
     id: bookings.id,
+    bookingCode: bookings.bookingCode,
+    customerName: bookings.customerName,
   });
   if (!row) return fail('Pesanan tidak ditemukan.');
+
+  // Kode dan nama disalin ke ringkasan, bukan sekadar id: setelah pesanannya
+  // hilang, baris riwayat inilah satu-satunya keterangan bahwa ia pernah ada.
+  await catatAktivitas({
+    aksi: 'pesanan.hapus',
+    ringkasan: `Menghapus pesanan ${row.bookingCode} atas nama ${row.customerName}`,
+    entitas: 'booking',
+    entitasId: id,
+  });
 
   revalidatePath('/');
   revalidatePath('/booking');

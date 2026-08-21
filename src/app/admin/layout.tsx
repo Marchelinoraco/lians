@@ -53,7 +53,10 @@ export default async function AdminLayout({ children }: { children: ReactNode })
                 menjadi wadah gulir sendiri, dan semua yang position:sticky di
                 dalamnya (baris tombol simpan) berhenti menempel. Setiap tabel
                 admin sudah punya pembungkus overflow-nya masing-masing. */}
-            <main className="min-w-0 flex-1 p-8">{children}</main>
+            {/* pt-20 di layar sempit memberi ruang untuk bilah atas yang
+                dipasang fixed; mulai lg bilah itu hilang dan bantalannya
+                kembali seragam. */}
+            <main className="min-w-0 flex-1 px-4 pb-8 pt-20 sm:px-6 lg:p-8">{children}</main>
             <Toaster position="top-right" richColors />
           </div>
         </SessionProvider>

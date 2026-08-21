@@ -10,6 +10,7 @@ import { getAllVehicles } from '@/queries/vehicles';
 import { LOCALES, localeHref } from '@/i18n';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 function segarkan(slug?: string) {
   for (const locale of LOCALES) {
@@ -51,6 +52,11 @@ export async function createVehicle(input: unknown): Promise<ActionResult<{ id: 
     .returning({ id: vehicles.id });
 
   segarkan(slug);
+  await catatAktivitas({
+    aksi: 'armada.buat',
+    ringkasan: `Menambah kendaraan ${parsed.data.name}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -89,6 +95,11 @@ export async function updateVehicle(
 
   segarkan(slug);
   if (lama.slug !== slug) segarkan(lama.slug);
+  await catatAktivitas({
+    aksi: 'armada.ubah',
+    ringkasan: `Mengubah kendaraan ${parsed.data.name}`,
+  });
+
   return ok({ id });
 }
 
@@ -104,5 +115,10 @@ export async function deleteVehicle(id: string): Promise<ActionResult<{ id: stri
   await db.delete(vehicles).where(eq(vehicles.id, id));
 
   segarkan(lama.slug);
+  await catatAktivitas({
+    aksi: 'armada.hapus',
+    ringkasan: `Menghapus kendaraan ${lama.name}`,
+  });
+
   return ok({ id });
 }

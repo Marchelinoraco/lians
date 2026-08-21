@@ -7,6 +7,7 @@ import { posts } from '@/db/schema';
 import { postInputSchema } from '@/schemas/post';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 async function jaga(): Promise<string | null> {
   try {
@@ -54,6 +55,11 @@ export async function createPost(input: unknown): Promise<ActionResult<{ id: str
 
   segarkan(parsed.data.slug);
   revalidatePath('/blog');
+  await catatAktivitas({
+    aksi: 'blog.buat',
+    ringkasan: `Menerbitkan artikel ${parsed.data.title.id}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -94,6 +100,11 @@ export async function updatePost(
 
   segarkan(row.slug);
   revalidatePath(`/blog/${id}`);
+  await catatAktivitas({
+    aksi: 'blog.ubah',
+    ringkasan: `Mengubah artikel ${parsed.data.title.id}`,
+  });
+
   return ok({ id: row.id });
 }
 
@@ -108,5 +119,10 @@ export async function deletePost(id: string): Promise<ActionResult<{ id: string 
   if (!row) return fail('Artikel tidak ditemukan.');
 
   segarkan(row.slug);
+  await catatAktivitas({
+    aksi: 'blog.hapus',
+    ringkasan: `Menghapus artikel ${row.slug}`,
+  });
+
   return ok({ id: row.id });
 }

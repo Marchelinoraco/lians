@@ -35,6 +35,9 @@ async function hash(id: string): Promise<string> {
 }
 
 const bersesi = (id: string) => authMock.mockResolvedValue({ user: { id, email: 'u@lians.id' } });
+/** Reset kata sandi orang lain kini hanya milik pemilik. */
+const sebagaiPemilik = (id: string) =>
+  authMock.mockResolvedValue({ user: { id, email: 'bos@lians.id', role: 'super_admin' } });
 
 jalankan('changeOwnPassword', () => {
   it('menolak tanpa sesi', async () => {
@@ -116,7 +119,7 @@ jalankan('resetStaffPassword', () => {
   it('menyetel ulang kata sandi staf lain tanpa perlu kata sandi lamanya', async () => {
     const staf = await buatAkun();
     const admin = await buatAkun();
-    bersesi(admin);
+    sebagaiPemilik(admin);
 
     expect(await resetStaffPassword({ userId: staf, passwordBaru: BARU })).toMatchObject({
       ok: true,

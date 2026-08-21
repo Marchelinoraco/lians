@@ -12,6 +12,7 @@ import { cocokkanAtauBuatPelanggan } from '@/lib/customer-match';
 import { normalizePhone } from '@/lib/whatsapp';
 import { requireSession } from './auth-guard';
 import { fail, ok, type ActionResult } from './result';
+import { catatAktivitas } from '@/lib/aktivitas';
 
 async function jaga(): Promise<string | null> {
   try {
@@ -97,6 +98,13 @@ export async function createManualBooking(
     })
     .returning({ id: bookings.id });
 
+  await catatAktivitas({
+    aksi: 'pesanan.buat',
+    ringkasan: `Mencatat pesanan manual ${bookingCode} atas nama ${data.customerName}`,
+    entitas: 'booking',
+    entitasId: row.id,
+  });
+
   revalidatePath('/booking');
   revalidatePath('/pemasok');
   revalidatePath('/');
@@ -120,6 +128,13 @@ export async function updateSupplierPaid(
     .returning({ id: bookings.id });
 
   if (!row) return fail('Pesanan tidak ditemukan.');
+
+  await catatAktivitas({
+    aksi: 'pesanan.pemasok-lunas',
+    ringkasan: `Menandai pembayaran ke pemasok ${parsed.data ? 'sudah' : 'belum'} lunas`,
+    entitas: 'booking',
+    entitasId: id,
+  });
 
   revalidatePath('/pemasok');
   revalidatePath(`/booking/${id}`);
