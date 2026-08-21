@@ -95,28 +95,32 @@ export default async function BookingListPage({
         ))}
       </nav>
 
+      {/* min-w membuat pembungkus overflow di atasnya benar-benar berguna.
+          Dengan w-full saja, tabel tujuh kolom ini menciut mengikuti layar
+          ponsel dan nama pelanggan pecah menjadi tiga baris — tergulir ke
+          samping jauh lebih terbaca daripada terjepit. */}
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[46rem] text-sm">
           <thead className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-muted">
             <tr>
-              <th className="p-4">Kode</th>
-              <th className="p-4">Asal</th>
-              <th className="p-4">Pelanggan</th>
-              <th className="p-4">Pesanan</th>
-              <th className="p-4">Mulai</th>
-              <th className="p-4">Total</th>
-              <th className="p-4">Status</th>
+              <th className="p-3 sm:p-4">Kode</th>
+              <th className="p-3 sm:p-4">Asal</th>
+              <th className="p-3 sm:p-4">Pelanggan</th>
+              <th className="p-3 sm:p-4">Pesanan</th>
+              <th className="p-3 sm:p-4">Mulai</th>
+              <th className="p-3 sm:p-4">Total</th>
+              <th className="p-3 sm:p-4">Status</th>
             </tr>
           </thead>
           <tbody>
             {daftar.map((b) => (
               <tr key={b.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                <td className="p-4">
+                <td className="p-3 sm:p-4">
                   <Link href={`/booking/${b.id}`} className="font-semibold text-lians-700">
                     {b.bookingCode}
                   </Link>
                 </td>
-                <td className="p-4">
+                <td className="p-3 sm:p-4">
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                       b.source === 'manual'
@@ -127,16 +131,16 @@ export default async function BookingListPage({
                     {b.source === 'manual' ? 'Manual' : 'Website'}
                   </span>
                 </td>
-                <td className="p-4">
+                <td className="p-3 sm:p-4">
                   {b.customerName}
                   <span className="block text-xs text-muted">{b.phone}</span>
                 </td>
-                <td className="p-4">{b.vehicleNameSnapshot ?? b.routeNameSnapshot ?? '—'}</td>
-                <td className="p-4">{formatTanggal(new Date(b.startDate), 'id')}</td>
-                <td className="p-4">
+                <td className="p-3 sm:p-4">{b.vehicleNameSnapshot ?? b.routeNameSnapshot ?? '—'}</td>
+                <td className="p-3 sm:p-4">{formatTanggal(new Date(b.startDate), 'id')}</td>
+                <td className="p-3 sm:p-4">
                   {b.totalPrice === null ? 'Menunggu penawaran' : formatRupiah(b.totalPrice)}
                 </td>
-                <td className="p-4">
+                <td className="p-3 sm:p-4">
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold ${WARNA_STATUS[b.status]}`}
                   >
