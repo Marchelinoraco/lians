@@ -12,6 +12,7 @@ import { ImageUploader } from './ImageUploader';
 import { LocalizedListInput } from './LocalizedListInput';
 import { KELAS_ISIAN, KELAS_LABEL, KELAS_BANTUAN, KELAS_CENTANG, KELAS_TOMBOL_UTAMA } from './kelas-form';
 import { BagianForm, KolomForm, AksiForm } from './BagianForm';
+import { LABEL_LAYANAN } from '@/lib/label-layanan';
 
 type Values = {
   name: string;
@@ -222,9 +223,12 @@ export function VehicleForm({
         <legend className="mb-2 text-sm font-semibold">Jenis layanan</legend>
         <div className="flex flex-wrap gap-4">
           {[
-            { value: 'self-drive', label: 'Lepas kunci' },
-            { value: 'with-driver', label: 'Dengan sopir' },
-            { value: 'tourism', label: 'Pariwisata' },
+            { value: 'self-drive', label: LABEL_LAYANAN['self-drive'] },
+            { value: 'with-driver', label: LABEL_LAYANAN['with-driver'] },
+            // Pariwisata tetap ditawarkan di sini meski tidak lagi muncul saat
+            // mencatat pesanan: tiga bus dan Hiace memang menawarkannya di
+            // katalog publik, dan itu tidak ikut dihapus.
+            { value: 'tourism', label: LABEL_LAYANAN.tourism },
           ].map((s) => (
             <label key={s.value} className="flex items-center gap-2 text-sm">
               <input

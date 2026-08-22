@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { ActionResult } from '@/actions/result';
 import { hitungBiayaOperasional, hitungMargin } from '@/lib/biaya';
+import { LABEL_LAYANAN, LAYANAN_PESANAN_BARU } from '@/lib/label-layanan';
 import { formatRupiah, formatRupiahBertanda } from '@/lib/format';
 import {
   KELAS_ISIAN,
@@ -222,10 +223,11 @@ export function ManualBookingForm({
           <label>
             <span className={KELAS_LABEL}>Jenis layanan</span>
             <select {...register('serviceType')} className={KELAS_ISIAN}>
-              <option value="self-drive">Lepas kunci</option>
-              <option value="with-driver">Dengan sopir</option>
-              <option value="tourism">Bus / Hiace pariwisata</option>
-              <option value="travel">Antar-jemput / travel</option>
+              {LAYANAN_PESANAN_BARU.map((jenis) => (
+                <option key={jenis} value={jenis}>
+                  {LABEL_LAYANAN[jenis]}
+                </option>
+              ))}
             </select>
           </label>
 

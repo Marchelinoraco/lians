@@ -193,3 +193,22 @@ describe('ManualBookingForm — unit armada LIANS', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });
+
+describe('ManualBookingForm — jenis layanan', () => {
+  it('menawarkan tiga jenis yang dipakai LIANS sehari-hari', () => {
+    pasang();
+    const pilihan = screen.getByLabelText(/jenis layanan/i);
+    expect(pilihan).toHaveTextContent('Lepas Kunci');
+    expect(pilihan).toHaveTextContent('Pelayanan (BBM + sopir)');
+    expect(pilihan).toHaveTextContent('Drop Off');
+  });
+
+  // Sewa bus dicatat sebagai Pelayanan: yang membedakannya hanya kendaraannya,
+  // dan kendaraan sudah dipilih di bagian tersendiri.
+  it('tidak lagi menawarkan pariwisata sebagai jenis terpisah', () => {
+    pasang();
+    const pilihan = screen.getByLabelText(/jenis layanan/i);
+    expect(pilihan).not.toHaveTextContent(/pariwisata/i);
+    expect(pilihan.querySelectorAll('option')).toHaveLength(3);
+  });
+});

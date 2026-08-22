@@ -5,6 +5,7 @@ import { adalahRincianLama } from '@/db/schema';
 import { getSettings } from '@/queries/settings';
 import { formatRupiah, formatRupiahBertanda } from '@/lib/format';
 import { hitungBiayaOperasional, hitungMargin } from '@/lib/biaya';
+import { LABEL_LAYANAN } from '@/lib/label-layanan';
 import { formatTanggal } from '@/lib/dates';
 import { waLink } from '@/lib/whatsapp';
 import { BookingStatusControl } from '@/components/admin/BookingStatusControl';
@@ -26,13 +27,6 @@ function LABEL_KATEGORI(b: { rateCategory: string | null; rateType: string | nul
   if (b.rateType === '12h') return '12 jam (model lama)';
   return '—';
 }
-
-const LABEL_LAYANAN: Record<string, string> = {
-  'self-drive': 'Lepas kunci',
-  'with-driver': 'Dengan sopir',
-  tourism: 'Bus / Hiace pariwisata',
-  travel: 'Antar-jemput / travel',
-};
 
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdminPage();
